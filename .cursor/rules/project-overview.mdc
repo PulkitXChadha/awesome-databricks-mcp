@@ -1,0 +1,39 @@
+# Databricks MCP Project Overview
+
+This is a full-stack application that implements the Model Context Protocol (MCP) for AI assistants to interact with Databricks workspaces. The project consists of:
+
+## Architecture
+- **Backend**: FastAPI server with integrated MCP server (`server/app.py`)
+- **Frontend**: React TypeScript application with TailwindCSS and Radix UI (`client/`)
+- **MCP Integration**: FastMCP server that exposes prompts and tools to AI assistants
+- **Databricks SDK**: Python tools leveraging Databricks APIs and Unity Catalog
+
+## Key Components
+
+### Backend (`server/`)
+- [app.py](mdc:server/app.py) - Main FastAPI application with MCP integration
+- [tools.py](mdc:server/tools.py) - Python functions exposed as MCP tools
+- [prompts.py](mdc:server/prompts.py) - Dynamic prompt loading from markdown files
+- [routers/](mdc:server/routers/) - API endpoints for frontend communication
+
+### Frontend (`client/`)
+- [App.tsx](mdc:client/src/App.tsx) - Main React application entry point
+- [PromptsPage.tsx](mdc:client/src/pages/PromptsPage.tsx) - MCP discovery and management interface
+- [components/ui/](mdc:client/src/components/ui/) - Reusable UI components using Shadcn/Radix
+- [fastapi_client/](mdc:client/src/fastapi_client/) - Auto-generated TypeScript client for backend APIs
+
+### Configuration
+- [config.yaml](mdc:config.yaml) - Server configuration including MCP server name
+- [pyproject.toml](mdc:pyproject.toml) - Python dependencies and build configuration
+- [client/package.json](mdc:client/package.json) - Node.js dependencies and build scripts
+
+## Development Workflow
+1. Backend changes in `server/` directory
+2. Frontend changes in `client/` directory  
+3. Use `./run_app_local.sh` for local development
+4. Use `./deploy.sh` to deploy to Databricks Apps
+5. MCP tools and prompts are automatically loaded and exposed
+description:
+globs:
+alwaysApply: false
+---

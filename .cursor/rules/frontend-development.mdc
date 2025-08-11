@@ -1,0 +1,58 @@
+# Frontend Development Guidelines
+
+## React TypeScript Architecture
+
+### Tech Stack
+- **Framework**: React 18 with TypeScript 5.2
+- **Build Tool**: Vite with SWC for fast compilation
+- **Styling**: TailwindCSS with custom components
+- **UI Components**: Shadcn UI + Radix UI primitives
+- **State Management**: React Query for server state
+- **Package Manager**: Bun for fast dependency management
+
+### Project Structure
+- `client/src/App.tsx` - Main application component
+- `client/src/pages/` - Page-level components
+- `client/src/components/ui/` - Reusable UI components
+- `client/src/fastapi_client/` - Auto-generated TypeScript client
+- `client/src/lib/` - Utility functions and API helpers
+
+### Component Patterns
+```tsx
+// Use functional components with TypeScript interfaces
+interface ComponentProps {
+  title: string
+  onAction: () => void
+}
+
+export function MyComponent({ title, onAction }: ComponentProps) {
+  return (
+    <div className="p-4 bg-background">
+      <h1 className="text-2xl font-bold">{title}</h1>
+      <Button onClick={onAction}>Action</Button>
+    </div>
+  )
+}
+```
+
+### Styling Guidelines
+- Use TailwindCSS utility classes exclusively
+- Leverage Shadcn UI components for consistency
+- Use `class:` for conditional styling instead of ternary operators
+- Follow mobile-first responsive design principles
+
+### API Integration
+- Use auto-generated FastAPI client from `fastapi_client/`
+- Implement React Query for caching and state management
+- Handle loading states and error boundaries properly
+- Use proper TypeScript interfaces for API responses
+
+### Code Quality
+- Use ESLint and Prettier for code formatting
+- Follow React best practices and hooks guidelines
+- Implement proper accessibility features (ARIA labels, keyboard navigation)
+- Use descriptive variable names with camelCase convention
+description:
+globs:
+alwaysApply: false
+---

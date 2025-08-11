@@ -1,0 +1,60 @@
+# Databricks Integration Guidelines
+
+## Databricks SDK and APIs
+
+### Core Dependencies
+- **Databricks SDK**: `databricks-sdk==0.59.0` for workspace management
+- **MLflow Integration**: `mlflow[databricks]>=3.1.1` for ML lifecycle
+- **Databricks Connect**: `databricks-connect>=16.1.6` for local development
+- **Unity Catalog**: Built-in support through Databricks SDK
+
+### Authentication Patterns
+- **OAuth Flow**: Automatic authentication through Databricks Apps
+- **Environment Variables**: Load from `.env.local` for local development
+- **Workspace Configuration**: Use `config.yaml` for server settings
+
+### Common Databricks Operations
+```python
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.service import jobs, sql, ml
+
+# Initialize client
+client = WorkspaceClient()
+
+# Jobs management
+jobs_service = jobs.JobsAPI(client)
+job_list = jobs_service.list()
+
+# SQL warehouses
+sql_service = sql.StatementExecutionAPI(client)
+result = sql_service.execute_statement(
+    statement="SELECT * FROM my_table",
+    warehouse_id="warehouse_id"
+)
+
+# MLflow models
+ml_service = ml.ModelRegistryAPI(client)
+models = ml_service.list_models()
+```
+
+### Unity Catalog Integration
+- **Table Access**: Use three-part naming (`catalog.schema.table`)
+- **Permissions**: Leverage Databricks SDK for access control
+- **Data Lineage**: Built-in support through Unity Catalog APIs
+
+### Best Practices
+- **Error Handling**: Always handle Databricks API errors gracefully
+- **Rate Limiting**: Implement proper backoff for API calls
+- **Caching**: Cache frequently accessed workspace information
+- **Logging**: Log all Databricks operations for debugging
+- **Testing**: Use local development environment with `./run_app_local.sh`
+
+### Development Workflow
+1. Local development with Databricks Connect
+2. Test with local MCP proxy
+3. Deploy to Databricks Apps for production
+4. Use web interface for MCP tool discovery and testing
+description:
+globs:
+alwaysApply: false
+---

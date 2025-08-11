@@ -1,0 +1,78 @@
+# Development Workflow and Deployment
+
+## Local Development
+
+### Setup and Dependencies
+- **Python Environment**: Use `uv` for dependency management (see [uv.lock](mdc:uv.lock))
+- **Node.js Environment**: Use `bun` for frontend dependencies (see [client/bun.lock](mdc:client/bun.lock))
+- **Initial Setup**: Run `./setup.sh` for first-time configuration
+
+### Development Commands
+```bash
+# Start local development server
+./run_app_local.sh
+
+# Watch for changes and auto-reload
+./watch.sh
+
+# Run MCP proxy for local testing
+./run-mcp-proxy.sh
+
+# Check application status
+./app_status.sh
+```
+
+### Local Development URLs
+- **Backend API**: http://localhost:8000/api
+- **MCP Endpoint**: http://localhost:8000/mcp
+- **Frontend**: http://localhost:5173 (Vite dev server)
+
+## Testing and Validation
+
+### MCP Testing
+- **Web Interface**: Test MCP tools through React frontend
+- **Local Proxy**: Use `dba_mcp_proxy/` for CLI testing
+- **Validation Scripts**: Use `claude_scripts/` for automated testing
+
+### Code Quality
+- **Python**: ruff for linting and formatting
+- **TypeScript**: ESLint + Prettier for frontend code
+- **Formatting**: Run `./fix.sh` to auto-format code
+
+## Deployment
+
+### Databricks Apps Deployment
+```bash
+# Deploy to Databricks Apps
+./deploy.sh
+
+# Check deployment status
+./app_status.sh
+```
+
+### Configuration Files
+- [app.yaml](mdc:app.yaml) - Databricks App configuration
+- [config.yaml](mdc:config.yaml) - Server configuration
+- [requirements.txt](mdc:requirements.txt) - Python dependencies
+
+### Environment Variables
+- **Local**: `.env.local` for development settings
+- **Production**: Set through Databricks Apps environment variables
+- **Required**: Databricks host, authentication tokens
+
+## Troubleshooting
+
+### Common Issues
+- **Port Conflicts**: Check if ports 8000/5173 are available
+- **Authentication**: Verify `.env.local` configuration
+- **Dependencies**: Run `./fix.sh` to resolve dependency issues
+- **Build Issues**: Check `client/build/` directory exists for production
+
+### Debug Mode
+- Enable debug logging in FastAPI
+- Use `debugpy` for Python debugging
+- Check browser console for frontend issues
+description:
+globs:
+alwaysApply: false
+---

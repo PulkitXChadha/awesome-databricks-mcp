@@ -1,0 +1,54 @@
+# MCP Development Guidelines
+
+## Model Context Protocol Implementation
+
+### MCP Server Architecture
+- **FastMCP Integration**: Uses FastMCP library for MCP protocol implementation
+- **Dual Protocol Support**: HTTP/SSE for web interface, stdio for CLI tools
+- **Automatic Discovery**: Tools and prompts are automatically exposed to MCP clients
+
+### Prompt Development (`prompts/` directory)
+- **File Naming**: Filename becomes the prompt name (e.g., `check_system.md` → `check_system`)
+- **Format**: First line with `#` becomes the description, rest is content
+- **Example**:
+```markdown
+# Check system status and configuration
+This prompt provides system information including:
+- Databricks workspace status
+- Available resources
+- Configuration details
+```
+
+### Tool Development (`server/tools.py`)
+- **Decorator Pattern**: Use `@mcp_server.tool()` decorator
+- **Type Hints**: Always include proper Python type hints
+- **Documentation**: Docstrings become tool descriptions for MCP discovery
+- **Return Values**: Return structured data (dict, list, or primitive types)
+
+```python
+@mcp_server.tool()
+def list_databricks_jobs(workspace_id: str = None) -> list[dict]:
+    """List all Databricks jobs in the workspace."""
+    # Implementation here
+    return [{"job_id": "123", "name": "ETL Job"}]
+```
+
+### MCP Client Integration
+- **Local Development**: Use `dba_mcp_proxy/` for local testing
+- **Claude Integration**: Copy-paste setup commands from web interface
+- **Authentication**: Handled automatically through Databricks OAuth
+
+### Testing MCP Tools
+- **Web Interface**: Test tools through React frontend at `/mcp` endpoint
+- **Local Proxy**: Use `./run-mcp-proxy.sh` for local MCP testing
+- **Validation**: Tools automatically appear in MCP discovery response
+
+### Best Practices
+- Keep tools focused and single-purpose
+- Use descriptive names and documentation
+- Handle errors gracefully with proper error messages
+- Return structured data that AI assistants can easily parse
+description:
+globs:
+alwaysApply: false
+---

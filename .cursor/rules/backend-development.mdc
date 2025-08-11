@@ -1,0 +1,44 @@
+# Backend Development Guidelines
+
+## FastAPI MCP Server Architecture
+
+### Core Structure
+- **Entry Point**: [app.py](mdc:server/app.py) - Main FastAPI application with MCP integration
+- **MCP Server**: Uses FastMCP for Model Context Protocol implementation
+- **Dynamic Loading**: Tools and prompts are automatically loaded at startup
+
+### File Organization
+- `server/app.py` - Main application and MCP server setup
+- `server/tools.py` - Python functions decorated with `@mcp_server.tool`
+- `server/prompts.py` - Dynamic loading of markdown prompts from `prompts/` directory
+- `server/routers/` - API endpoints for frontend communication
+- `server/services/` - Business logic and external service integration
+
+### MCP Tool Development
+```python
+@mcp_server.tool()
+def my_tool(param1: str, param2: int) -> dict:
+    """Tool description for MCP discovery."""
+    # Implementation here
+    return {"result": "success"}
+```
+
+### Configuration Management
+- Load from [config.yaml](mdc:config.yaml) for server settings
+- Environment variables from `.env.local` for local development
+- Use `load_config()` function for centralized configuration
+
+### Dependencies
+- Core: FastAPI, FastMCP, Databricks SDK
+- Development: ruff, pytest, watchdog
+- See [pyproject.toml](mdc:pyproject.toml) for complete dependency list
+
+### Code Style
+- Use single quotes for strings
+- 2-space indentation
+- Line length: 100 characters
+- Follow ruff linting rules defined in pyproject.toml
+description:
+globs:
+alwaysApply: false
+---
