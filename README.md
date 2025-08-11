@@ -1,4 +1,4 @@
-# 🤖 Databricks MCP Server Template
+# awesome-databricks-mcp
 
 Host Model Context Protocol (MCP) prompts and tools on Databricks Apps, enabling AI assistants like Claude to interact with your Databricks workspace through a secure, authenticated interface.
 
@@ -9,6 +9,8 @@ This template lets you create an MCP server that runs on Databricks Apps. You ca
 - 🛠️ **Create tools** as Python functions that leverage Databricks SDK
 - 🔐 **Authenticate securely** with OAuth through Databricks Apps
 - 🚀 **Deploy instantly** to make your MCP server accessible to Claude
+- 🖥️ **Web Interface** with a modern React TypeScript frontend for MCP discovery
+- 🧪 **Comprehensive Testing** with automated MCP validation tools
 
 Think of it as a bridge between Claude and your Databricks workspace - you define what Claude can see and do, and this server handles the rest.
 
@@ -33,12 +35,18 @@ Think of it as a bridge between Claude and your Databricks workspace - you defin
    - Exposes Python functions as MCP tools via `@mcp_server.tool` decorator
    - Handles both HTTP requests and MCP protocol over Server-Sent Events
 
-2. **Prompts** (`prompts/`): Simple markdown files where:
+2. **React Frontend** (`client/`): A modern TypeScript React application that:
+   - Provides a web interface for MCP discovery and testing
+   - Shows available prompts, tools, and MCP configuration
+   - Includes copy-paste setup commands for Claude integration
+   - Built with TailwindCSS, Radix UI, and modern React patterns
+
+3. **Prompts** (`prompts/`): Simple markdown files where:
    - Filename = prompt name (e.g., `check_system.md` → `check_system` prompt)
    - First line with `#` = description
    - File content = what gets returned to Claude
 
-3. **Local Proxy** (`dba_mcp_proxy/`): Authenticates and proxies MCP requests:
+4. **Local Proxy** (`dba_mcp_proxy/`): Authenticates and proxies MCP requests:
    - Handles Databricks OAuth authentication automatically
    - Translates between Claude's stdio protocol and HTTP/SSE
    - Works with both local development and deployed apps
@@ -78,7 +86,7 @@ cd my-mcp-server
 This will:
 - Configure Databricks authentication
 - Set your MCP server name
-- Install all dependencies
+- Install all dependencies (Python + Node.js)
 - Create your `.env.local` file
 
 #### Step 3: Deploy with Claude
@@ -120,7 +128,7 @@ git clone <your-repo>
 cd <your-repo>
 ./setup.sh
 
-# Start dev server
+# Start dev server (both backend and frontend)
 ./watch.sh
 
 # Set your configuration for local testing
@@ -171,7 +179,7 @@ We auto-load `prompts/` for convenience, but function-based prompts are useful w
 
 ### Adding Tools
 
-Add a function in `server/app.py` using the `@mcp_server.tool` decorator:
+Add a function in `server/tools.py` using the `@mcp_server.tool` decorator:
 
 ```python
 @mcp_server.tool
@@ -195,6 +203,48 @@ Tools must:
 - Return JSON-serializable data (dict, list, str, etc.)
 - Accept only JSON-serializable parameters
 
+## Available MCP Tools
+
+This template includes a comprehensive set of Databricks tools:
+
+### SQL & Data Tools
+- **`execute_dbsql`** - Execute SQL queries on Databricks SQL warehouses
+- **`list_warehouses`** - List all SQL warehouses in the workspace
+
+### File System Tools
+- **`list_dbfs_files`** - Browse DBFS file system
+- **`upload_dbfs_file`** - Upload files to DBFS
+- **`download_dbfs_file`** - Download files from DBFS
+
+### Unity Catalog Tools
+- **`list_uc_catalogs`** - List Unity Catalog catalogs
+- **`describe_uc_catalog`** - Get detailed catalog information
+- **`describe_uc_schema`** - Get schema details and tables
+- **`describe_uc_table`** - Get table metadata and lineage
+- **`list_uc_volumes`** - List volumes in a Unity Catalog schema
+- **`describe_uc_volume`** - Get detailed volume information
+- **`list_uc_functions`** - List functions in a Unity Catalog schema
+- **`describe_uc_function`** - Get detailed function information
+- **`list_uc_models`** - List models in a Unity Catalog schema
+- **`describe_uc_model`** - Get detailed model information
+- **`list_external_locations`** - List external locations
+- **`describe_external_location`** - Get external location details
+- **`list_storage_credentials`** - List storage credentials
+- **`describe_storage_credential`** - Get storage credential details
+- **`list_uc_permissions`** - List permissions for UC objects
+- **`search_uc_objects`** - Search for UC objects by name/description
+- **`get_table_statistics`** - Get table statistics and metadata
+- **`list_metastores`** - List all metastores
+- **`describe_metastore`** - Get metastore details
+- **`list_uc_tags`** - List available tags
+- **`apply_uc_tags`** - Apply tags to UC objects
+- **`list_data_quality_monitors`** - List data quality monitors
+- **`get_data_quality_results`** - Get monitoring results
+- **`create_data_quality_monitor`** - Create data quality monitor
+
+### System Tools
+- **`health`** - Check MCP server and Databricks connection status
+- **`get_workspace_info`** - Get workspace configuration details
 
 ## Deployment
 
@@ -244,16 +294,31 @@ Claude: I'll execute that SQL query for you using the execute_dbsql tool.
 
 ```
 ├── server/                    # FastAPI backend with MCP server
-│   ├── app.py                # Main application + MCP tools
+│   ├── app.py                # Main application + MCP server setup
+│   ├── tools.py              # MCP tools implementation
 │   └── routers/              # API endpoints
+├── client/                   # React TypeScript frontend
+│   ├── src/                  # Source code
+│   │   ├── components/       # Reusable UI components
+│   │   ├── pages/            # Page components
+│   │   └── fastapi_client/   # Auto-generated API client
+│   ├── package.json          # Node.js dependencies
+│   └── tailwind.config.js    # TailwindCSS configuration
 ├── prompts/                  # MCP prompts (markdown files)
 │   ├── check_system.md      
 │   ├── list_files.md        
 │   └── ping_google.md       
 ├── dba_mcp_proxy/           # MCP proxy for Claude CLI
 │   └── mcp_client.py        # OAuth + proxy implementation
-├── client/                  # React frontend (optional)
-├── scripts/                 # Development tools
+├── claude_scripts/          # Comprehensive testing tools
+│   ├── test_local_mcp_*.sh  # Local MCP testing scripts
+│   ├── test_remote_mcp_*.sh # Remote MCP testing scripts
+│   ├── test_uc_tools.py     # Unity Catalog tools testing
+│   └── inspect_*.sh         # Web-based MCP Inspector
+├── docs/                     # Documentation
+│   ├── databricks_apis/      # Databricks API documentation
+│   └── unity_catalog_tools.md # Unity Catalog tools documentation
+├── scripts/                  # Development tools
 └── pyproject.toml          # Python package configuration
 ```
 
@@ -345,6 +410,21 @@ All tests dynamically discover app URLs and handle OAuth authentication automati
 
 See [`claude_scripts/README.md`](claude_scripts/README.md) for detailed documentation.
 
+### Web Interface Testing
+
+The React frontend provides an additional way to test your MCP server:
+
+```bash
+# Start the development server
+./watch.sh
+
+# Open http://localhost:3000 in your browser
+# Navigate to the MCP Discovery page to see:
+# - Available prompts and tools
+# - MCP configuration details
+# - Copy-paste setup commands for Claude
+```
+
 ## Troubleshooting
 
 - **Authentication errors**: Run `databricks auth login` to refresh credentials
@@ -360,6 +440,11 @@ See [`claude_scripts/README.md`](claude_scripts/README.md) for detailed document
   rm -rf ~/.cache/uv/git-v0/checkouts/*/
   # Or clear entire uv cache
   uv cache clean
+  ```
+- **Frontend build issues**: Ensure Node.js dependencies are installed:
+  ```bash
+  cd client
+  bun install
   ```
 
 ## Contributing
