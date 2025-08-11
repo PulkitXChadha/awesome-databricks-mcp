@@ -142,6 +142,162 @@ claude mcp add databricks-mcp-local --scope local -- \
   --databricks-app-url $DATABRICKS_APP_URL
 ```
 
+## Running Locally
+
+### Prerequisites
+
+Before running the MCP server locally, ensure you have:
+
+- **Python 3.9+** and **Node.js 18+** installed
+- **Databricks CLI** configured with `databricks auth login`
+- **Git** for cloning the repository
+- **uv** package manager (recommended) or **pip** for Python dependencies
+- **bun** (recommended) or **npm** for Node.js dependencies
+
+### Step-by-Step Local Setup
+
+#### 1. Clone and Configure
+
+```bash
+# Clone your repository
+git clone https://github.com/YOUR-USERNAME/your-mcp-server.git
+cd your-mcp-server
+
+# Run the interactive setup script
+./setup.sh
+```
+
+The setup script will:
+- Install Python dependencies using `uv` or `pip`
+- Install Node.js dependencies using `bun` or `npm`
+- Configure your Databricks workspace settings
+- Create a `.env.local` file with your configuration
+
+#### 2. Start the Development Server
+
+```bash
+# Start both backend (FastAPI) and frontend (React) servers
+./watch.sh
+```
+
+This command starts:
+- **Backend**: FastAPI server on `http://localhost:8000`
+- **Frontend**: React development server on `http://localhost:3000`
+- **File watching**: Automatic reloading when files change
+
+#### 3. Verify Local Setup
+
+Open your browser and navigate to:
+- **Backend API**: http://localhost:8000/docs (FastAPI Swagger UI)
+- **Frontend**: http://localhost:3000 (React application)
+- **MCP Endpoint**: http://localhost:8000/mcp/ (MCP server)
+
+#### 4. Test with Claude CLI
+
+```bash
+# Set environment variables for local testing
+export DATABRICKS_HOST="https://your-workspace.cloud.databricks.com"
+export DATABRICKS_APP_URL="http://localhost:8000"
+
+# Add the local MCP server to Claude
+claude mcp add databricks-mcp-local --scope local -- \
+  uvx --from git+ssh://git@github.com/YOUR-USERNAME/your-repo.git dba-mcp-proxy \
+  --databricks-host $DATABRICKS_HOST \
+  --databricks-app-url $DATABRICKS_APP_URL
+
+# Test the connection
+echo "What MCP prompts are available from databricks-mcp-local?" | claude
+```
+
+### Development Workflow
+
+#### Making Changes
+
+1. **Edit prompts**: Modify files in `prompts/` directory
+2. **Edit tools**: Update functions in `server/tools.py`
+3. **Edit frontend**: Modify React components in `client/src/`
+4. **Edit backend**: Update FastAPI routes in `server/`
+
+All changes automatically reload thanks to the file watchers in `./watch.sh`.
+
+#### Testing Changes
+
+```bash
+# Test local MCP server directly
+./claude_scripts/test_local_mcp_curl.sh
+
+# Test with MCP proxy
+./claude_scripts/test_local_mcp_proxy.sh
+
+# Use the web-based MCP Inspector
+./claude_scripts/inspect_local_mcp.sh
+```
+
+#### Debugging
+
+- **Backend logs**: Check terminal output from `./watch.sh`
+- **Frontend logs**: Check browser console and terminal output
+- **MCP logs**: Monitor the `/mcp/` endpoint responses
+- **Database queries**: Check Databricks workspace logs
+
+### Local vs Production Differences
+
+| Feature | Local Development | Production |
+|---------|------------------|------------|
+| **Authentication** | Databricks CLI token | OAuth via Databricks Apps |
+| **URL** | `http://localhost:8000` | `https://your-app.databricksapps.com` |
+| **HTTPS** | No (HTTP only) | Yes (HTTPS required) |
+| **File watching** | Yes (auto-reload) | No |
+| **Debug mode** | Yes | No |
+| **Logs** | Terminal output | Databricks Apps logs |
+
+### Troubleshooting Local Issues
+
+#### Common Problems
+
+**Port conflicts:**
+```bash
+# Check what's using port 8000
+lsof -i :8000
+
+# Kill process if needed
+kill -9 <PID>
+```
+
+**Dependencies not found:**
+```bash
+# Reinstall Python dependencies
+uv sync
+
+# Reinstall Node.js dependencies
+cd client && bun install
+```
+
+**Databricks authentication:**
+```bash
+# Refresh Databricks CLI credentials
+databricks auth login
+
+# Verify configuration
+databricks config get
+```
+
+**MCP connection issues:**
+```bash
+# Test MCP endpoint directly
+curl http://localhost:8000/mcp/
+
+# Check Claude MCP configuration
+claude mcp list
+```
+
+#### Performance Tips
+
+- Use `uv` instead of `pip` for faster Python dependency management
+- Use `bun` instead of `npm` for faster Node.js dependency management
+- The `./watch.sh` script uses `uvicorn --reload` for fast backend development
+- Frontend uses Vite for fast hot module replacement
+
 ## Customization Guide
 
 This template uses [FastMCP](https://github.com/jlowin/fastmcp), a framework that makes it easy to build MCP servers. FastMCP provides two main decorators for extending functionality:
