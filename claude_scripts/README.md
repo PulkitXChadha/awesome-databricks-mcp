@@ -101,7 +101,7 @@ Launch MCP Inspector for visual testing:
 - Server accessible on http://localhost:8000
 
 ### For Remote Testing  
-- Databricks CLI configured: `uvx databricks auth login --host <your-workspace>`
+- Databricks CLI configured: `uvx --from databricks-cli databricks auth login --host <your-workspace>`
 - App deployed with `./deploy.sh`
 - Valid `.env.local` configuration with `DATABRICKS_HOST`, `DATABRICKS_TOKEN`, and `DATABRICKS_APP_NAME`
 

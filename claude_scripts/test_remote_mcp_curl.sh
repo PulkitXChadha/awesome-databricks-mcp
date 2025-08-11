@@ -45,11 +45,11 @@ fi
 echo "✅ Found app URL: $REMOTE_URL"
 
 echo "Getting OAuth token from Databricks CLI..."
-TOKEN=$(uvx databricks auth token --host "${DATABRICKS_HOST}" 2>/dev/null | jq -r '.access_token')
+TOKEN=$(uvx --from databricks-cli databricks auth token --host "${DATABRICKS_HOST}" 2>/dev/null | jq -r '.access_token')
 
 if [ "$TOKEN" = "null" ] || [ -z "$TOKEN" ]; then
   echo "❌ ERROR: Failed to get OAuth token"
-  echo "   Please run: uvx databricks auth login --host ${DATABRICKS_HOST}"
+     echo "   Please run: uvx --from databricks-cli databricks auth login --host ${DATABRICKS_HOST}"
   exit 1
 fi
 

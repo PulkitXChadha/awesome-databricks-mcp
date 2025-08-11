@@ -40,7 +40,7 @@ def get_oauth_token(databricks_host):
   try:
     # First try to get token directly from Databricks CLI
     result = subprocess.run(
-      ['uvx', 'databricks', 'auth', 'token', '--host', databricks_host],
+      ['uvx', '--from', 'databricks-cli', 'databricks', 'auth', 'token', '--host', databricks_host],
       capture_output=True,
       text=True,
       check=True,
@@ -56,7 +56,7 @@ def get_oauth_token(databricks_host):
     try:
       # OAuth login should handle token generation automatically
       subprocess.run(
-        ['uvx', 'databricks', 'auth', 'login', '--host', databricks_host],
+        ['uvx', '--from', 'databricks-cli', 'databricks', 'auth', 'login', '--host', databricks_host],
         capture_output=True,
         text=True,
         check=True,
@@ -64,7 +64,7 @@ def get_oauth_token(databricks_host):
 
       # Get the token that was generated during login
       result = subprocess.run(
-        ['uvx', 'databricks', 'auth', 'token', '--host', databricks_host],
+        ['uvx', '--from', 'databricks-cli', 'databricks', 'auth', 'token', '--host', databricks_host],
         capture_output=True,
         text=True,
         check=True,

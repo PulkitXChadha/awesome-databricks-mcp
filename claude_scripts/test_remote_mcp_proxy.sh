@@ -88,7 +88,7 @@ echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}' | \
 
 if [ $? -eq 124 ]; then
   echo "❌ Test timed out - OAuth authentication may have failed"
-  echo "   Please run: uvx databricks auth login --host ${DATABRICKS_HOST}"
+     echo "   Please run: uvx --from databricks-cli databricks auth login --host ${DATABRICKS_HOST}"
 fi
 
 echo ""
