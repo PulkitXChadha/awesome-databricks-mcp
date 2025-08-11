@@ -1,0 +1,21 @@
+# Generated from pyproject.toml for Databricks Apps deployment
+# Avoids editable installs and hash conflicts
+
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+databricks-sdk==0.59.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+python-dotenv>=1.0.0
+httpx>=0.25.0
+pandas>=2.1.0
+requests>=2.32.4
+rich>=14.0.0
+click>=8.1.0
+databricks-connect>=16.1.6
+mlflow[databricks]>=3.1.1
+debugpy>=1.8.15
+fastapi-mcp>=0.3.7
+fastmcp
+mcp>=1.12.0
+pyyaml>=6.0.2

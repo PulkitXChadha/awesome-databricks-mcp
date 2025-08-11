@@ -1,0 +1,13 @@
+command: ["python", "-m", "server.app"]
+
+source_code_path: "."
+
+environment:
+  - name: DATABRICKS_HOST
+    value_from: workspace
+  - name: DATABRICKS_PATH
+    value_from: workspace
+  - name: DATABRICKS_TOKEN
+    value_from: pat
+  - name: DATABRICKS_APP_PORT
+    value_from: app_port
