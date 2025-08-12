@@ -1,1 +1,0 @@
-We will use ping google.com via bash to ping google

@@ -291,6 +291,16 @@ export function WelcomePage() {
                 </code>
               </div>
 
+              <div>
+                <h4 className="font-semibold mb-2">Cursor Configuration</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  To use this MCP server with Cursor, run:
+                </p>
+                <code className="bg-muted px-3 py-2 rounded block text-sm font-mono">
+                  claude mcp add {mcpInfo.server_name || 'mcp-commands'} {mcpInfo.client_path || 'python mcp_databricks_client.py'}
+                </code>
+              </div>
+
               <div className="flex items-center gap-4">
                 <Badge variant="outline">
                   Transport: {mcpInfo.transport}

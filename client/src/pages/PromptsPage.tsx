@@ -177,10 +177,28 @@ export function PromptsPage() {
 
     // Use the correct uvx command from the README with actual values
     return `claude mcp add ${mcpConfig.servername} --scope user -- \\
-  uvx --from git+ssh://git@github.com/databricks-solutions/custom-mcp-databricks-app.git dba-mcp-proxy \\
+  uvx --from git+ssh://git@/github.com/PulkitXChadha/awesome-databricks-mcp.git dba-mcp-proxy \\
   --databricks-host ${databricksHost} \\
   --databricks-app-url ${databricksAppUrl}`;
   };
+
+  const getCursorSetupCommand = () => {
+    if (!mcpConfig) return "";
+    const databricksAppUrl = window.location.origin;
+    const databricksHost = mcpConfig.databricks_host;
+  return `"${mcpConfig.servername} ": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+ssh://git@github.com/PulkitXChadha/awesome-databricks-mcp.git",
+        "dba-mcp-proxy",
+        "--databricks-host",
+        "${databricksHost}",
+        "--databricks-app-url",
+        "${databricksAppUrl}"
+      ]
+    }`
+  }
 
   return (
     <div className="container mx-auto py-8">
@@ -221,6 +239,58 @@ export function PromptsPage() {
                 repository. After adding, restart Claude Code to enable the MCP
                 integration. Then you can use slash commands like{" "}
                 <code>/{servername}:ping_google</code>.
+              </p>
+              <div className="mt-4 pt-3 border-t">
+                <a
+                  href="https://github.com/databricks-solutions/custom-mcp-databricks-app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View documentation and source code on GitHub
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Cursor MCP Setup Instructions Section */}
+      {mcpConfig && (
+        <div className="mb-12">
+          <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+            <Terminal className="h-6 w-6" />
+            Cursor MCP Setup
+          </h2>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Add this MCP server to Cursor</CardTitle>
+              <CardDescription>
+                Run this command in your terminal to add the MCP server to
+                Cursor using uvx
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-muted p-4 rounded-lg font-mono text-sm relative group">
+                <pre className="whitespace-pre-wrap">
+                  {getCursorSetupCommand()}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => copyToClipboard(getCursorSetupCommand())}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-3">
+                This command uses uvx to run the dba-mcp-proxy from the git
+                repository. After adding, restart Cursor to enable the MCP
+                integration. Then you can use slash commands like{" "}
+                <code>/{servername}:ping_google</code> in Cursor's chat.
               </p>
               <div className="mt-4 pt-3 border-t">
                 <a
