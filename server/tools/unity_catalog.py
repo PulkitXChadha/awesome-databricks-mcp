@@ -38,8 +38,8 @@ def load_uc_tools(mcp_server):
                     'type': catalog.catalog_type,
                     'comment': catalog.comment,
                     'owner': catalog.owner,
-                    'created_time': catalog.created_time,
-                    'updated_time': catalog.updated_time,
+                    'created_at': catalog.created_at,
+                    'updated_at': catalog.updated_at,
                     'properties': catalog.properties,
                 })
 
@@ -86,8 +86,8 @@ def load_uc_tools(mcp_server):
                     'name': schema.name,
                     'comment': schema.comment,
                     'owner': schema.owner,
-                    'created_time': schema.created_time,
-                    'updated_time': schema.updated_time,
+                    'created_at': schema.created_at,
+                    'updated_at': schema.updated_at,
                     'properties': schema.properties,
                 })
 
@@ -98,8 +98,8 @@ def load_uc_tools(mcp_server):
                     'type': catalog.catalog_type,
                     'comment': catalog.comment,
                     'owner': catalog.owner,
-                    'created_time': catalog.created_time,
-                    'updated_time': catalog.updated_time,
+                    'created_at': catalog.created_at,
+                    'updated_at': catalog.updated_at,
                     'properties': catalog.properties,
                 },
                 'schemas': schema_list,
@@ -135,10 +135,10 @@ def load_uc_tools(mcp_server):
             )
 
             # Get schema details
-            schema = w.schemas.get(full_name=f"{catalog_name}.{schema_name}")
+            schema = w.schemas.get(f"{catalog_name}.{schema_name}")
             
             # List tables in the schema
-            tables = w.tables.list(full_name=f"{catalog_name}.{schema_name}")
+            tables = w.tables.list(catalog_name=catalog_name, schema_name=schema_name)
             
             table_list = []
             for table in tables:
@@ -147,8 +147,8 @@ def load_uc_tools(mcp_server):
                     'table_type': table.table_type,
                     'comment': table.comment,
                     'owner': table.owner,
-                    'created_time': table.created_time,
-                    'updated_time': table.updated_time,
+                    'created_at': table.created_at,
+                    'updated_at': table.updated_at,
                     'properties': table.properties,
                 }
                 
@@ -157,7 +157,7 @@ def load_uc_tools(mcp_server):
                     for col in table.columns:
                         columns.append({
                             'name': col.name,
-                            'type': col.type,
+                            'type': col.type_text,
                             'comment': col.comment,
                             'nullable': col.nullable,
                         })
@@ -171,8 +171,8 @@ def load_uc_tools(mcp_server):
                     'name': schema.name,
                     'comment': schema.comment,
                     'owner': schema.owner,
-                    'created_time': schema.created_time,
-                    'updated_time': schema.updated_time,
+                    'created_at': schema.created_at,
+                    'updated_at': schema.updated_at,
                     'properties': schema.properties,
                 },
                 'tables': table_list,
@@ -218,7 +218,7 @@ def load_uc_tools(mcp_server):
             )
 
             # Get table details
-            table = w.tables.get(full_name=f"{catalog_name}.{schema_name}.{table_name_only}")
+            table = w.tables.get(f"{catalog_name}.{schema_name}.{table_name_only}")
             
             # Get column information
             columns = []
@@ -226,7 +226,7 @@ def load_uc_tools(mcp_server):
                 for col in table.columns:
                     columns.append({
                         'name': col.name,
-                        'type': col.type,
+                        'type': col.type_text,
                         'comment': col.comment,
                         'nullable': col.nullable,
                         'position': col.position,
@@ -247,8 +247,8 @@ def load_uc_tools(mcp_server):
                 'table_type': table.table_type,
                 'comment': table.comment,
                 'owner': table.owner,
-                'created_time': table.created_time,
-                'updated_time': table.updated_time,
+                'created_at': table.created_at,
+                'updated_at': table.updated_at,
                 'properties': table.properties,
                 'columns': columns,
                 'partitioning': partitioning,
@@ -290,7 +290,7 @@ def load_uc_tools(mcp_server):
             )
 
             # List volumes in the schema
-            volumes = w.volumes.list(full_name=f"{catalog_name}.{schema_name}")
+            volumes = w.volumes.list(catalog_name=catalog_name, schema_name=schema_name)
             
             volume_list = []
             for volume in volumes:
@@ -300,8 +300,8 @@ def load_uc_tools(mcp_server):
                     'volume_type': volume.volume_type,
                     'comment': volume.comment,
                     'owner': volume.owner,
-                    'created_time': volume.created_time,
-                    'updated_time': volume.updated_time,
+                    'created_at': volume.created_at,
+                    'updated_at': volume.updated_at,
                     'properties': volume.properties,
                 })
 
@@ -346,7 +346,7 @@ def load_uc_tools(mcp_server):
             )
 
             # Get volume details
-            volume = w.volumes.get(full_name=f"{catalog_name}.{schema_name}.{volume_name_only}")
+            volume = w.volumes.get(f"{catalog_name}.{schema_name}.{volume_name_only}")
             
             return {
                 'success': True,
@@ -356,8 +356,8 @@ def load_uc_tools(mcp_server):
                     'volume_type': volume.volume_type,
                     'comment': volume.comment,
                     'owner': volume.owner,
-                    'created_time': volume.created_time,
-                    'updated_time': volume.updated_time,
+                    'created_at': volume.created_at,
+                    'updated_at': volume.updated_at,
                     'properties': volume.properties,
                     'storage_location': volume.storage_location if hasattr(volume, 'storage_location') else None,
                 },
@@ -387,7 +387,7 @@ def load_uc_tools(mcp_server):
             )
 
             # List functions in the schema
-            functions = w.functions.list(full_name=f"{catalog_name}.{schema_name}")
+            functions = w.functions.list(catalog_name=catalog_name, schema_name=schema_name)
             
             function_list = []
             for func in functions:
@@ -397,8 +397,8 @@ def load_uc_tools(mcp_server):
                     'function_type': func.function_type,
                     'comment': func.comment,
                     'owner': func.owner,
-                    'created_time': func.created_time,
-                    'updated_time': func.updated_time,
+                    'created_at': func.created_at,
+                    'updated_at': func.updated_at,
                     'properties': func.properties,
                 })
 
@@ -443,7 +443,7 @@ def load_uc_tools(mcp_server):
             )
 
             # Get function details
-            func = w.functions.get(full_name=f"{catalog_name}.{schema_name}.{function_name_only}")
+            func = w.functions.get(f"{catalog_name}.{schema_name}.{function_name_only}")
             
             return {
                 'success': True,
@@ -453,8 +453,8 @@ def load_uc_tools(mcp_server):
                     'function_type': func.function_type,
                     'comment': func.comment,
                     'owner': func.owner,
-                    'created_time': func.created_time,
-                    'updated_time': func.updated_time,
+                    'created_at': func.created_at,
+                    'updated_at': func.updated_at,
                     'properties': func.properties,
                     'parameters': func.parameters if hasattr(func, 'parameters') else None,
                     'return_type': func.return_type if hasattr(func, 'return_type') else None,
@@ -485,18 +485,16 @@ def load_uc_tools(mcp_server):
             )
 
             # List models in the schema
-            models = w.model_registry.list_models()
+            models = w.models.list(catalog_name=catalog_name, schema_name=schema_name)
             
-            # Filter by catalog and schema if possible
             model_list = []
             for model in models:
-                # Note: Model filtering by catalog/schema may require additional logic
                 model_list.append({
                     'name': model.name,
                     'comment': model.comment,
                     'owner': model.owner,
-                    'created_time': model.created_time,
-                    'updated_time': model.updated_time,
+                    'created_at': model.created_at,
+                    'updated_at': model.updated_at,
                     'tags': model.tags,
                 })
 
@@ -507,7 +505,6 @@ def load_uc_tools(mcp_server):
                 'catalog': catalog_name,
                 'schema': schema_name,
                 'message': f'Found {len(model_list)} model(s) in {catalog_name}.{schema_name}',
-                'note': 'Model filtering by catalog/schema may require additional logic',
             }
 
         except Exception as e:
@@ -542,7 +539,7 @@ def load_uc_tools(mcp_server):
             )
 
             # Get model details
-            model = w.model_registry.get_model(model_name_only)
+            model = w.models.get(f"{catalog_name}.{schema_name}.{model_name_only}")
             
             return {
                 'success': True,
@@ -551,8 +548,8 @@ def load_uc_tools(mcp_server):
                     'full_name': f'{catalog_name}.{schema_name}.{model.name}',
                     'comment': model.comment,
                     'owner': model.owner,
-                    'created_time': model.created_time,
-                    'updated_time': model.updated_time,
+                    'created_at': model.created_at,
+                    'updated_at': model.updated_at,
                     'tags': model.tags,
                     'description': model.description if hasattr(model, 'description') else None,
                 },
@@ -721,15 +718,15 @@ def load_uc_tools(mcp_server):
             
             metastore_list = []
             for metastore in metastores:
-                metastore_list.append({
-                    'name': metastore.name,
-                    'owner': metastore.owner,
-                    'created_time': metastore.created_time,
-                    'updated_time': metastore.updated_time,
-                    'region': metastore.region,
-                    'cloud': metastore.cloud,
-                    'global_metastore_id': metastore.global_metastore_id,
-                })
+                            metastore_list.append({
+                'name': metastore.name,
+                'owner': metastore.owner,
+                'created_at': metastore.created_at,
+                'updated_at': metastore.updated_at,
+                'region': metastore.region,
+                'cloud': metastore.cloud,
+                'global_metastore_id': metastore.global_metastore_id,
+            })
 
             return {
                 'success': True,
@@ -767,8 +764,8 @@ def load_uc_tools(mcp_server):
                 'metastore': {
                     'name': metastore.name,
                     'owner': metastore.owner,
-                    'created_time': metastore.created_time,
-                    'updated_time': metastore.updated_time,
+                    'created_at': metastore.created_at,
+                    'updated_at': metastore.updated_at,
                     'region': metastore.region,
                     'cloud': metastore.cloud,
                     'global_metastore_id': metastore.global_metastore_id,
