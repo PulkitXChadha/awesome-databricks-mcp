@@ -1,6 +1,6 @@
 # Build DLT Medallion Architecture Pipeline
 
-I can help you build a Delta Live Tables (DLT) pipeline using the medallion architecture pattern. This tool will create a DLT pipeline with Bronze, Silver, and Gold layers, including:
+I can help you build a Delta Live Tables (DLT) pipeline using the medallion architecture pattern. This tool will guide you through the complete deployment lifecycle, from initial deployment to resolving all failures and ensuring successful pipeline execution. This tool will create a DLT pipeline with Bronze, Silver, and Gold layers, including:
 
 ## Features
 - **Bronze Layer**: Raw data ingestion with audit columns and schema evolution
@@ -70,6 +70,23 @@ The tool will generate:
    - `databricks.yml` configuration file
    - `resources/` directory with pipeline definitions
 5. **Implementation Guide**: Step-by-step deployment instructions
+
+## Deployment Process
+
+### Phase 1: Asset Bundle Deployment
+- Deploy pipeline using `databricks bundle deploy`
+- Verify pipeline creation in Databricks workspace
+- Validate compute configuration and permissions
+
+### Phase 2: Pipeline Execution
+- Start pipeline with `databricks pipeline start`
+- Monitor initial execution for any configuration issues
+- Verify all three layers (Bronze, Silver, Gold) process successfully
+
+### Phase 3: Validation & Monitoring
+- Confirm data quality expectations are met
+- Verify star schema structure in Gold layer
+- Set up monitoring and alerting for production use
 
 ## Configuration Details
 
