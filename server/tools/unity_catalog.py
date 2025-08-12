@@ -135,10 +135,10 @@ def load_uc_tools(mcp_server):
             )
 
             # Get schema details
-            schema = w.schemas.get(catalog_name=catalog_name, schema_name=schema_name)
+            schema = w.schemas.get(full_name=f"{catalog_name}.{schema_name}")
             
             # List tables in the schema
-            tables = w.tables.list(catalog_name=catalog_name, schema_name=schema_name)
+            tables = w.tables.list(full_name=f"{catalog_name}.{schema_name}")
             
             table_list = []
             for table in tables:
@@ -218,7 +218,7 @@ def load_uc_tools(mcp_server):
             )
 
             # Get table details
-            table = w.tables.get(catalog_name=catalog_name, schema_name=schema_name, table_name=table_name_only)
+            table = w.tables.get(full_name=f"{catalog_name}.{schema_name}.{table_name_only}")
             
             # Get column information
             columns = []
@@ -290,7 +290,7 @@ def load_uc_tools(mcp_server):
             )
 
             # List volumes in the schema
-            volumes = w.volumes.list(catalog_name=catalog_name, schema_name=schema_name)
+            volumes = w.volumes.list(full_name=f"{catalog_name}.{schema_name}")
             
             volume_list = []
             for volume in volumes:
@@ -346,7 +346,7 @@ def load_uc_tools(mcp_server):
             )
 
             # Get volume details
-            volume = w.volumes.get(catalog_name=catalog_name, schema_name=schema_name, volume_name=volume_name_only)
+            volume = w.volumes.get(full_name=f"{catalog_name}.{schema_name}.{volume_name_only}")
             
             return {
                 'success': True,
@@ -387,7 +387,7 @@ def load_uc_tools(mcp_server):
             )
 
             # List functions in the schema
-            functions = w.functions.list(catalog_name=catalog_name, schema_name=schema_name)
+            functions = w.functions.list(full_name=f"{catalog_name}.{schema_name}")
             
             function_list = []
             for func in functions:
@@ -443,7 +443,7 @@ def load_uc_tools(mcp_server):
             )
 
             # Get function details
-            func = w.functions.get(catalog_name=catalog_name, schema_name=schema_name, function_name=function_name_only)
+            func = w.functions.get(full_name=f"{catalog_name}.{schema_name}.{function_name_only}")
             
             return {
                 'success': True,
