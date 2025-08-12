@@ -27,6 +27,7 @@ To build your DLT pipeline, I'll need information about your source tables and c
 - **databricks_cli_profile**: Databricks CLI profile to use (defaults to "DEFAULT" if not provided)
 - **sql_warehouse**: SQL warehouse ID or name to run SQL queries. 
 
+
 ### Star Schema Design
 The gold layer will be designed as a star schema with:
 - **Fact Tables**: Central tables containing business metrics and measures
@@ -93,5 +94,6 @@ The generated Asset Bundle supports:
 - **Serverless Compute**: All layers configured to use serverless compute for cost optimization
 - **CLI Profile**: Uses specified Databricks CLI profile for deployment
 - **SQL Warehouse**: Configured to use the specified warehouse for SQL queries
+
 
 Just describe your source tables and requirements, and I'll build a complete DLT pipeline with star schema design and Asset Bundle deployment for you!
