@@ -8,7 +8,7 @@ from .jobs_pipelines import load_job_tools
 from .workspace_files import load_workspace_tools
 from .dashboards import load_dashboard_tools
 from .repositories import load_repo_tools
-from .governance import load_governance_tools
+# from .governance import load_governance_tools
 
 
 def load_tools(mcp_server):
@@ -26,4 +26,4 @@ def load_tools(mcp_server):
     load_workspace_tools(mcp_server)
     load_dashboard_tools(mcp_server)
     load_repo_tools(mcp_server)
-    load_governance_tools(mcp_server)
+    # load_governance_tools(mcp_server)
