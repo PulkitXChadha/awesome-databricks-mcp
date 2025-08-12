@@ -8,9 +8,35 @@ I can help you build a Delta Live Tables (DLT) pipeline using the medallion arch
 - **Gold Layer**: Business-ready star schema with fact and dimension tables optimized for analytics and BI tools
 - **Serverless Compute**: Configured for cost-effective, autoscaling compute.
 - **Data Quality Rules**: Built-in expectations that handle real-world data issues gracefully
-- **Multiple Source Types**: Supports Parquet, Delta, JSON, CSV, Kafka, and Auto Loader
+- **Multiple Source Types**: Supports Parquet, Delta, CSV, JSON, Kafka, and Auto Loader
 - **Asset Bundle Deployment**: Complete Databricks Asset Bundle for CI/CD deployment
 - **Star Schema Design**: Optimized dimensional model for analytics and reporting
+
+## Databricks Documentation
+
+### Core Concepts
+- **[Delta Live Tables Overview](https://docs.databricks.com/en/delta-live-tables/index.html)**: Complete guide to DLT concepts and architecture
+- **[Medallion Architecture](https://docs.databricks.com/en/lakehouse/medallion.html)**: Best practices for data lakehouse design patterns
+- **[Unity Catalog](https://docs.databricks.com/en/data-governance/unity-catalog/index.html)**: Data governance and catalog management
+- **[Delta Lake](https://docs.databricks.com/en/delta/index.html)**: ACID transactions and schema evolution
+
+### DLT Development
+- **[DLT Python API](https://docs.databricks.com/en/delta-live-tables/python-ref.html)**: Python functions and decorators reference
+- **[DLT Expectations](https://docs.databricks.com/en/delta-live-tables/expectations.html)**: Data quality rules and validation
+- **[DLT Pipeline Configuration](https://docs.databricks.com/en/delta-live-tables/configuration.html)**: Pipeline settings and compute configuration
+- **[DLT Best Practices](https://docs.databricks.com/en/delta-live-tables/best-practices.html)**: Performance and reliability guidelines
+
+### Deployment & Operations
+- **[Databricks Asset Bundles](https://docs.databricks.com/en/dev-tools/bundles/index.html)**: Infrastructure as code for Databricks
+- **[Asset Bundle CLI](https://docs.databricks.com/en/dev-tools/bundles/cli.html)**: Command-line interface for deployment
+- **[DLT Pipeline Management](https://docs.databricks.com/en/delta-live-tables/manage.html)**: Monitoring, troubleshooting, and maintenance
+- **[Serverless Compute](https://docs.databricks.com/en/compute/serverless.html)**: On-demand compute for cost optimization
+
+### Data Engineering
+- **[Auto Loader](https://docs.databricks.com/en/ingestion/auto-loader/index.html)**: Incremental data ingestion
+- **[Streaming with DLT](https://docs.databricks.com/en/delta-live-tables/streaming.html)**: Real-time data processing
+- **[Schema Evolution](https://docs.databricks.com/en/delta-live-tables/schema-evolution.html)**: Handling changing data structures
+- **[Data Quality Monitoring](https://docs.databricks.com/en/delta-live-tables/quality-monitoring.html)**: Tracking data quality metrics
 
 ## How to Use
 
@@ -24,8 +50,7 @@ To build your DLT pipeline, I'll need information about your source tables and c
 - **catalog**: Unity Catalog name (will create new catalog if specified)
 - **schema**: Schema for DLT tables (will create new schema if specified)
 - **databricks_cli_profile**: Databricks CLI profile to use (defaults to "DEFAULT" if not provided)
-- **sql_warehouse**: SQL warehouse ID or name to run SQL queries.  The DLT pipeline will be serverless.
-
+- **sql_warehouse**: SQL warehouse ID or name to run SQL queries. The DLT pipeline will be serverless.
 
 ### Star Schema Design
 The gold layer will be designed as a star schema with:
@@ -41,11 +66,10 @@ The tool will generate:
 1. **Complete DLT Python Code**: Ready-to-deploy ELT pipeline code with appropriate Expectations that handle real-world data issues gracefully.
 2. **Star Schema Design**: Optimized dimensional model in the gold layer
 3. **Pipeline Configuration**: JSON configuration for Databricks DLT with serverless compute
-6. **Asset Bundle Structure**: Complete Databricks Asset Bundle with:
+4. **Asset Bundle Structure**: Complete Databricks Asset Bundle with:
    - `databricks.yml` configuration file
    - `resources/` directory with pipeline definitions
-7. **Implementation Guide**: Step-by-step deployment instructions
-
+5. **Implementation Guide**: Step-by-step deployment instructions
 
 ## Configuration Details
 
@@ -97,5 +121,16 @@ GRANT ALL PRIVILEGES ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
 GRANT SELECT ON SCHEMA {source_catalog}.{source_schema} TO `{user_email}`;
 ```
 
+## Additional Resources
+
+### Learning Paths
+- **[Data Engineering Learning Path](https://docs.databricks.com/en/learn/data-engineering.html)**: Comprehensive data engineering tutorials
+- **[DLT Tutorials](https://docs.databricks.com/en/delta-live-tables/tutorial.html)**: Step-by-step DLT examples
+- **[Unity Catalog Tutorials](https://docs.databricks.com/en/data-governance/unity-catalog/workspace-setup.html)**: Setting up data governance
+
+### Community & Support
+- **[Databricks Community](https://community.databricks.com/)**: Ask questions and share solutions
+- **[Databricks Academy](https://academy.databricks.com/)**: Free online courses and certifications
+- **[GitHub Examples](https://github.com/databricks/tech-talks)**: Code samples and best practices
 
 Just describe your source tables and requirements, and I'll build a complete DLT pipeline with star schema design and Asset Bundle deployment for you!
