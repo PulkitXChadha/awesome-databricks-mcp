@@ -55,5 +55,47 @@ The tool will generate:
 - **CLI Profile**: Uses specified Databricks CLI profile for deployment
 - **SQL Warehouse**: Configured to use the specified warehouse for SQL queries only. The DLT pipeline will be serverless.
 
+## Critical Code Generation Rules
+
+### Data Type Safety (MANDATORY)
+- **ALWAYS** use `float()` for numeric values in schemas with `DoubleType()`
+- **ALWAYS** use `datetime.now()` instead of `F.current_timestamp()` for data values
+- **ALWAYS** use `.0` suffix for numeric literals (e.g., `0.0` not `0`)
+- **NEVER** pass PySpark Column objects as data values
+
+### Unity Catalog Configuration (MANDATORY)
+- **ALWAYS** use `target: {schema_name}` (schema name only)
+- **ALWAYS** specify `catalog: {catalog_name}` as separate field
+- **ALWAYS** include comprehensive permission grants
+
+### Error Prevention Patterns
+- Handle division by zero: `value if total > 0 else 0.0`
+- Null-safe counting: `df.count() or 0`
+- Type conversion: `float(count)` for all numeric metrics
+
+## Required Permission Setup
+
+### Pre-deployment Permissions Script
+```sql
+-- Create catalog and schema
+CREATE CATALOG IF NOT EXISTS {catalog_name} 
+COMMENT 'Retail analytics catalog for medallion architecture';
+
+CREATE SCHEMA IF NOT EXISTS {catalog_name}.{schema_name} 
+COMMENT 'Medallion architecture schema for bronze, silver, and gold tables';
+
+-- Grant comprehensive permissions
+GRANT USE CATALOG ON CATALOG {catalog_name} TO `{user_email}`;
+GRANT CREATE SCHEMA ON CATALOG {catalog_name} TO `{user_email}`;
+GRANT USE SCHEMA ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+GRANT CREATE TABLE ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+GRANT CREATE MATERIALIZED VIEW ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+GRANT CREATE FUNCTION ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+GRANT ALL PRIVILEGES ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+
+-- Grant source data access
+GRANT SELECT ON SCHEMA {source_catalog}.{source_schema} TO `{user_email}`;
+```
+
 
 Just describe your source tables and requirements, and I'll build a complete DLT pipeline with star schema design and Asset Bundle deployment for you!
