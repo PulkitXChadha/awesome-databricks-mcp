@@ -12,31 +12,10 @@ I can help you build a Delta Live Tables (DLT) pipeline using the medallion arch
 - **Asset Bundle Deployment**: Complete Databricks Asset Bundle for CI/CD deployment
 - **Star Schema Design**: Optimized dimensional model for analytics and reporting
 
-## Databricks Documentation
-
-### Core Concepts
-- **[Delta Live Tables Overview](https://docs.databricks.com/en/delta-live-tables/index.html)**: Complete guide to DLT concepts and architecture
-- **[Medallion Architecture](https://docs.databricks.com/en/lakehouse/medallion.html)**: Best practices for data lakehouse design patterns
-- **[Unity Catalog](https://docs.databricks.com/en/data-governance/unity-catalog/index.html)**: Data governance and catalog management
-- **[Delta Lake](https://docs.databricks.com/en/delta/index.html)**: ACID transactions and schema evolution
-
-### DLT Development
-- **[DLT Python API](https://docs.databricks.com/en/delta-live-tables/python-ref.html)**: Python functions and decorators reference
-- **[DLT Expectations](https://docs.databricks.com/en/delta-live-tables/expectations.html)**: Data quality rules and validation
-- **[DLT Pipeline Configuration](https://docs.databricks.com/en/delta-live-tables/configuration.html)**: Pipeline settings and compute configuration
-- **[DLT Best Practices](https://docs.databricks.com/en/delta-live-tables/best-practices.html)**: Performance and reliability guidelines
-
-### Deployment & Operations
-- **[Databricks Asset Bundles](https://docs.databricks.com/en/dev-tools/bundles/index.html)**: Infrastructure as code for Databricks
-- **[Asset Bundle CLI](https://docs.databricks.com/en/dev-tools/bundles/cli.html)**: Command-line interface for deployment
-- **[DLT Pipeline Management](https://docs.databricks.com/en/delta-live-tables/manage.html)**: Monitoring, troubleshooting, and maintenance
-- **[Serverless Compute](https://docs.databricks.com/en/compute/serverless.html)**: On-demand compute for cost optimization
-
-### Data Engineering
-- **[Auto Loader](https://docs.databricks.com/en/ingestion/auto-loader/index.html)**: Incremental data ingestion
-- **[Streaming with DLT](https://docs.databricks.com/en/delta-live-tables/streaming.html)**: Real-time data processing
-- **[Schema Evolution](https://docs.databricks.com/en/delta-live-tables/schema-evolution.html)**: Handling changing data structures
-- **[Data Quality Monitoring](https://docs.databricks.com/en/delta-live-tables/quality-monitoring.html)**: Tracking data quality metrics
+## Quick Start 🚀
+1. **Describe your data**: Tell me about your source tables (name, structure, data types)
+2. **Set preferences**: Choose pipeline name, catalog, and schema
+3. **Deploy & Monitor**: I'll generate code, deploy, and monitor until success
 
 ## How to Use
 
@@ -69,24 +48,81 @@ The tool will generate:
 4. **Asset Bundle Structure**: Complete Databricks Asset Bundle with:
    - `databricks.yml` configuration file
    - `resources/` directory with pipeline definitions
-5. **Implementation Guide**: Step-by-step deployment instructions
+5. **Monitor and Fix All Errors**: Deploy, run and monitor the execution of the pipeline until it succeeds.
 
-## Deployment Process
+## Success Criteria ✅
+- Pipeline state: "IDLE" 
+- Latest update: "COMPLETED"
+- No ERROR events in recent history
+- All expected tables created and accessible
 
-### Phase 1: Asset Bundle Deployment
-- Deploy pipeline using `databricks bundle deploy`
-- Verify pipeline creation in Databricks workspace
-- Validate compute configuration and permissions
+## Monitoring Workflow
+1. **Deploy**: `databricks bundle deploy --target dev`
+2. **Start**: `databricks bundle run --target dev {pipeline_name}`
+3. **Monitor**: I'll continuously check status and fix errors
+4. **Success**: Pipeline runs without errors and creates all tables
 
-### Phase 2: Pipeline Execution
-- Start pipeline with `databricks pipeline start`
-- Monitor initial execution for any configuration issues
-- Verify all three layers (Bronze, Silver, Gold) process successfully
+## Common Issues & Solutions
+- **Permission errors**: Run the pre-deployment permissions script first
+- **Schema evolution**: DLT handles this automatically with proper expectations
+- **Compute issues**: Serverless compute is configured by default
+- **Data type errors**: Ensure proper type handling in transformations
 
-### Phase 3: Validation & Monitoring
-- Confirm data quality expectations are met
-- Verify star schema structure in Gold layer
-- Set up monitoring and alerting for production use
+## Critical Rules (Must Follow)
+- **Data Types**: Use `float()` for numeric values, `datetime.now()` for timestamps
+- **Unity Catalog**: Use `target: {schema_name}` and `catalog: {catalog_name}` separately
+- **Error Handling**: Always handle division by zero and null values
+- **Type Safety**: Use `.0` suffix for numeric literals, never pass PySpark Column objects as data values
+
+## Required Permission Setup
+
+### Pre-deployment Permissions Script
+```sql
+-- Create catalog and schema
+CREATE CATALOG IF NOT EXISTS {catalog_name} 
+COMMENT 'Retail analytics catalog for medallion architecture';
+
+CREATE SCHEMA IF NOT EXISTS {catalog_name}.{schema_name} 
+COMMENT 'Medallion architecture schema for bronze, silver, and gold tables';
+
+-- Grant comprehensive permissions
+GRANT USE CATALOG ON CATALOG {catalog_name} TO `{user_email}`;
+GRANT CREATE SCHEMA ON CATALOG {catalog_name} TO `{user_email}`;
+GRANT USE SCHEMA ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+GRANT CREATE TABLE ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+GRANT CREATE MATERIALIZED VIEW ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+GRANT CREATE FUNCTION ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+GRANT ALL PRIVILEGES ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+
+-- Grant source data access
+GRANT SELECT ON SCHEMA {source_catalog}.{source_schema} TO `{user_email}`;
+```
+
+## Databricks Documentation
+
+### Core Concepts
+- **[Delta Live Tables Overview](https://docs.databricks.com/en/delta-live-tables/index.html)**: Complete guide to DLT concepts and architecture
+- **[Medallion Architecture](https://docs.databricks.com/en/lakehouse/medallion.html)**: Best practices for data lakehouse design patterns
+- **[Unity Catalog](https://docs.databricks.com/en/data-governance/unity-catalog/index.html)**: Data governance and catalog management
+- **[Delta Lake](https://docs.databricks.com/en/delta/index.html)**: ACID transactions and schema evolution
+
+### DLT Development
+- **[DLT Python API](https://docs.databricks.com/en/delta-live-tables/python-ref.html)**: Python functions and decorators reference
+- **[DLT Expectations](https://docs.databricks.com/en/delta-live-tables/expectations.html)**: Data quality rules and validation
+- **[DLT Pipeline Configuration](https://docs.databricks.com/en/delta-live-tables/configuration.html)**: Pipeline settings and compute configuration
+- **[DLT Best Practices](https://docs.databricks.com/en/delta-live-tables/best-practices.html)**: Performance and reliability guidelines
+
+### Deployment & Operations
+- **[Databricks Asset Bundles](https://docs.databricks.com/en/dev-tools/bundles/index.html)**: Infrastructure as code for Databricks
+- **[Asset Bundle CLI](https://docs.databricks.com/en/dev-tools/bundles/cli.html)**: Command-line interface for deployment
+- **[DLT Pipeline Management](https://docs.databricks.com/en/delta-live-tables/manage.html)**: Monitoring, troubleshooting, and maintenance
+- **[Serverless Compute](https://docs.databricks.com/en/compute/serverless.html)**: On-demand compute for cost optimization
+
+### Data Engineering
+- **[Auto Loader](https://docs.databricks.com/en/ingestion/auto-loader/index.html)**: Incremental data ingestion
+- **[Streaming with DLT](https://docs.databricks.com/en/delta-live-tables/streaming.html)**: Real-time data processing
+- **[Schema Evolution](https://docs.databricks.com/en/delta-live-tables/schema-evolution.html)**: Handling changing data structures
+- **[Data Quality Monitoring](https://docs.databricks.com/en/delta-live-tables/quality-monitoring.html)**: Tracking data quality metrics
 
 ## Configuration Details
 
@@ -114,28 +150,40 @@ The tool will generate:
 - Null-safe counting: `df.count() or 0`
 - Type conversion: `float(count)` for all numeric metrics
 
-## Required Permission Setup
+## Example Monitoring Session
+  ### Step 1: Deploy and start
+  databricks bundle deploy --target dev
+  databricks bundle run --target dev retail_pipeline
 
-### Pre-deployment Permissions Script
-```sql
--- Create catalog and schema
-CREATE CATALOG IF NOT EXISTS {catalog_name} 
-COMMENT 'Retail analytics catalog for medallion architecture';
+  ### Step 2: Get pipeline ID
+  pipeline_id = get_pipeline_id_from_bundle_summary()
 
-CREATE SCHEMA IF NOT EXISTS {catalog_name}.{schema_name} 
-COMMENT 'Medallion architecture schema for bronze, silver, and gold tables';
+  ### Step 3: Monitor continuously
+  while True:
+      status = check_pipeline_status(pipeline_id)
+      events = get_recent_events(pipeline_id)
 
--- Grant comprehensive permissions
-GRANT USE CATALOG ON CATALOG {catalog_name} TO `{user_email}`;
-GRANT CREATE SCHEMA ON CATALOG {catalog_name} TO `{user_email}`;
-GRANT USE SCHEMA ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
-GRANT CREATE TABLE ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
-GRANT CREATE MATERIALIZED VIEW ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
-GRANT CREATE FUNCTION ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
-GRANT ALL PRIVILEGES ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
+      if "COMPLETED" in status:
+          print("✅ Pipeline completed successfully!")
+          break
+      elif "FAILED" in status or any_errors_in_events(events):
+          print("❌ Error found, analyzing...")
+          error_details = extract_error_details(events)
+          fix_code_based_on_error(error_details)
+          redeploy_and_restart()
+      else:
+          print(f"⏳ Pipeline running... Status: {status}")
+          sleep(30)
 
--- Grant source data access
-GRANT SELECT ON SCHEMA {source_catalog}.{source_schema} TO `{user_email}`;
-```
+IMPORTANT: Never consider the pipeline "done" until you have continuously monitored it through to successful completion. Many issues only surface during actual execution, not during deployment.
+
+  After generating the DLT pipeline code:
+
+  1. GENERATE the complete pipeline with all imports and syntax validation
+  2. DEPLOY the pipeline to the target environment
+  3. START continuous monitoring as described above
+  4. ITERATIVELY fix any errors found during execution
+  5. CONTINUE until successful completion is verified
+  6. DOCUMENT any fixes made during the monitoring process
 
 Just describe your source tables and requirements, and I'll build a complete DLT pipeline with star schema design and Asset Bundle deployment for you!
