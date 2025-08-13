@@ -32,21 +32,29 @@ Think of it as a bridge between Claude and your Databricks workspace - you defin
 
 1. **MCP Server** (`server/app.py`): A FastAPI app with integrated MCP server that:
    - Dynamically loads prompts from `prompts/*.md` files
-   - Exposes Python functions as MCP tools via `@mcp_server.tool` decorator
+   - Exposes Python functions as MCP tools via modular tool system
    - Handles both HTTP requests and MCP protocol over Server-Sent Events
+   - Uses FastMCP framework for seamless MCP integration
 
 2. **React Frontend** (`client/`): A modern TypeScript React application that:
    - Provides a web interface for MCP discovery and testing
    - Shows available prompts, tools, and MCP configuration
    - Includes copy-paste setup commands for Claude integration
    - Built with TailwindCSS, Radix UI, and modern React patterns
+   - Uses Vite for fast development and building
 
 3. **Prompts** (`prompts/`): Simple markdown files where:
-   - Filename = prompt name (e.g., `check_system.md` → `check_system` prompt)
+   - Filename = prompt name (e.g., `build_dlt_pipeline.md` → `build_dlt_pipeline` prompt)
    - First line with `#` = description
    - File content = what gets returned to Claude
 
-4. **Local Proxy** (`dba_mcp_proxy/`): Authenticates and proxies MCP requests:
+4. **Modular Tools System** (`server/tools/`): Organized tool modules that:
+   - Break down functionality into logical, manageable components
+   - Provide 104+ tools across 9 specialized modules
+   - Enable better maintainability and collaboration
+   - Support easy addition of new tools
+
+5. **Local Proxy** (`dba_mcp_proxy/`): Authenticates and proxies MCP requests:
    - Handles Databricks OAuth authentication automatically
    - Translates between Claude's stdio protocol and HTTP/SSE
    - Works with both local development and deployed apps
@@ -148,7 +156,7 @@ claude mcp add databricks-mcp-local --scope local -- \
 
 Before running the MCP server locally, ensure you have:
 
-- **Python 3.9+** and **Node.js 18+** installed
+- **Python 3.11+** and **Node.js 18+** installed
 - **Databricks CLI** configured with `databricks auth login`
 - **Git** for cloning the repository
 - **uv** package manager (recommended) or **pip** for Python dependencies
@@ -214,7 +222,7 @@ echo "What MCP prompts are available from databricks-mcp-local?" | claude
 #### Making Changes
 
 1. **Edit prompts**: Modify files in `prompts/` directory
-2. **Edit tools**: Update functions in `server/tools.py`
+2. **Edit tools**: Update functions in appropriate modules under `server/tools/`
 3. **Edit frontend**: Modify React components in `client/src/`
 4. **Edit backend**: Update FastAPI routes in `server/`
 
@@ -335,7 +343,7 @@ We auto-load `prompts/` for convenience, but function-based prompts are useful w
 
 ### Adding Tools
 
-Add a function in `server/tools.py` using the `@mcp_server.tool` decorator:
+Add a function in the appropriate module under `server/tools/` using the `@mcp_server.tool` decorator:
 
 ```python
 @mcp_server.tool
@@ -361,18 +369,29 @@ Tools must:
 
 ## Available MCP Tools
 
-This template includes a comprehensive set of Databricks tools:
+This template includes a comprehensive set of **104+ Databricks tools** organized into **9 logical modules**:
 
-### SQL & Data Tools
+### Core Tools (`core.py`)
+- **`health`** - Check MCP server and Databricks connection status
+
+### SQL & Data Tools (`sql_operations.py`)
 - **`execute_dbsql`** - Execute SQL queries on Databricks SQL warehouses
 - **`list_warehouses`** - List all SQL warehouses in the workspace
+- **`get_sql_warehouse`** - Get details of a specific SQL warehouse
+- **`create_sql_warehouse`** - Create a new SQL warehouse
+- **`start_sql_warehouse`** - Start a SQL warehouse
+- **`stop_sql_warehouse`** - Stop a SQL warehouse
+- **`delete_sql_warehouse`** - Delete a SQL warehouse
+- **`list_queries`** - List queries for a warehouse
+- **`get_query`** - Get details of a specific query
+- **`get_query_results`** - Get results of a completed query
+- **`cancel_query`** - Cancel a running query
+- **`get_statement_status`** - Get statement execution status
+- **`get_statement_results`** - Get statement results
+- **`cancel_statement`** - Cancel statement execution
+- **`list_recent_queries`** - List recent queries
 
-### File System Tools
-- **`list_dbfs_files`** - Browse DBFS file system
-- **`upload_dbfs_file`** - Upload files to DBFS
-- **`download_dbfs_file`** - Download files from DBFS
-
-### Unity Catalog Tools
+### Unity Catalog Tools (`unity_catalog.py`)
 - **`list_uc_catalogs`** - List Unity Catalog catalogs
 - **`describe_uc_catalog`** - Get detailed catalog information
 - **`describe_uc_schema`** - Get schema details and tables
@@ -398,9 +417,111 @@ This template includes a comprehensive set of Databricks tools:
 - **`get_data_quality_results`** - Get monitoring results
 - **`create_data_quality_monitor`** - Create data quality monitor
 
-### System Tools
-- **`health`** - Check MCP server and Databricks connection status
-- **`get_workspace_info`** - Get workspace configuration details
+### Data Management Tools (`data_management.py`)
+- **`list_dbfs_files`** - Browse DBFS file system
+- **`upload_dbfs_file`** - Upload files to DBFS
+- **`download_dbfs_file`** - Download files from DBFS
+- **`delete_dbfs_file`** - Delete files from DBFS
+- **`list_volumes`** - List volumes in a Unity Catalog schema
+- **`describe_volume`** - Get detailed volume information
+- **`list_external_locations`** - List external locations
+- **`describe_external_location`** - Get external location details
+- **`list_storage_credentials`** - List storage credentials
+- **`describe_storage_credential`** - Get storage credential details
+
+### Jobs & Pipelines Tools (`jobs_pipelines.py`)
+- **`list_jobs`** - List all jobs in the workspace
+- **`get_job`** - Get details of a specific job
+- **`create_job`** - Create a new job
+- **`update_job`** - Update an existing job
+- **`delete_job`** - Delete a job
+- **`run_job`** - Run a job
+- **`list_job_runs`** - List runs for a job
+- **`get_job_run`** - Get details of a specific job run
+- **`cancel_job_run`** - Cancel a running job
+- **`list_pipelines`** - List all DLT pipelines
+- **`get_pipeline`** - Get details of a specific pipeline
+- **`create_pipeline`** - Create a new DLT pipeline
+- **`update_pipeline`** - Update an existing pipeline
+- **`delete_pipeline`** - Delete a pipeline
+- **`start_pipeline`** - Start a pipeline
+- **`stop_pipeline`** - Stop a pipeline
+- **`list_pipeline_runs`** - List runs for a pipeline
+- **`get_pipeline_run`** - Get details of a specific pipeline run
+- **`cancel_pipeline_run`** - Cancel a running pipeline
+- **`get_pipeline_update`** - Get pipeline update details
+
+### Workspace Files Tools (`workspace_files.py`)
+- **`list_workspace_files`** - List files in the workspace
+- **`get_workspace_file`** - Get details of a specific file
+- **`create_workspace_file`** - Create a new file
+- **`update_workspace_file`** - Update an existing file
+- **`delete_workspace_file`** - Delete a file
+
+### Dashboard Tools (`dashboards.py`)
+- **`list_lakeview_dashboards`** - List all Lakeview dashboards
+- **`get_lakeview_dashboard`** - Get details of a specific Lakeview dashboard
+- **`create_lakeview_dashboard`** - Create a new Lakeview dashboard
+- **`update_lakeview_dashboard`** - Update an existing Lakeview dashboard
+- **`delete_lakeview_dashboard`** - Delete a Lakeview dashboard
+- **`list_dashboards`** - List all legacy dashboards
+- **`get_dashboard`** - Get details of a specific legacy dashboard
+- **`delete_dashboard`** - Delete a legacy dashboard
+
+### Repository Tools (`repositories.py`)
+- **`list_repositories`** - List all Git repositories
+- **`get_repository`** - Get details of a specific repository
+- **`create_repository`** - Create a new repository
+- **`update_repository`** - Update an existing repository
+- **`delete_repository`** - Delete a repository
+- **`list_branches`** - List branches for a repository
+- **`get_branch`** - Get details of a specific branch
+- **`create_branch`** - Create a new branch
+- **`delete_branch`** - Delete a branch
+- **`list_commits`** - List commits for a repository
+
+### Governance Tools (`governance.py`)
+- **`list_audit_logs`** - List audit logs
+- **`get_audit_log`** - Get details of a specific audit log
+- **`list_governance_rules`** - List governance rules
+- **`get_governance_rule`** - Get details of a specific governance rule
+- **`create_governance_rule`** - Create a new governance rule
+- **`update_governance_rule`** - Update an existing governance rule
+- **`delete_governance_rule`** - Delete a governance rule
+- **`list_data_lineage`** - List data lineage information
+- **`get_data_lineage`** - Get details of specific data lineage
+- **`list_access_controls`** - List access controls
+- **`get_access_control`** - Get details of a specific access control
+- **`create_access_control`** - Create a new access control
+- **`update_access_control`** - Update an existing access control
+- **`delete_access_control`** - Delete an access control
+- **`list_compliance_reports`** - List compliance reports
+
+## Modular Tools Architecture
+
+The tools are organized into logical, manageable modules for better maintainability:
+
+```
+server/tools/
+├── __init__.py              # Main entry point that imports and registers all tools
+├── core.py                  # Core/health tools (1 tool)
+├── sql_operations.py        # SQL warehouse and query management (15 tools)
+├── unity_catalog.py         # Unity Catalog operations (20 tools)
+├── data_management.py       # DBFS, volumes, and data operations (10 tools)
+├── jobs_pipelines.py        # Job and pipeline management (20 tools)
+├── workspace_files.py       # Workspace file operations (5 tools)
+├── dashboards.py            # Dashboard and monitoring tools (8 tools)
+├── repositories.py          # Git repository management (10 tools)
+└── governance.py            # Governance rules and data lineage (15 tools)
+```
+
+### Benefits of Modularization
+
+1. **Maintainability**: Each module focuses on a specific domain
+2. **Readability**: Smaller files are easier to navigate and debug
+3. **Collaboration**: Multiple developers can work on different modules simultaneously
+4. **Testing**: Individual modules can be tested in isolation
+5. **Scalability**: New tools can be added to appropriate modules without cluttering
 
 ## Deployment
 
@@ -431,9 +552,7 @@ Once added, you can interact with your MCP server in Claude:
 Human: What prompts are available?
 
 Claude: I can see the following prompts from your Databricks MCP server:
-- check_system: Get system information
-- list_files: List files in the current directory
-- ping_google: Check network connectivity
+- build_dlt_pipeline: Build a DLT pipeline for data processing
 ```
 
 ### Sample Tool Usage
@@ -451,7 +570,17 @@ Claude: I'll execute that SQL query for you using the execute_dbsql tool.
 ```
 ├── server/                    # FastAPI backend with MCP server
 │   ├── app.py                # Main application + MCP server setup
-│   ├── tools.py              # MCP tools implementation
+│   ├── tools/                # Modular MCP tools implementation
+│   │   ├── __init__.py       # Tool registration and loading
+│   │   ├── core.py           # Core and health tools
+│   │   ├── sql_operations.py # SQL and warehouse tools
+│   │   ├── unity_catalog.py  # Unity Catalog tools
+│   │   ├── data_management.py # Data and DBFS tools
+│   │   ├── jobs_pipelines.py # Jobs and DLT pipeline tools
+│   │   ├── workspace_files.py # Workspace file tools
+│   │   ├── dashboards.py     # Dashboard tools
+│   │   ├── repositories.py   # Git repository tools
+│   │   └── governance.py     # Governance and compliance tools
 │   └── routers/              # API endpoints
 ├── client/                   # React TypeScript frontend
 │   ├── src/                  # Source code
@@ -461,9 +590,7 @@ Claude: I'll execute that SQL query for you using the execute_dbsql tool.
 │   ├── package.json          # Node.js dependencies
 │   └── tailwind.config.js    # TailwindCSS configuration
 ├── prompts/                  # MCP prompts (markdown files)
-│   ├── check_system.md      
-│   ├── list_files.md        
-│   └── ping_google.md       
+│   └── build_dlt_pipeline.md # DLT pipeline building prompt
 ├── dba_mcp_proxy/           # MCP proxy for Claude CLI
 │   └── mcp_client.py        # OAuth + proxy implementation
 ├── claude_scripts/          # Comprehensive testing tools
@@ -522,7 +649,7 @@ After adding the MCP server to Claude, verify it's working:
 echo "What MCP prompts are available from databricks-mcp?" | claude
 
 # Test a specific prompt
-echo "Use the check_system prompt from databricks-mcp" | claude
+echo "Use the build_dlt_pipeline prompt from databricks-mcp" | claude
 ```
 
 ### Comprehensive Testing Suite
