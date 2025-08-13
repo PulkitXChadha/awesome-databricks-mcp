@@ -1,35 +1,32 @@
-# Build DLT Medallion Architecture Pipeline
+# Build Lakeflow Declarative Pipeline (LDP) (Formerly Known as Delta Live Tables DLT) Medallion Architecture Pipeline
 
-I can help you build a Delta Live Tables (DLT) pipeline using the medallion architecture pattern. This tool will guide you through the complete deployment lifecycle, from initial deployment to resolving all failures and ensuring successful pipeline execution. This tool will create a DLT pipeline with Bronze, Silver, and Gold layers, including:
+I can help you build a Lakeflow Declarative Pipeline (LDP) (formerly known as Delta Live Tables (DLT) pipeline) using the medallion architecture pattern. This tool will guide you through the complete deployment lifecycle, from initial deployment to Databricks asset bundle deployments of the pipelines, resolving all failures, and ensuring successful pipeline execution.
 
 ## Features
 - **Bronze Layer**: Raw data ingestion with audit columns and schema evolution
-- **Silver Layer**: Cleaned, validated data with comprehensive data quality rules
+- **Silver Layer**: Cleaned and validated data with comprehensive data quality rules
 - **Gold Layer**: Business-ready star schema with fact and dimension tables optimized for analytics and BI tools
 - **Serverless Compute**: Configured for cost-effective, autoscaling compute.
 - **Data Quality Rules**: Built-in expectations that handle real-world data issues gracefully
 - **Multiple Source Types**: Supports Parquet, Delta, CSV, JSON, Kafka, and Auto Loader
 - **Asset Bundle Deployment**: Complete Databricks Asset Bundle for CI/CD deployment
 - **Star Schema Design**: Optimized dimensional model for analytics and reporting
+- **Resolve Errors**: Validate Deployed Databricks Asset Bundle. Execute the pipeline and fix errors, and redeploy until successful execution. 
 
-## Quick Start 🚀
-1. **Describe your data**: Tell me about your source tables (name, structure, data types)
-2. **Set preferences**: Choose pipeline name, catalog, and schema
-3. **Deploy & Monitor**: I'll generate code, deploy, and monitor until success
 
 ## How to Use
 
-To build your DLT pipeline, I'll need information about your source tables and configuration preferences:
+To build your Lakeflow Declarative Pipeline, I'll need information about your source tables and configuration preferences:
 
 ### Required Information
 - **name**: Table name (e.g., "customers", "orders")
 
 ### Pipeline Configuration
-- **pipeline_name**: Name for your DLT pipeline
+- **pipeline_name**: Name for your pipeline
 - **catalog**: Unity Catalog name (will create new catalog if specified)
-- **schema**: Schema for DLT tables (will create new schema if specified)
+- **schema**: Schema for the Lakeflow Declarative Pipelines tables (will create new schema if specified)
 - **databricks_cli_profile**: Databricks CLI profile to use (defaults to "DEFAULT" if not provided)
-- **sql_warehouse**: SQL warehouse ID or name to run SQL queries. The DLT pipeline will be serverless.
+- **sql_warehouse**: SQL warehouse ID or name to run SQL queries. The pipeline will be serverless.
 
 ### Star Schema Design
 The gold layer will be designed as a star schema with:
@@ -42,13 +39,13 @@ The gold layer will be designed as a star schema with:
 
 The tool will generate:
 
-1. **Complete DLT Python Code**: Ready-to-deploy ELT pipeline code with appropriate Expectations that handle real-world data issues gracefully.
+1. **Complete Lakeflow Declarative Pipeline Python Code**: Ready-to-deploy ELT pipeline code with appropriate Expectations that handle real-world data issues gracefully.
 2. **Star Schema Design**: Optimized dimensional model in the gold layer
-3. **Pipeline Configuration**: JSON configuration for Databricks DLT with serverless compute
+3. **Pipeline Configuration**: JSON configuration for Databricks Declarative Pipeline with serverless compute
 4. **Asset Bundle Structure**: Complete Databricks Asset Bundle with:
    - `databricks.yml` configuration file
    - `resources/` directory with pipeline definitions
-5. **Monitor and Fix All Errors**: Deploy, run and monitor the execution of the pipeline until it succeeds.
+5. **Monitor and Fix All Errors**: Deploy the Databricks Asset Bundle, run the bundle, and monitor its execution until it succeeds.
 
 ## Success Criteria ✅
 - Pipeline state: "IDLE" 
@@ -62,9 +59,9 @@ The tool will generate:
 3. **Monitor**: I'll continuously check status and fix errors
 4. **Success**: Pipeline runs without errors and creates all tables
 
-## Common Issues & Solutions
+## Common Issues and Solutions
 - **Permission errors**: Run the pre-deployment permissions script first
-- **Schema evolution**: DLT handles this automatically with proper expectations
+- **Schema evolution**: the pipeline handles this automatically with proper expectations
 - **Compute issues**: Serverless compute is configured by default
 - **Data type errors**: Ensure proper type handling in transformations
 
@@ -177,7 +174,7 @@ GRANT SELECT ON SCHEMA {source_catalog}.{source_schema} TO `{user_email}`;
 
 IMPORTANT: Never consider the pipeline "done" until you have continuously monitored it through to successful completion. Many issues only surface during actual execution, not during deployment.
 
-  After generating the DLT pipeline code:
+  After generating the Lakeflow Declarative Pipeline code:
 
   1. GENERATE the complete pipeline with all imports and syntax validation
   2. DEPLOY the pipeline to the target environment
@@ -186,4 +183,6 @@ IMPORTANT: Never consider the pipeline "done" until you have continuously monito
   5. CONTINUE until successful completion is verified
   6. DOCUMENT any fixes made during the monitoring process
 
-Just describe your source tables and requirements, and I'll build a complete DLT pipeline with star schema design and Asset Bundle deployment for you!
+NOTE: DLT (Delta Live Tables) and Lakeflow Declarative Pipeline are use interchangeabiliy. 
+
+Just describe your source tables and requirements, and I'll build a complete Lakeflow Declarative Pipeline with star schema design and Asset Bundle deployment as well as run the Asset Bundle for you!
