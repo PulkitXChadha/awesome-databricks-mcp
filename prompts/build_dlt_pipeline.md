@@ -138,16 +138,4 @@ GRANT ALL PRIVILEGES ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
 GRANT SELECT ON SCHEMA {source_catalog}.{source_schema} TO `{user_email}`;
 ```
 
-## Additional Resources
-
-### Learning Paths
-- **[Data Engineering Learning Path](https://docs.databricks.com/en/learn/data-engineering.html)**: Comprehensive data engineering tutorials
-- **[DLT Tutorials](https://docs.databricks.com/en/delta-live-tables/tutorial.html)**: Step-by-step DLT examples
-- **[Unity Catalog Tutorials](https://docs.databricks.com/en/data-governance/unity-catalog/workspace-setup.html)**: Setting up data governance
-
-### Community & Support
-- **[Databricks Community](https://community.databricks.com/)**: Ask questions and share solutions
-- **[Databricks Academy](https://academy.databricks.com/)**: Free online courses and certifications
-- **[GitHub Examples](https://github.com/databricks/tech-talks)**: Code samples and best practices
-
 Just describe your source tables and requirements, and I'll build a complete DLT pipeline with star schema design and Asset Bundle deployment for you!
