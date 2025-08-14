@@ -61,31 +61,145 @@ Think of it as a bridge between Claude and your Databricks workspace - you defin
 
 ## 🎬 Demo
 
-This 10-minute video shows you how to set up and use a Databricks MCP server with Claude: https://www.youtube.com/watch?v=oKE59zgb6e0
+This 5-minute video shows you how to set up and use the MCP server with Claude and/or Cursor: https://www.youtube.com/watch?v=_yPtm2iH04o
 
-[![Databricks MCP Demo](https://github.com/user-attachments/assets/315a0e35-73c0-47f7-9ce5-dfada3149101)](https://www.youtube.com/watch?v=oKE59zgb6e0)
+![@databricks_mcp_app_home_page.png](docs/images/databricks_mcp_app_home_page.png)
 
-This video demonstrates creating your own MCP server with a custom jobs interface in Claude.
 
 ## Quick Start
 
 ### Create Your Own MCP Server
 
-#### Step 1: Use this template
+#### Step 1: Install Databricks CLI and Set Up GitHub SSH Access
 
-[![Use this template](https://img.shields.io/badge/Use%20this%20template-2ea44f?style=for-the-badge)](https://github.com/databricks-solutions/custom-mcp-databricks-app/generate)
+Before you begin, make sure you have the Databricks CLI and GitHub SSH access configured.
 
-Or use the GitHub CLI:
+**Install Databricks CLI:**
+
+**macOS:**
 ```bash
-gh repo create my-mcp-server --template databricks-solutions/custom-mcp-databricks-app --private
+# Using Homebrew (recommended)
+brew install databricks/tap/databricks
+
+# Using pip
+pip install databricks-cli
+
+# Verify installation
+databricks --version
 ```
 
-#### Step 2: Clone and setup
+**Windows:**
+```bash
+# Using pip
+pip install databricks-cli
+
+# Or download from official releases
+# https://github.com/databricks/databricks-cli/releases
+# Download the .exe file and add to PATH
+
+# Verify installation
+databricks --version
+```
+
+**Linux:**
+```bash
+# Using pip
+pip install databricks-cli
+
+# Using apt (Ubuntu/Debian)
+curl -fsSL https://databricks.com/install-cli.sh | bash
+
+# Using yum (RHEL/CentOS)
+curl -fsSL https://databricks.com/install-cli.sh | bash
+
+# Verify installation
+databricks --version
+```
+
+**Set Up GitHub SSH Access:**
+
+**macOS:**
+```bash
+# Generate SSH key (if you don't have one)
+ssh-keygen -t ed25519 -C "your-email@example.com"
+
+# Start ssh-agent
+eval "$(ssh-agent -s)"
+
+# Add SSH key to ssh-agent
+ssh-add ~/.ssh/id_ed25519
+
+# Copy public key to clipboard
+pbcopy < ~/.ssh/id_ed25519.pub
+
+# Add to GitHub: https://github.com/settings/keys
+# Click "New SSH key" and paste the copied key
+```
+
+**Windows:**
+```bash
+# Generate SSH key (if you don't have one)
+ssh-keygen -t ed25519 -C "your-email@example.com"
+
+# Start ssh-agent (PowerShell as Administrator)
+Set-Service ssh-agent -StartupType Automatic
+Start-Service ssh-agent
+
+# Add SSH key to ssh-agent
+ssh-add ~/.ssh/id_ed25519
+
+# Copy public key to clipboard
+Get-Content ~/.ssh/id_ed25519.pub | Set-Clipboard
+
+# Add to GitHub: https://github.com/settings/keys
+# Click "New SSH key" and paste the copied key
+```
+
+**Linux:**
+```bash
+# Generate SSH key (if you don't have one)
+ssh-keygen -t ed25519 -C "your-email@example.com"
+
+# Start ssh-agent
+eval "$(ssh-agent -s)"
+
+# Add SSH key to ssh-agent
+ssh-add ~/.ssh/id_ed25519
+
+# Copy public key to clipboard (if xclip is available)
+xclip -sel clip < ~/.ssh/id_ed25519.pub
+
+# Or display the key to copy manually
+cat ~/.ssh/id_ed25519.pub
+
+# Add to GitHub: https://github.com/settings/keys
+# Click "New SSH key" and paste the copied key
+```
+
+**Test GitHub SSH Connection:**
+```bash
+# Test the connection
+ssh -T git@github.com
+
+# You should see: "Hi username! You've successfully authenticated..."
+```
+
+**Configure Git with SSH:**
+```bash
+# Set your Git username and email
+git config --global user.name "Your Name"
+git config --global user.email "your-email@example.com"
+
+# Verify SSH is working by cloning a private repo
+git clone git@github.com:username/private-repo.git
+```
+
+#### Step 2: Clone the Repo
 
 ```bash
 # Clone your new repository
-git clone https://github.com/YOUR-USERNAME/my-mcp-server.git
-cd my-mcp-server
+git clone https://github.com/PulkitXChadha/awesome-databricks-mcp.git
+cd awesome-databricks-mcp
 
 # Run the interactive setup
 ./setup.sh
@@ -168,8 +282,8 @@ Before running the MCP server locally, ensure you have:
 
 ```bash
 # Clone your repository
-git clone https://github.com/YOUR-USERNAME/your-mcp-server.git
-cd your-mcp-server
+git clone https://github.com/PulkitXChadha/awesome-databricks-mcp.git
+cd awesome-databricks-mcp
 
 # Run the interactive setup script
 ./setup.sh
@@ -209,7 +323,7 @@ export DATABRICKS_APP_URL="http://localhost:8000"
 
 # Add the local MCP server to Claude
 claude mcp add databricks-mcp-local --scope local -- \
-  uvx --from git+ssh://git@github.com/YOUR-USERNAME/your-repo.git dba-mcp-proxy \
+  uvx --from git+ssh://git@github.com/PulkitXChadha/awesome-databricks-mcp.git dba-mcp-proxy \
   --databricks-host $DATABRICKS_HOST \
   --databricks-app-url $DATABRICKS_APP_URL
 
@@ -306,222 +420,6 @@ claude mcp list
 - The `./watch.sh` script uses `uvicorn --reload` for fast backend development
 - Frontend uses Vite for fast hot module replacement
 
-## Customization Guide
-
-This template uses [FastMCP](https://github.com/jlowin/fastmcp), a framework that makes it easy to build MCP servers. FastMCP provides two main decorators for extending functionality:
-
-- **`@mcp_server.prompt`** - For registering prompts that return text
-- **`@mcp_server.tool`** - For registering tools that execute functions
-
-### Adding Prompts
-
-The easiest way is to create a markdown file in the `prompts/` directory:
-
-```markdown
-# Get cluster information
-
-List all available clusters in the workspace with their current status
-```
-
-The prompt will be automatically loaded with:
-- **Name**: filename without extension (e.g., `get_clusters.md` → `get_clusters`)
-- **Description**: first line after `#` 
-- **Content**: entire file content
-
-Alternatively, you can register prompts as functions in `server/app.py`:
-
-```python
-@mcp_server.prompt(name="dynamic_status", description="Get dynamic system status")
-async def get_dynamic_status():
-    # This can include dynamic logic, API calls, etc.
-    w = get_workspace_client()
-    current_user = w.current_user.me()
-    return f"Current user: {current_user.display_name}\nWorkspace: {DATABRICKS_HOST}"
-```
-
-We auto-load `prompts/` for convenience, but function-based prompts are useful when you need dynamic content.
-
-### Adding Tools
-
-Add a function in the appropriate module under `server/tools/` using the `@mcp_server.tool` decorator:
-
-```python
-@mcp_server.tool
-def list_clusters(status: str = "RUNNING") -> dict:
-    """List Databricks clusters by status."""
-    w = get_workspace_client()
-    clusters = []
-    for cluster in w.clusters.list():
-        if cluster.state.name == status:
-            clusters.append({
-                "id": cluster.cluster_id,
-                "name": cluster.cluster_name,
-                "state": cluster.state.name
-            })
-    return {"clusters": clusters}
-```
-
-Tools must:
-- Use the `@mcp_server.tool` decorator
-- Have a docstring (becomes the tool description)
-- Return JSON-serializable data (dict, list, str, etc.)
-- Accept only JSON-serializable parameters
-
-## Available MCP Tools
-
-This template includes a comprehensive set of **104+ Databricks tools** organized into **9 logical modules**:
-
-### Core Tools (`core.py`)
-- **`health`** - Check MCP server and Databricks connection status
-
-### SQL & Data Tools (`sql_operations.py`)
-- **`execute_dbsql`** - Execute SQL queries on Databricks SQL warehouses
-- **`list_warehouses`** - List all SQL warehouses in the workspace
-- **`get_sql_warehouse`** - Get details of a specific SQL warehouse
-- **`create_sql_warehouse`** - Create a new SQL warehouse
-- **`start_sql_warehouse`** - Start a SQL warehouse
-- **`stop_sql_warehouse`** - Stop a SQL warehouse
-- **`delete_sql_warehouse`** - Delete a SQL warehouse
-- **`list_queries`** - List queries for a warehouse
-- **`get_query`** - Get details of a specific query
-- **`get_query_results`** - Get results of a completed query
-- **`cancel_query`** - Cancel a running query
-- **`get_statement_status`** - Get statement execution status
-- **`get_statement_results`** - Get statement results
-- **`cancel_statement`** - Cancel statement execution
-- **`list_recent_queries`** - List recent queries
-
-### Unity Catalog Tools (`unity_catalog.py`)
-- **`list_uc_catalogs`** - List Unity Catalog catalogs
-- **`describe_uc_catalog`** - Get detailed catalog information
-- **`describe_uc_schema`** - Get schema details and tables
-- **`describe_uc_table`** - Get table metadata and lineage
-- **`list_uc_volumes`** - List volumes in a Unity Catalog schema
-- **`describe_uc_volume`** - Get detailed volume information
-- **`list_uc_functions`** - List functions in a Unity Catalog schema
-- **`describe_uc_function`** - Get detailed function information
-- **`list_uc_models`** - List models in a Unity Catalog schema
-- **`describe_uc_model`** - Get detailed model information
-- **`list_external_locations`** - List external locations
-- **`describe_external_location`** - Get external location details
-- **`list_storage_credentials`** - List storage credentials
-- **`describe_storage_credential`** - Get storage credential details
-- **`list_uc_permissions`** - List permissions for UC objects
-- **`search_uc_objects`** - Search for UC objects by name/description
-- **`get_table_statistics`** - Get table statistics and metadata
-- **`list_metastores`** - List all metastores
-- **`describe_metastore`** - Get metastore details
-- **`list_uc_tags`** - List available tags
-- **`apply_uc_tags`** - Apply tags to UC objects
-- **`list_data_quality_monitors`** - List data quality monitors
-- **`get_data_quality_results`** - Get monitoring results
-- **`create_data_quality_monitor`** - Create data quality monitor
-
-### Data Management Tools (`data_management.py`)
-- **`list_dbfs_files`** - Browse DBFS file system
-- **`upload_dbfs_file`** - Upload files to DBFS
-- **`download_dbfs_file`** - Download files from DBFS
-- **`delete_dbfs_file`** - Delete files from DBFS
-- **`list_volumes`** - List volumes in a Unity Catalog schema
-- **`describe_volume`** - Get detailed volume information
-- **`list_external_locations`** - List external locations
-- **`describe_external_location`** - Get external location details
-- **`list_storage_credentials`** - List storage credentials
-- **`describe_storage_credential`** - Get storage credential details
-
-### Jobs & Pipelines Tools (`jobs_pipelines.py`)
-- **`list_jobs`** - List all jobs in the workspace
-- **`get_job`** - Get details of a specific job
-- **`create_job`** - Create a new job
-- **`update_job`** - Update an existing job
-- **`delete_job`** - Delete a job
-- **`run_job`** - Run a job
-- **`list_job_runs`** - List runs for a job
-- **`get_job_run`** - Get details of a specific job run
-- **`cancel_job_run`** - Cancel a running job
-- **`list_pipelines`** - List all DLT pipelines
-- **`get_pipeline`** - Get details of a specific pipeline
-- **`create_pipeline`** - Create a new DLT pipeline
-- **`update_pipeline`** - Update an existing pipeline
-- **`delete_pipeline`** - Delete a pipeline
-- **`start_pipeline`** - Start a pipeline
-- **`stop_pipeline`** - Stop a pipeline
-- **`list_pipeline_runs`** - List runs for a pipeline
-- **`get_pipeline_run`** - Get details of a specific pipeline run
-- **`cancel_pipeline_run`** - Cancel a running pipeline
-- **`get_pipeline_update`** - Get pipeline update details
-
-### Workspace Files Tools (`workspace_files.py`)
-- **`list_workspace_files`** - List files in the workspace
-- **`get_workspace_file`** - Get details of a specific file
-- **`create_workspace_file`** - Create a new file
-- **`update_workspace_file`** - Update an existing file
-- **`delete_workspace_file`** - Delete a file
-
-### Dashboard Tools (`dashboards.py`)
-- **`list_lakeview_dashboards`** - List all Lakeview dashboards
-- **`get_lakeview_dashboard`** - Get details of a specific Lakeview dashboard
-- **`create_lakeview_dashboard`** - Create a new Lakeview dashboard
-- **`update_lakeview_dashboard`** - Update an existing Lakeview dashboard
-- **`delete_lakeview_dashboard`** - Delete a Lakeview dashboard
-- **`list_dashboards`** - List all legacy dashboards
-- **`get_dashboard`** - Get details of a specific legacy dashboard
-- **`delete_dashboard`** - Delete a legacy dashboard
-
-### Repository Tools (`repositories.py`)
-- **`list_repositories`** - List all Git repositories
-- **`get_repository`** - Get details of a specific repository
-- **`create_repository`** - Create a new repository
-- **`update_repository`** - Update an existing repository
-- **`delete_repository`** - Delete a repository
-- **`list_branches`** - List branches for a repository
-- **`get_branch`** - Get details of a specific branch
-- **`create_branch`** - Create a new branch
-- **`delete_branch`** - Delete a branch
-- **`list_commits`** - List commits for a repository
-
-### Governance Tools (`governance.py`)
-- **`list_audit_logs`** - List audit logs
-- **`get_audit_log`** - Get details of a specific audit log
-- **`list_governance_rules`** - List governance rules
-- **`get_governance_rule`** - Get details of a specific governance rule
-- **`create_governance_rule`** - Create a new governance rule
-- **`update_governance_rule`** - Update an existing governance rule
-- **`delete_governance_rule`** - Delete a governance rule
-- **`list_data_lineage`** - List data lineage information
-- **`get_data_lineage`** - Get details of specific data lineage
-- **`list_access_controls`** - List access controls
-- **`get_access_control`** - Get details of a specific access control
-- **`create_access_control`** - Create a new access control
-- **`update_access_control`** - Update an existing access control
-- **`delete_access_control`** - Delete an access control
-- **`list_compliance_reports`** - List compliance reports
-
-## Modular Tools Architecture
-
-The tools are organized into logical, manageable modules for better maintainability:
-
-```
-server/tools/
-├── __init__.py              # Main entry point that imports and registers all tools
-├── core.py                  # Core/health tools (1 tool)
-├── sql_operations.py        # SQL warehouse and query management (15 tools)
-├── unity_catalog.py         # Unity Catalog operations (20 tools)
-├── data_management.py       # DBFS, volumes, and data operations (10 tools)
-├── jobs_pipelines.py        # Job and pipeline management (20 tools)
-├── workspace_files.py       # Workspace file operations (5 tools)
-├── dashboards.py            # Dashboard and monitoring tools (8 tools)
-├── repositories.py          # Git repository management (10 tools)
-└── governance.py            # Governance rules and data lineage (15 tools)
-```
-
-### Benefits of Modularization
-
-1. **Maintainability**: Each module focuses on a specific domain
-2. **Readability**: Smaller files are easier to navigate and debug
-3. **Collaboration**: Multiple developers can work on different modules simultaneously
-4. **Testing**: Individual modules can be tested in isolation
-5. **Scalability**: New tools can be added to appropriate modules without cluttering
 
 ## Deployment
 
@@ -552,7 +450,7 @@ Once added, you can interact with your MCP server in Claude:
 Human: What prompts are available?
 
 Claude: I can see the following prompts from your Databricks MCP server:
-- build_dlt_pipeline: Build a DLT pipeline for data processing
+- build_ldp_pipeline: Build a DLT pipeline for data processing
 ```
 
 ### Sample Tool Usage
