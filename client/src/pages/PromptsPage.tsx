@@ -15,13 +15,7 @@ import {
   Copy,
   ExternalLink,
 } from "lucide-react";
-import { PromptsService, McpService } from "@/fastapi_client";
-
-interface Prompt {
-  name: string;
-  description: string;
-  filename: string;
-}
+import { McpService } from "@/fastapi_client";
 
 interface PromptDetail {
   name: string;
@@ -41,7 +35,6 @@ interface MCPConfig {
 }
 
 export function PromptsPage() {
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [mcpPrompts, setMcpPrompts] = useState<MCPItem[]>([]);
   const [mcpTools, setMcpTools] = useState<MCPItem[]>([]);
   const [servername, setServername] = useState<string>("");
@@ -59,9 +52,6 @@ export function PromptsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch prompts from prompts directory
-      const promptsResponse = await PromptsService.listPromptsApiPromptsGet();
-      setPrompts(promptsResponse);
 
       // Fetch MCP discovery info
       const mcpResponse =
@@ -84,17 +74,6 @@ export function PromptsPage() {
       console.error(err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchPromptDetail = async (promptName: string) => {
-    try {
-      const response =
-        await PromptsService.getPromptApiPromptsPromptNameGet(promptName);
-      setSelectedPrompt(response);
-    } catch (err) {
-      setError("Failed to load prompt detail");
-      console.error(err);
     }
   };
 
@@ -186,7 +165,7 @@ export function PromptsPage() {
     if (!mcpConfig) return "";
     const databricksAppUrl = window.location.origin;
     const databricksHost = mcpConfig.databricks_host;
-  return `"${mcpConfig.servername} ": {
+    return `"${mcpConfig.servername} ": {
       "command": "uvx",
       "args": [
         "--from",
@@ -197,8 +176,8 @@ export function PromptsPage() {
         "--databricks-app-url",
         "${databricksAppUrl}"
       ]
-    }`
-  }
+    }`;
+  };
 
   return (
     <div className="container mx-auto py-8">
