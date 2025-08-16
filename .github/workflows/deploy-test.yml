@@ -29,6 +29,11 @@ jobs:
       run: |
         uv sync --all-extras
 
+    - name: Install bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
     - name: Build frontend
       run: |
         cd client
