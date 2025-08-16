@@ -1,303 +1,248 @@
-# Databricks App Template Development Guide
+# CLAUDE.md
 
-## Project Memory
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-This is a modern full-stack application template for Databricks Apps, featuring FastAPI backend with React TypeScript frontend and modern development tooling.
+## Project Overview
 
-## Tech Stack
+This is a Databricks MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with Databricks workspaces. It's built as a hybrid application combining:
+- **MCP Server**: FastAPI backend with integrated MCP server using FastMCP
+- **Web Interface**: React TypeScript frontend for MCP discovery and testing
+- **Modular Tools**: 100+ tools organized across 8 specialized modules for Databricks operations
+- **OAuth Integration**: Secure authentication via Databricks Apps deployment
 
-**Backend:**
-- Python with `uv` for package management
-- FastAPI for API framework
-- Databricks SDK for workspace integration
-- OpenAPI automatic client generation
+## Architecture
 
-**Frontend:**
-- TypeScript with React
-- Vite for fast development and hot reloading
-- shadcn/ui components with Tailwind CSS
-- React Query for API state management
-- Bun for package management
+The MCP server architecture consists of:
+- **FastAPI backend** (`server/app.py`) with integrated MCP server via FastMCP
+- **Modular tools system** (`server/tools/`) with specialized modules for different Databricks operations  
+- **React frontend** (`client/`) for web-based MCP discovery and testing
+- **MCP proxy** (`dba_mcp_proxy/`) for Claude CLI integration with OAuth handling
+- **Prompts system** (`prompts/`) where markdown files become MCP prompts
+
+## Development Commands
+
+### Essential Commands
+- `./setup.sh` - Interactive setup for environment, authentication, and dependencies
+- `./watch.sh` - Start development servers (backend + frontend + file watching)
+- `./fix.sh` - Format code (ruff for Python, prettier for TypeScript)
+- `./deploy.sh` - Deploy to Databricks Apps
+- `./app_status.sh` - Check deployment status and get app URLs
+
+### Python Execution Rules
+
+**CRITICAL: Always use `uv run` instead of direct `python`:**
+```bash
+# ✅ CORRECT
+uv run python script.py
+uv run uvicorn server.app:app
+
+# ❌ WRONG  
+python script.py
+uvicorn server.app:app
+```
+
+### Databricks CLI Rules
+
+**CRITICAL: Always source environment before Databricks CLI:**
+```bash
+# ✅ CORRECT - Load environment first
+source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databricks current-user me
+
+# ❌ WRONG - Direct CLI usage
+databricks current-user me
+```
 
 ## Development Workflow
 
+### Starting Development
+1. Run `./setup.sh` for first-time setup or configuration changes
+2. Run `./watch.sh` to start development servers:
+   - Backend: http://localhost:8000 (FastAPI + MCP server)
+   - Frontend: http://localhost:5173 (React dev server)
+   - MCP endpoint: http://localhost:8000/mcp/
+   - API docs: http://localhost:8000/docs
+
+### Making Changes
+- **Tools**: Edit functions in `server/tools/*.py` modules
+- **Prompts**: Add/edit markdown files in `prompts/` directory
+- **Frontend**: Modify React components in `client/src/`
+- **Backend**: Update FastAPI routes in `server/routers/`
+
+All changes auto-reload via file watchers in `./watch.sh`.
+
 ### Package Management
-- Use `uv add/remove` for Python dependencies, not manual edits to pyproject.toml
-- Use `bun add/remove` for frontend dependencies, not manual package.json edits
-- Always check if dependencies exist in the project before adding new ones
+- **Python**: Use `uv add/remove` for dependencies, never edit pyproject.toml manually
+- **Frontend**: Use `bun add/remove` for dependencies, never edit package.json manually
+- Always check if dependencies already exist before adding new ones
 
-### Development Commands
-- `./setup.sh` - Interactive environment setup and dependency installation
-- `./watch.sh` - Start development servers with hot reloading (frontend:5173, backend:8000)
-- `./fix.sh` - Format code (ruff for Python, prettier for TypeScript)
-- `./deploy.sh` - Deploy to Databricks Apps
+## Tool System Architecture
 
-### 🚨 IMPORTANT: NEVER RUN THE SERVER MANUALLY 🚨
+The modular tools system (`server/tools/`) is organized into specialized modules:
+- `core.py` - Health checks and basic operations
+- `sql_operations.py` - SQL warehouse and query tools
+- `unity_catalog.py` - Unity Catalog operations (catalogs, schemas, tables)
+- `jobs_pipelines.py` - Job and DLT pipeline management
+- `workspace_files.py` - Workspace file operations
+- `dashboards.py` - Dashboard management tools
+- `repositories.py` - Git repository integration
+- `data_management.py` - DBFS and data operations (commented out)
+- `governance.py` - Governance tools (commented out)
 
-**ALWAYS use the watch script with nohup and logging:**
-
-```bash
-# Start development servers (REQUIRED COMMAND)
-nohup ./watch.sh > /tmp/databricks-app-watch.log 2>&1 &
-
-# Or for production mode
-nohup ./watch.sh --prod > /tmp/databricks-app-watch.log 2>&1 &
+### Adding New Tools
+Tools are automatically registered when added to modules. Follow existing patterns:
+```python
+def load_module_tools(mcp_server):
+    """Register tools from this module."""
+    
+    @mcp_server.tool
+    def your_new_tool(param: str) -> dict:
+        """Tool description for Claude."""
+        # Implementation using Databricks SDK
+        return {"result": "data"}
 ```
 
-**NEVER run uvicorn or the server directly!** Always use `./watch.sh` as it:
-- Configures environment variables properly
-- Starts both frontend and backend correctly
-- Generates TypeScript client automatically
-- Handles authentication setup
-- Provides proper logging and error handling
+## MCP Integration
 
-### 🚨 PYTHON EXECUTION RULE 🚨
-
-**NEVER run `python` directly - ALWAYS use `uv run`:**
-
+### Local Development Testing
 ```bash
-# ✅ CORRECT - Always use uv run
-uv run python script.py
-uv run uvicorn server.app:app
-uv run scripts/make_fastapi_client.py
+# Test MCP server directly
+./claude_scripts/test_local_mcp_curl.sh
 
-# ❌ WRONG - Never use python directly
-python script.py
-uvicorn server.app:app
-python scripts/make_fastapi_client.py
+# Test with MCP proxy
+./claude_scripts/test_local_mcp_proxy.sh  
+
+# Web-based MCP Inspector
+./claude_scripts/inspect_local_mcp.sh
 ```
 
-### 🚨 DATABRICKS CLI EXECUTION RULE 🚨
-
-**NEVER run `databricks` CLI directly - ALWAYS prefix with environment setup:**
-
+### Production Testing
 ```bash
-# ✅ CORRECT - Always source .env.local first
-source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databricks current-user me
-source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databricks apps list
-source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databricks workspace list /
+# Test deployed MCP server
+./claude_scripts/test_remote_mcp_curl.sh
 
-# ❌ WRONG - Never use databricks CLI directly
-databricks current-user me
-databricks apps list
-databricks workspace list /
+# Test with production proxy
+./claude_scripts/test_remote_mcp_proxy.sh
+
+# Remote MCP Inspector
+./claude_scripts/inspect_remote_mcp.sh
 ```
 
-**Why this is required:**
-- Ensures environment variables are loaded from .env.local
-- Exports authentication variables to environment
-- Prevents authentication failures and missing configuration
+### Claude CLI Integration
+After deployment, add to Claude CLI:
+```bash
+# Get app URL from ./app_status.sh
+export DATABRICKS_APP_URL="https://your-app.databricksapps.com"
+export DATABRICKS_HOST="https://your-workspace.cloud.databricks.com"
 
-### Claude Natural Language Commands
-Claude understands natural language commands for common development tasks:
+# Add MCP server to Claude
+claude mcp add databricks-mcp -- \
+  uvx --from git+ssh://git@github.com/YOUR-USERNAME/YOUR-REPO.git dba-mcp-proxy \
+  --databricks-host $DATABRICKS_HOST \
+  --databricks-app-url $DATABRICKS_APP_URL
+```
 
-**Development Lifecycle:**
-- "start the devserver" → Runs `./watch.sh` in background with logging
-- "kill the devserver" → Stops all background development processes
-- "fix the code" → Runs `./fix.sh` to format Python and TypeScript code
-- "deploy the app" → Runs `./deploy.sh` to deploy to Databricks Apps
+## Authentication
 
-**Development Tasks:**
-- "add a new API endpoint" → Creates FastAPI routes with proper patterns
-- "create a new React component" → Builds UI components using shadcn/ui
-- "debug this error" → Analyzes logs and fixes issues
-- "install [package]" → Adds dependencies using uv (Python) or bun (frontend)
-- "generate the TypeScript client" → Regenerates API client from OpenAPI spec
-- "open the UI in playwright" → Opens the frontend app in Playwright browser for testing
-- "open app" → Gets app URL from `./app_status.sh` and opens it with `open {url}`
+### Local Development
+- Uses Databricks CLI credentials (PAT or profile-based)
+- Environment variables loaded from `.env.local`
+- No OAuth required for local testing
 
-### Implementation Validation Workflow
-**During implementation, ALWAYS:**
-1. **Start development server first**: `nohup ./watch.sh > /tmp/databricks-app-watch.log 2>&1 &`
-2. **Open app with Playwright** to see current state before changes
-3. **After each implementation step:**
-   - Check logs: `tail -f /tmp/databricks-app-watch.log`
-   - Use Playwright to verify UI changes are working
-   - Take snapshots to confirm features render correctly
-   - Test user interactions and API calls
-4. **🚨 CRITICAL: FastAPI Endpoint Verification**
-   - **IMPORTANT: After adding ANY new FastAPI endpoint, MUST curl the endpoint to verify it works**
-   - **NEVER move on to the next step until the endpoint is verified with curl**
-   - **Example verification commands:**
-     ```bash
-     # Test GET endpoint
-     curl -s http://localhost:8000/api/new-endpoint | jq
-     
-     # Test POST endpoint
-     curl -X POST -H "Content-Type: application/json" -d '{"key":"value"}' http://localhost:8000/api/new-endpoint | jq
-     ```
-   - **Show the curl response to confirm the endpoint works correctly**
-   - **If the endpoint fails, debug and fix it before proceeding**
-5. **Install Playwright if needed**: `claude mcp add playwright npx '@playwright/mcp@latest'`
-6. **Iterative validation**: Test each feature before moving to next step
+### Production Deployment
+- OAuth handled automatically via Databricks Apps
+- Proxy manages authentication flow
+- Users authenticate through their Databricks workspace
 
-**This ensures every implementation step is validated and working before proceeding.**
+## Code Quality
 
-### Development Server
-- **ALWAYS** run `./watch.sh` with nohup in background and log to file for debugging
-- Watch script automatically runs in background and logs to `/tmp/databricks-app-watch.log`
-- Frontend runs on http://localhost:5173
-- Backend runs on http://localhost:8000
-- API docs available at http://localhost:8000/docs
-- Supports hot reloading for both frontend and backend
-- Automatically generates TypeScript client from FastAPI OpenAPI spec
-- **Check logs**: `tail -f /tmp/databricks-app-watch.log`
-- **Stop processes**: `pkill -f "watch.sh"` or check PID file
+### Formatting and Linting
+- Python: `ruff` for formatting and linting
+- TypeScript: `prettier` for formatting, ESLint for linting
+- Run `./fix.sh` before commits to format all code
 
-### Code Quality
-- Use `./fix.sh` for code formatting before commits
-- Python: ruff for formatting and linting, ty for type checking
-- TypeScript: prettier for formatting, ESLint for linting
-- Type checking with TypeScript and ty (Python)
+### Type Checking
+- Python: Uses `ty` for type checking
+- TypeScript: Built-in TypeScript compiler
 
-### API Development
-- FastAPI automatically generates OpenAPI spec
-- TypeScript client is auto-generated from OpenAPI spec
-- Test endpoints with curl or FastAPI docs
-- Check server logs after requests
-- Verify response includes expected fields
+## Testing
 
-### Databricks API Integration
-- **ALWAYS** reference `docs/databricks_apis/` documentation when implementing Databricks features
-- Use `docs/databricks_apis/databricks_sdk.md` for workspace, cluster, and SQL operations
-- Use `docs/databricks_apis/mlflow_genai.md` for AI agent and LLM functionality
-- Use `docs/databricks_apis/model_serving.md` for model serving endpoints and inference
-- Use `docs/databricks_apis/workspace_apis.md` for file operations and directory management
-- Follow the documented patterns and examples for proper API usage
-- Check official documentation links in each API guide for latest updates
+### Comprehensive Testing Suite
+The `claude_scripts/` directory contains testing tools:
+- **curl tests**: Direct HTTP testing with session handling
+- **proxy tests**: End-to-end MCP proxy testing  
+- **MCP Inspector**: Web-based interactive testing UI
+- **Tool-specific tests**: Individual tool validation scripts
 
-### Frontend Development
-- Use shadcn/ui components for consistent UI
-- Follow React Query patterns for API calls
-- Use TypeScript strictly - no `any` types
-- Import from auto-generated client: `import { apiClient } from '@/fastapi_client'`
-- Client uses shadcn/ui components with proper TypeScript configuration
-- shadcn components must be added with: npx shadcn@latest add <component-name>
+### API Testing
+- FastAPI docs interface: http://localhost:8000/docs
+- Manual curl testing for endpoints
+- Network tab in browser dev tools for frontend API calls
 
-### Testing Methodology
-- Test API endpoints using FastAPI docs interface
-- Use browser dev tools for frontend debugging
-- Check network tab for API request/response inspection
-- Verify console for any JavaScript errors
+## Deployment
 
-### Deployment
-- Use `./deploy.sh` for Databricks Apps deployment
-- Automatically builds frontend and generates requirements.txt
-- Configures app.yaml with environment variables
-- Verifies deployment through Databricks CLI
-- **IMPORTANT**: After deployment, monitor `/logz` endpoint of your Databricks app to check for installation issues
-- App logs are available at: `https://<app-url>/logz` (visit in browser - requires OAuth authentication)
+### Deploying to Databricks Apps
+```bash
+./deploy.sh
+```
 
-### Environment Configuration
-- Use `.env.local` for local development configuration
-- Set environment variables and Databricks credentials
-- Never commit `.env.local` to version control
-- Use `./setup.sh` to create and update environment configuration
+This automatically:
+- Builds React frontend for production
+- Generates Python requirements.txt from pyproject.toml
+- Creates app.yaml configuration
+- Deploys via Databricks CLI
+- Verifies deployment status
 
-### Debugging Tips
-- Verify environment variables are set correctly
-- Use FastAPI docs for API testing: http://localhost:8000/docs
-- Check browser console for frontend errors
-- Use React Query DevTools for API state inspection
-- **Check watch logs**: `tail -f /tmp/databricks-app-watch.log` for all development server output
-- **Check process status**: `ps aux | grep databricks-app` or check PID file at `/tmp/databricks-app-watch.pid`
-- **Force stop**: `kill $(cat /tmp/databricks-app-watch.pid)` or `pkill -f watch.sh`
+### Post-Deployment
+- Check status: `./app_status.sh`
+- Monitor logs: Visit deployed app URL + `/logz` 
+- Test MCP functionality with remote testing scripts
 
-### Key Files
-- `server/app.py` - FastAPI application entry point
-- `server/routers/` - API endpoint routers
-- `client/src/App.tsx` - React application entry point
-- `client/src/pages/` - React page components
-- `scripts/make_fastapi_client.py` - TypeScript client generator
-- `pyproject.toml` - Python dependencies and project configuration
+## Configuration Files
+
+### Key Configuration
+- `.env.local` - Local development environment variables
+- `config.yaml` - MCP server name configuration
+- `pyproject.toml` - Python dependencies and project metadata
 - `client/package.json` - Frontend dependencies and scripts
-- `claude_scripts/` - Test scripts created by Claude for testing functionality
+- `app.yaml` - Databricks Apps deployment configuration
 
-### API Documentation
-- `docs/databricks_apis/` - Comprehensive API documentation for Databricks integrations
-- `docs/databricks_apis/databricks_sdk.md` - Databricks SDK usage patterns
-- `docs/databricks_apis/mlflow_genai.md` - MLflow GenAI for AI agents
-- `docs/databricks_apis/model_serving.md` - Model serving endpoints and inference
-- `docs/databricks_apis/workspace_apis.md` - Workspace file operations
+### Environment Variables
+Essential variables in `.env.local`:
+```bash
+DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
+DATABRICKS_TOKEN=your-token  # For PAT auth
+DATABRICKS_CONFIG_PROFILE=DEFAULT  # For profile auth
+DATABRICKS_APP_NAME=your-app-name
+DBA_SOURCE_CODE_PATH=/Workspace/Users/email/app-name
+```
 
-### Documentation Files
-- `docs/product.md` - Product requirements document (created during /dba workflow)
-- `docs/design.md` - Technical design document (created during /dba workflow)
-- These files are generated through iterative collaboration with the user during the /dba command
+## Troubleshooting
 
 ### Common Issues
-- If TypeScript client is not found, run the client generation script manually
-- If hot reload not working, restart `./watch.sh`
-- If dependencies missing, run `./setup.sh` to reinstall
+- **Authentication failures**: Run `databricks auth login` or check `.env.local` configuration
+- **MCP connection issues**: Verify app deployment with `./app_status.sh`
+- **TypeScript client not found**: Auto-generated by `./watch.sh`, check logs
+- **Port conflicts**: Default ports 8000 (backend) and 5173 (frontend)
 
-### MCP (Model Context Protocol) Integration
-
-**IMPORTANT: The server must support BOTH HTTP homepage AND MCP over HTTP simultaneously.**
-
-#### MCP Setup and Configuration
-- **ALWAYS use absolute paths when adding MCP servers** because the command can be run from anywhere:
-  ```bash
-  # ✅ CORRECT - Use absolute path
-  claude mcp add databricks-proxy /Users/nikhil.thorat/emu/mcp-commands-databricks-app/mcp_databricks_client.py
-  
-  # ❌ WRONG - Never use relative paths
-  claude mcp add databricks-proxy ./mcp_databricks_client.py
-  ```
-
-#### MCP Testing Workflow
-**End-to-end testing process for MCP integration:**
-
-1. **Add the MCP server to Claude CLI:**
-   ```bash
-   claude mcp add databricks-proxy /Users/nikhil.thorat/emu/mcp-commands-databricks-app/mcp_databricks_client.py
-   ```
-
-2. **Test MCP availability:**
-   ```bash
-   # Test if MCP tools are available
-   echo "list the mcp prompts and tools" | claude
-   ```
-
-3. **Check MCP logs for debugging:**
-   ```bash
-   # Find MCP log directory (created by Claude CLI)
-   ls -la ~/Library/Caches/claude-cli-nodejs/-Users-nikhil-thorat-emu-mcp-commands-databricks-app/mcp-logs-databricks-proxy/
-   
-   # Read the latest log file
-   cat ~/Library/Caches/claude-cli-nodejs/-Users-nikhil-thorat-emu-mcp-commands-databricks-app/mcp-logs-databricks-proxy/$(ls -t ~/Library/Caches/claude-cli-nodejs/-Users-nikhil-thorat-emu-mcp-commands-databricks-app/mcp-logs-databricks-proxy/ | head -1)
-   ```
-
-   **Log locations from actual testing:**
-   - MCP logs: `~/Library/Caches/claude-cli-nodejs/-Users-nikhil-thorat-emu-mcp-commands-databricks-app/mcp-logs-databricks-proxy/`
-   - Log files are timestamped like: `mcp-2025-07-22T00-14-48-872Z.log`
-   - Logs contain detailed MCP communication including tool discovery and execution
-
-4. **Verify both HTTP and MCP work simultaneously:**
-   - HTTP Homepage: `http://localhost:5176` (or port shown in watch logs)
-   - MCP Discovery: Available through Claude CLI when MCP server is added
-   - Both must work at the same time without conflicts
-
-#### MCP Architecture in this App
-- FastAPI app serves both regular HTTP endpoints and MCP functionality
-- MCP server is integrated using FastMCP library
-- MCP tools are mounted at `/mcp` path with SSE support
-- Client proxy (`mcp_databricks_client.py`) connects to deployed app or local server
-- OAuth authentication handled automatically for deployed apps
-
-### Testing MCP Servers
-When testing MCP server connections, use this trick:
+### Debug Commands
 ```bash
-# Check if MCP server is connected and list available commands
-echo "list your mcp commands" | claude
+# Check development server logs
+tail -f /tmp/databricks-app-watch.log
 
-# Check specific MCP server prompts
+# Test Databricks connection
+source .env.local && databricks current-user me
+
+# Verify MCP endpoint
+curl http://localhost:8000/mcp/
+
+# Check Claude MCP integration
 echo "What MCP prompts are available from databricks-mcp?" | claude
 ```
 
-If the MCP server doesn't respond:
-1. Check Claude logs: `tail -f ~/Library/Logs/Claude/*.log`
-2. Check MCP logs in cache directory
-3. Verify the proxy command works standalone
-4. Ensure the app is deployed and accessible
+## Documentation
 
-Remember: This is a development template focused on rapid iteration and modern tooling.
+Reference documentation in `docs/` directory:
+- `docs/databricks_apis/` - Databricks SDK integration guides
+- `docs/unity_catalog_tools.md` - Unity Catalog operations reference
+- `docs/core-tools.md` - Core tool documentation
+- `claude_scripts/README.md` - Testing tools documentation
