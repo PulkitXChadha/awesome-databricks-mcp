@@ -6,11 +6,11 @@
 
 # def load_data_tools(mcp_server):
 #     """Register data management MCP tools with the server.
-    
+
 #     Args:
 #         mcp_server: The FastMCP server instance to register tools with
 #     """
-    
+
 #     @mcp_server.tool
 #     def list_dbfs_files(path: str = '/') -> dict:
 #         """List files and directories in DBFS (Databricks File System).
@@ -24,13 +24,13 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # List files in DBFS
 #             files = w.dbfs.list(path)
-            
+
 #             file_list = []
 #             for file in files:
 #                 file_list.append({
@@ -65,13 +65,13 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # Get file info
 #             file_info = w.dbfs.get_status(path)
-            
+
 #             return {
 #                 'success': True,
 #                 'path': path,
@@ -103,7 +103,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -112,7 +112,7 @@
 #                 content = w.dbfs.read(path, offset=offset, length=length)
 #             else:
 #                 content = w.dbfs.read(path, offset=offset)
-            
+
 #             # Convert bytes to string if possible
 #             try:
 #                 content_str = content.decode('utf-8')
@@ -151,16 +151,16 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # Convert string to bytes
 #             content_bytes = content.encode('utf-8')
-            
+
 #             # Write file content
 #             w.dbfs.put(path, content_bytes, overwrite=overwrite)
-            
+
 #             return {
 #                 'success': True,
 #                 'path': path,
@@ -187,13 +187,13 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # Delete path
 #             w.dbfs.delete(path, recursive=recursive)
-            
+
 #             return {
 #                 'success': True,
 #                 'path': path,
@@ -218,13 +218,13 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # Create directory
 #             w.dbfs.mkdirs(path)
-            
+
 #             return {
 #                 'success': True,
 #                 'path': path,
@@ -249,13 +249,13 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # Move path
 #             w.dbfs.move(source, destination)
-            
+
 #             return {
 #                 'success': True,
 #                 'source': source,
@@ -277,13 +277,13 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # List external locations
 #             locations = w.external_locations.list()
-            
+
 #             location_list = []
 #             for location in locations:
 #                 location_list.append({
@@ -320,13 +320,13 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # Get external location details
 #             location = w.external_locations.get(location_name)
-            
+
 #             return {
 #                 'success': True,
 #                 'location': {
@@ -357,13 +357,13 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # List storage credentials
 #             credentials = w.storage_credentials.list()
-            
+
 #             credential_list = []
 #             for cred in credentials:
 #                 credential_list.append({
@@ -398,13 +398,13 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
 #             # Get storage credential details
 #             credential = w.storage_credentials.get(credential_name)
-            
+
 #             return {
 #                 'success': True,
 #                 'credential': {
@@ -423,7 +423,7 @@
 #             return {'success': False, 'error': f'Error: {str(e)}'}
 
 #     @mcp_server.tool
-#     def list_uc_permissions(catalog_name: str = None, schema_name: str = None, 
+#     def list_uc_permissions(catalog_name: str = None, schema_name: str = None,
 #                            table_name: str = None) -> dict:
 #         """List permissions for Unity Catalog objects.
 
@@ -438,7 +438,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 

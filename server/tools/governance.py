@@ -6,11 +6,11 @@
 
 # def load_governance_tools(mcp_server):
 #     """Register governance and lineage MCP tools with the server.
-    
+
 #     Args:
 #         mcp_server: The FastMCP server instance to register tools with
 #     """
-    
+
 #     @mcp_server.tool
 #     def list_audit_logs(start_time: str = None, end_time: str = None, user_id: str = None) -> dict:
 #         """List audit logs for the workspace.
@@ -26,7 +26,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -60,7 +60,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -93,7 +93,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -122,7 +122,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -153,7 +153,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -184,7 +184,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -215,7 +215,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -246,7 +246,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -277,7 +277,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -310,7 +310,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -343,7 +343,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -377,7 +377,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 
@@ -411,7 +411,7 @@
 #         try:
 #             # Initialize Databricks SDK
 #             w = WorkspaceClient(
-#                 host=os.environ.get('DATABRICKS_HOST'), 
+#                 host=os.environ.get('DATABRICKS_HOST'),
 #                 token=os.environ.get('DATABRICKS_TOKEN')
 #             )
 

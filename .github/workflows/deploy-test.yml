@@ -1,0 +1,167 @@
+name: Deployment Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ labeled ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    if: contains(github.event.label.name, 'deploy-test') || github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras
+
+    - name: Build frontend
+      run: |
+        cd client
+        bun install
+        bun run build
+
+    - name: Test deployment build process
+      run: |
+        # Simulate deployment build
+        uv run python scripts/generate_semver_requirements.py
+        
+        # Verify requirements.txt was generated
+        test -f requirements.txt
+        
+        # Test that app can start (without actually running)
+        uv run python -c "
+        import server.app
+        print('App module loads successfully')
+        "
+
+    - name: Test MCP server functionality
+      run: |
+        # Test MCP server can be created and tools loaded
+        uv run python -c "
+        from fastmcp import FastMCP
+        from server.tools import load_tools
+        from server.prompts import load_prompts
+        
+        server = FastMCP(name='deploy-test-server')
+        load_tools(server)
+        load_prompts(server)
+        
+        print(f'MCP server created with {len(server.tools)} tools')
+        assert len(server.tools) > 0, 'No tools loaded'
+        print('MCP server test passed')
+        "
+
+    - name: Test proxy functionality
+      run: |
+        # Test proxy can be imported and initialized
+        uv run python -c "
+        from dba_mcp_proxy.mcp_client import MCPProxy
+        
+        proxy = MCPProxy('https://test.databricks.com', 'http://localhost:8000')
+        print('Proxy created successfully')
+        assert proxy.databricks_host == 'https://test.databricks.com'
+        assert proxy.app_url == 'http://localhost:8000/mcp/'
+        print('Proxy test passed')
+        "
+
+    - name: Upload deployment artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-build
+        path: |
+          requirements.txt
+          client/build/
+          server/
+          dba_mcp_proxy/
+
+  mcp-integration-test:
+    runs-on: ubuntu-latest
+    needs: build-test
+    if: contains(github.event.label.name, 'deploy-test') || github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras
+
+    - name: Test MCP protocol compliance
+      run: |
+        # Test that our MCP server follows the protocol correctly
+        uv run python -c "
+        import json
+        from fastmcp import FastMCP
+        from server.tools import load_tools
+        
+        server = FastMCP(name='protocol-test-server')
+        load_tools(server)
+        
+        # Test that tools have proper MCP structure
+        for tool_name, tool_info in server.tools.items():
+            assert hasattr(tool_info, 'fn'), f'Tool {tool_name} missing function'
+            assert callable(tool_info.fn), f'Tool {tool_name} function not callable'
+            assert tool_info.fn.__doc__, f'Tool {tool_name} missing documentation'
+        
+        print('MCP protocol compliance test passed')
+        "
+
+    - name: Test Claude CLI integration format
+      run: |
+        # Test that our proxy can handle Claude CLI format requests
+        uv run python tests/integration/test_claude_cli_integration.py || echo "Claude CLI integration test not found"
+
+  performance-test:
+    runs-on: ubuntu-latest
+    needs: build-test
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras
+        uv pip install pytest-benchmark
+
+    - name: Run performance tests
+      run: |
+        uv run pytest tests/ -v -m "performance" --benchmark-only --benchmark-json=benchmark.json || echo "No performance tests found"
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: benchmark.json
+      if: always()

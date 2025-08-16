@@ -239,6 +239,128 @@ curl http://localhost:8000/mcp/
 echo "What MCP prompts are available from databricks-mcp?" | claude
 ```
 
+## Testing
+
+### Test Suite Overview
+
+The project includes a comprehensive test suite with 100+ tests covering:
+- **Unit Tests**: Individual component testing with mocks
+- **Integration Tests**: End-to-end workflow testing
+- **API Tests**: FastAPI endpoint testing
+- **MCP Protocol Tests**: MCP server compliance
+- **Proxy Tests**: MCP proxy functionality
+- **Performance Tests**: Benchmarks and performance validation
+
+### Running Tests
+
+#### Quick Testing
+```bash
+# Run all tests (recommended)
+make test
+
+# Unit tests only (fast)
+make test-unit
+
+# Integration tests only
+make test-integration
+
+# With coverage reporting
+make coverage
+```
+
+#### Comprehensive Testing
+```bash
+# Full test suite with security checks
+make test-ci
+
+# All tests including slow ones
+make test-all
+
+# Performance benchmarks
+make benchmark
+
+# Security scanning
+make security
+```
+
+#### Development Testing
+```bash
+# Fast feedback during development
+make test-dev
+
+# Watch mode for continuous testing
+make test-watch
+
+# Specific test categories
+make test-api      # FastAPI endpoints
+make test-tools    # MCP tools
+make test-mcp      # MCP protocol
+make test-proxy    # Proxy functionality
+```
+
+### Test Configuration
+
+Tests use pytest with comprehensive configuration:
+- **Markers**: Organized by component and test type
+- **Fixtures**: Shared test utilities and mocks
+- **Coverage**: 80%+ coverage requirement
+- **Parallel Execution**: Fast test runs with pytest-xdist
+- **Environment**: Isolated test environment with mocks
+
+### CI/CD Integration
+
+GitHub Actions workflows provide:
+- **Multi-Python Testing**: Python 3.11 and 3.12
+- **Code Quality**: Linting, formatting, type checking
+- **Security Scanning**: Bandit and Safety checks
+- **Coverage Reporting**: Codecov integration
+- **Performance Testing**: Benchmark tracking
+- **Deployment Testing**: Build and deployment validation
+
+### Test Categories
+
+Use pytest markers to run specific test types:
+```bash
+# By test level
+uv run pytest -m "unit"
+uv run pytest -m "integration"
+uv run pytest -m "slow"
+
+# By component
+uv run pytest -m "api"
+uv run pytest -m "tools"
+uv run pytest -m "mcp"
+uv run pytest -m "proxy"
+
+# Combined markers
+uv run pytest -m "unit and tools"
+uv run pytest -m "integration and not slow"
+```
+
+### Writing Tests
+
+Follow the established patterns:
+```python
+@pytest.mark.unit
+@pytest.mark.tools
+class TestNewTool:
+    """Test new tool functionality."""
+    
+    def test_tool_success(self, mcp_server, mock_databricks_client):
+        """Test successful tool execution."""
+        # Arrange, Act, Assert pattern
+        pass
+```
+
+Key testing principles:
+- Use appropriate fixtures from `tests/conftest.py`
+- Mock external dependencies (Databricks SDK, HTTP requests)
+- Test both success and error scenarios
+- Follow naming conventions and markers
+- Keep unit tests fast, mark slow tests appropriately
+
+For detailed testing information, see `docs/testing.md` and `tests/README.md`.
+
 ## Documentation
 
 Reference documentation in `docs/` directory:
