@@ -1,4 +1,4 @@
-# """Data management MCP tools for Databricks."""
+"""Data management MCP tools for Databricks - TEMPORARILY DISABLED."""
 
 # import os
 # from databricks.sdk import WorkspaceClient
@@ -450,7 +450,8 @@
 #                 'schema': schema_name,
 #                 'table': table_name,
 #                 'message': 'Permission listing initiated',
-#                 'note': 'Permission listing requires specific permissions and may not be directly accessible via SDK',
+#                 'note': 'Permission listing requires specific permissions and may not be '
+#                         'directly accessible via SDK',
 #                 'permissions': [],
 #                 'count': 0,
 #             }

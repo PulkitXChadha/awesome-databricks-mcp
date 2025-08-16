@@ -80,7 +80,7 @@ jobs:
         "
 
     - name: Upload deployment artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: deployment-build
         path: |
@@ -160,7 +160,7 @@ jobs:
         uv run pytest tests/ -v -m "performance" --benchmark-only --benchmark-json=benchmark.json || echo "No performance tests found"
 
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: benchmark-results
         path: benchmark.json

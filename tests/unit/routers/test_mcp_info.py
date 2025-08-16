@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -58,14 +58,14 @@ class TestMCPInfoRouter:
     mock_tool.description = 'Test tool description'
 
     mock_prompt_manager = Mock()
-    mock_prompt_manager.list_prompts = Mock(return_value=[mock_prompt])
+    mock_prompt_manager.list_prompts = AsyncMock(return_value=[mock_prompt])
 
     mock_tool_manager = Mock()
-    mock_tool_manager.list_tools = Mock(return_value=[mock_tool])
+    mock_tool_manager.list_tools = AsyncMock(return_value=[mock_tool])
 
     with (
-      patch('server.routers.mcp_info.mcp') as mock_mcp,
-      patch('server.routers.mcp_info.servername', 'test-server'),
+      patch('server.app.mcp_server') as mock_mcp,
+      patch('server.app.servername', 'test-server'),
     ):
       mock_mcp._prompt_manager = mock_prompt_manager
       mock_mcp._tool_manager = mock_tool_manager
@@ -91,8 +91,8 @@ class TestMCPInfoRouter:
   def test_get_mcp_discovery_no_managers(self, test_client):
     """Test MCP discovery when managers are not available."""
     with (
-      patch('server.routers.mcp_info.mcp') as mock_mcp,
-      patch('server.routers.mcp_info.servername', 'test-server'),
+      patch('server.app.mcp_server') as mock_mcp,
+      patch('server.app.servername', 'test-server'),
     ):
       # MCP server without _prompt_manager and _tool_manager
       delattr(mock_mcp, '_prompt_manager') if hasattr(mock_mcp, '_prompt_manager') else None
@@ -119,14 +119,14 @@ class TestMCPInfoRouter:
     mock_tool.description = None
 
     mock_prompt_manager = Mock()
-    mock_prompt_manager.list_prompts = Mock(return_value=[mock_prompt])
+    mock_prompt_manager.list_prompts = AsyncMock(return_value=[mock_prompt])
 
     mock_tool_manager = Mock()
-    mock_tool_manager.list_tools = Mock(return_value=[mock_tool])
+    mock_tool_manager.list_tools = AsyncMock(return_value=[mock_tool])
 
     with (
-      patch('server.routers.mcp_info.mcp') as mock_mcp,
-      patch('server.routers.mcp_info.servername', 'test-server'),
+      patch('server.app.mcp_server') as mock_mcp,
+      patch('server.app.servername', 'test-server'),
     ):
       mock_mcp._prompt_manager = mock_prompt_manager
       mock_mcp._tool_manager = mock_tool_manager
@@ -147,7 +147,7 @@ class TestMCPInfoRouter:
       if 'DATABRICKS_APP_PORT' in os.environ:
         del os.environ['DATABRICKS_APP_PORT']
 
-      with patch('server.routers.mcp_info.servername', 'test-mcp-server'):
+      with patch('server.app.servername', 'test-mcp-server'):
         response = test_client.get('/api/mcp_info/config')
 
     assert response.status_code == 200
@@ -164,7 +164,7 @@ class TestMCPInfoRouter:
       os.environ,
       {'DATABRICKS_HOST': 'https://production.databricks.com', 'DATABRICKS_APP_PORT': '8000'},
     ):
-      with patch('server.routers.mcp_info.servername', 'production-mcp'):
+      with patch('server.app.servername', 'production-mcp'):
         response = test_client.get('/api/mcp_info/config')
 
     assert response.status_code == 200

@@ -1,4 +1,4 @@
-# """Governance and lineage MCP tools for Databricks."""
+"""Governance and lineage MCP tools for Databricks - TEMPORARILY DISABLED."""
 
 # import os
 # from databricks.sdk import WorkspaceClient

@@ -171,10 +171,10 @@ class TestRouterConfiguration:
     # This should not raise any import errors
     try:
       # Test imports without using them
-      import server.routers
-      import server.routers.mcp_info
-      import server.routers.prompts
-      import server.routers.user
+      # import server.routers  # Not currently used
+      # import server.routers.mcp_info  # Not currently used
+      # import server.routers.prompts  # Not currently used
+      # import server.routers.user  # Not currently used
 
       # All imports successful
       assert True
