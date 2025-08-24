@@ -124,5 +124,9 @@ convention = "google"
 
 [dependency-groups]
 dev = [
+    "fastmcp>=2.10.6",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "pytest-mock>=3.14.1",
     "tomli>=2.2.1",
 ]
