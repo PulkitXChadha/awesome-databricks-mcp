@@ -58,18 +58,13 @@ class TestUnityCatalogTools:
     @pytest.mark.asyncio
     async def test_list_uc_catalogs(self, mcp_server, mock_workspace_client, mock_responses):
         """Test listing Unity Catalog catalogs."""
-        # Setup mock
-        mock_catalogs = []
-        for cat_data in mock_responses['unity_catalog']['catalogs']:
-            mock_cat = Mock()
-            mock_cat.name = cat_data['name']
-            mock_cat.catalog_type = cat_data['catalog_type']
-            mock_cat.comment = cat_data['comment']
-            mock_cat.owner = cat_data['owner']
-            mock_cat.created_at = cat_data['created_at']
-            mock_cat.updated_at = cat_data['updated_at']
-            mock_cat.properties = cat_data['properties']
-            mock_catalogs.append(mock_cat)
+        # Setup mock using Phase 2 utilities
+        from tests.utils import create_mock_catalog
+        
+        mock_catalogs = [
+            create_mock_catalog("main"),
+            create_mock_catalog("dev")
+        ]
         
         # Setup mock before loading tools
         mock_workspace_client.catalogs.list.return_value = mock_catalogs
@@ -83,33 +78,25 @@ class TestUnityCatalogTools:
         assert result['success'] is True
         assert result['count'] == 2
         assert len(result['catalogs']) == 2
-        assert result['catalogs'][0]['name'] == 'catalog1'
-        assert result['catalogs'][1]['name'] == 'catalog2'
+        assert result['catalogs'][0]['name'] == 'main'
+        assert result['catalogs'][1]['name'] == 'dev'
     
     @pytest.mark.asyncio
     async def test_describe_uc_catalog(self, mcp_server, mock_workspace_client, mock_responses):
         """Test describing a Unity Catalog catalog."""
         # Setup mock catalog
         mock_catalog = Mock()
-        mock_catalog.name = 'catalog1'
-        mock_catalog.catalog_type = 'MANAGED_CATALOG'
-        mock_catalog.comment = 'Test catalog 1'
+        mock_catalog.name = 'main'
         mock_catalog.owner = 'test@example.com'
-        mock_catalog.created_at = '2024-01-01T00:00:00Z'
-        mock_catalog.updated_at = '2024-01-01T00:00:00Z'
-        mock_catalog.properties = {}
+        mock_catalog.created_at = 1234567890
         
-        # Setup mock schemas
-        mock_schemas = []
-        for schema_data in mock_responses['unity_catalog']['schemas']:
-            mock_schema = Mock()
-            mock_schema.name = schema_data['name']
-            mock_schema.comment = schema_data['comment']
-            mock_schema.owner = schema_data['owner']
-            mock_schema.created_at = schema_data['created_at']
-            mock_schema.updated_at = schema_data['updated_at']
-            mock_schema.properties = schema_data['properties']
-            mock_schemas.append(mock_schema)
+        # Setup mock schemas using Phase 2 utilities
+        from tests.utils import create_mock_schema
+        
+        mock_schemas = [
+            create_mock_schema("main", "default"),
+            create_mock_schema("main", "bronze")
+        ]
         
         mock_workspace_client.catalogs.get.return_value = mock_catalog
         mock_workspace_client.schemas.list.return_value = mock_schemas
@@ -117,38 +104,30 @@ class TestUnityCatalogTools:
         # Load tools and test
         load_uc_tools(mcp_server)
         tool = mcp_server._tool_manager._tools['describe_uc_catalog']
-        result = tool.fn('catalog1')
+        result = tool.fn('main')
         
         # Assert
         assert result['success'] is True
-        assert result['catalog']['name'] == 'catalog1'
-        assert len(result['schemas']) == 1
-        assert result['schemas'][0]['name'] == 'schema1'
+        assert result['catalog']['name'] == 'main'
+        assert len(result['schemas']) == 2
+        assert result['schemas'][0]['name'] == 'default'
+        assert result['schemas'][1]['name'] == 'bronze'
     
     @pytest.mark.asyncio
     async def test_describe_uc_schema(self, mcp_server, mock_workspace_client, mock_responses):
         """Test describing Unity Catalog schema."""
         # Setup mock schema
         mock_schema = Mock()
-        mock_schema.name = 'schema1'
-        mock_schema.comment = 'Test schema 1'
+        mock_schema.name = 'default'
+        mock_schema.catalog_name = 'main'
         mock_schema.owner = 'test@example.com'
-        mock_schema.created_at = '2024-01-01T00:00:00Z'
-        mock_schema.updated_at = '2024-01-01T00:00:00Z'
-        mock_schema.properties = {}
         
-        # Setup mock tables
-        mock_tables = []
-        for table_data in mock_responses['unity_catalog']['tables']:
-            mock_table = Mock()
-            mock_table.name = table_data['name']
-            mock_table.table_type = table_data['table_type']
-            mock_table.comment = table_data['comment']
-            mock_table.owner = table_data['owner']
-            mock_table.created_at = table_data['created_at']
-            mock_table.updated_at = table_data['updated_at']
-            mock_table.properties = table_data['properties']
-            mock_tables.append(mock_table)
+        # Setup mock tables using Phase 2 utilities
+        from tests.utils import create_mock_table
+        
+        mock_tables = [
+            create_mock_table("main", "default", "users")
+        ]
         
         mock_workspace_client.schemas.get.return_value = mock_schema
         mock_workspace_client.tables.list.return_value = mock_tables
@@ -160,22 +139,17 @@ class TestUnityCatalogTools:
         
         # Assert
         assert result['success'] is True
-        assert result['schema']['name'] == 'schema1'
+        assert result['schema']['name'] == 'default'
         assert len(result['tables']) == 1
-        assert result['tables'][0]['name'] == 'table1'
+        assert result['tables'][0]['name'] == 'users'
     
     @pytest.mark.asyncio
     async def test_describe_uc_table(self, mcp_server, mock_workspace_client, mock_responses):
         """Test describing Unity Catalog table."""
-        # Setup mock table
-        mock_table = Mock()
-        mock_table.name = 'table1'
-        mock_table.table_type = 'MANAGED'
-        mock_table.comment = 'Test table 1'
-        mock_table.owner = 'test@example.com'
-        mock_table.created_at = '2024-01-01T00:00:00Z'
-        mock_table.updated_at = '2024-01-01T00:00:00Z'
-        mock_table.properties = {}
+        # Setup mock table using Phase 2 utilities
+        from tests.utils import create_mock_table
+        
+        mock_table = create_mock_table("main", "default", "users")
         
         # Mock columns attribute
         mock_columns = []
@@ -191,11 +165,11 @@ class TestUnityCatalogTools:
         # Load tools and test
         load_uc_tools(mcp_server)
         tool = mcp_server._tool_manager._tools['describe_uc_table']
-        result = tool.fn('catalog1.schema1.table1')
+        result = tool.fn('main.default.users')
         
         # Assert
         assert result['success'] is True
-        assert result['table']['name'] == 'table1'
+        assert result['table']['name'] == 'users'
 
 
 class TestSQLOperationsTools:
@@ -204,17 +178,17 @@ class TestSQLOperationsTools:
     @pytest.mark.asyncio
     async def test_list_warehouses(self, mcp_server, mock_workspace_client, mock_responses):
         """Test listing SQL warehouses."""
-        # Setup mock warehouses
+        # Setup mock warehouses using Phase 2 utilities
         mock_warehouses = []
-        for warehouse_data in mock_responses['sql_operations']['warehouses']:
-            mock_warehouse = Mock()
-            mock_warehouse.id = warehouse_data['id']
-            mock_warehouse.name = warehouse_data['name']
-            mock_warehouse.state = warehouse_data['state']
-            mock_warehouse.cluster_size = warehouse_data['cluster_size']
-            mock_warehouse.min_num_clusters = warehouse_data['min_num_clusters']
-            mock_warehouse.max_num_clusters = warehouse_data['max_num_clusters']
-            mock_warehouses.append(mock_warehouse)
+        warehouse_data = mock_responses['warehouses'][0]  # Use flat structure
+        
+        mock_warehouse = Mock()
+        mock_warehouse.id = warehouse_data['id']
+        mock_warehouse.name = warehouse_data['name']
+        mock_warehouse.state = warehouse_data['state']
+        mock_warehouse.size = warehouse_data['size']
+        mock_warehouse.auto_stop_mins = warehouse_data['auto_stop_mins']
+        mock_warehouses.append(mock_warehouse)
         
         mock_workspace_client.sql_warehouses.list.return_value = mock_warehouses
         
@@ -226,7 +200,7 @@ class TestSQLOperationsTools:
         # Assert
         assert result['success'] is True
         assert result['count'] == 1
-        assert result['warehouses'][0]['name'] == 'Test Warehouse 1'
+        assert result['warehouses'][0]['name'] == 'Test Warehouse'
     
     @pytest.mark.asyncio
     async def test_execute_dbsql(self, mcp_server, mock_workspace_client, mock_responses):
@@ -268,20 +242,21 @@ class TestJobsPipelinesTools:
     @pytest.mark.asyncio
     async def test_list_jobs(self, mcp_server, mock_workspace_client, mock_responses):
         """Test listing Databricks jobs."""
-        # Setup mock jobs
+        # Setup mock jobs using flat structure
         mock_jobs = []
-        for job_data in mock_responses['jobs_pipelines']['jobs']:
-            mock_job = Mock()
-            mock_job.job_id = job_data['job_id']
-            mock_job.creator_user_name = job_data['creator_user_name']
-            mock_job.created_time = job_data['created_time']
-            
-            # Mock settings with name
-            mock_settings = Mock()
-            mock_settings.name = job_data['job_name']
-            mock_job.settings = mock_settings
-            
-            mock_jobs.append(mock_job)
+        job_data = mock_responses['jobs'][0]  # Use flat structure
+        
+        mock_job = Mock()
+        mock_job.job_id = job_data['job_id']
+        mock_job.creator_user_name = job_data['creator_user_name']
+        mock_job.created_time = job_data['created_time']
+        
+        # Mock settings with name
+        mock_settings = Mock()
+        mock_settings.name = job_data['job_name']
+        mock_job.settings = mock_settings
+        
+        mock_jobs.append(mock_job)
         
         mock_workspace_client.jobs.list.return_value = mock_jobs
         
@@ -298,16 +273,17 @@ class TestJobsPipelinesTools:
     @pytest.mark.asyncio
     async def test_list_pipelines(self, mcp_server, mock_workspace_client, mock_responses):
         """Test listing Databricks pipelines."""
-        # Setup mock pipelines
+        # Setup mock pipelines using flat structure
         mock_pipelines = []
-        for pipeline_data in mock_responses['jobs_pipelines']['pipelines']:
-            mock_pipeline = Mock()
-            mock_pipeline.pipeline_id = pipeline_data['pipeline_id']
-            mock_pipeline.name = pipeline_data['name']
-            mock_pipeline.state = pipeline_data['state']
-            mock_pipeline.creator_user_name = pipeline_data['creator_user_name']
-            mock_pipeline.created_time = pipeline_data['created_time']
-            mock_pipelines.append(mock_pipeline)
+        pipeline_data = mock_responses['pipelines'][0]  # Use flat structure
+        
+        mock_pipeline = Mock()
+        mock_pipeline.pipeline_id = pipeline_data['pipeline_id']
+        mock_pipeline.name = pipeline_data['name']
+        mock_pipeline.state = pipeline_data['state']
+        mock_pipeline.creator_user_name = pipeline_data['creator_user_name']
+        mock_pipeline.created_time = pipeline_data['created_time']
+        mock_pipelines.append(mock_pipeline)
         
         mock_workspace_client.pipelines.list_pipelines.return_value = mock_pipelines
         
@@ -346,14 +322,15 @@ class TestDataManagementTools:
     @pytest.mark.asyncio
     async def test_list_dbfs_files(self, mcp_server, mock_workspace_client, mock_responses):
         """Test listing DBFS files."""
-        # Setup mock files
+        # Setup mock files using flat structure
         mock_files = []
-        for file_data in mock_responses['data_management']['volumes']:  # Reuse the mock data
-            mock_file = Mock()
-            mock_file.path = file_data['name']
-            mock_file.is_dir = False
-            mock_file.file_size = 1024
-            mock_files.append(mock_file)
+        file_data = mock_responses['volumes'][0]  # Use flat structure
+        
+        mock_file = Mock()
+        mock_file.path = file_data['name']
+        mock_file.is_dir = False
+        mock_file.file_size = 1024
+        mock_files.append(mock_file)
         
         mock_workspace_client.dbfs.list.return_value = mock_files
         
