@@ -1,45 +1,35 @@
-"""Test core MCP functionality."""
+"""Test core MCP tools."""
 import pytest
-from server.tools import load_tools
+from unittest.mock import patch, Mock
+from tests.utils import assert_success_response
+from server.tools.core import load_core_tools
 
-def test_mcp_server_creation(mcp_server):
-    """Test that MCP server can be created."""
-    assert mcp_server is not None
-    assert hasattr(mcp_server, 'name')
-
-@pytest.mark.asyncio
-async def test_tools_load_without_error(mcp_server, mock_env_vars):
-    """Test that all tools load successfully."""
-    # This should not raise any exceptions
-    load_tools(mcp_server)
+class TestCoreTools:
+    """Test core MCP tools."""
     
-    # Verify tools were loaded
-    tools = await mcp_server.get_tools()
-    assert len(tools) > 0
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-async def test_health_check(mcp_server, mock_env_vars):
-    """Test health check tool."""
-    from server.tools.core import load_core_tools
+    @pytest.mark.unit
+    def test_health_check(self, mcp_server, mock_env_vars):
+        """Test health check tool."""
+        load_core_tools(mcp_server)
+        
+        # Test that the tool was registered
+        tool = mcp_server._tool_manager._tools['health']
+        result = tool.fn()
+        
+        expected_result = {
+            'status': 'healthy',
+            'service': 'databricks-mcp',
+            'databricks_configured': True,  # Set by mock_env_vars
+        }
+        
+        assert result == expected_result
     
-    # Load tools and test
-    load_core_tools(mcp_server)
-    
-    # Test that the tool was registered by checking if it exists in the server
-    # We'll test the actual function by calling it through the server
-    tools = await mcp_server.get_tools()
-    assert 'health' in tools
-    
-    # Test the health function logic directly
-    import os
-    expected_result = {
-        'status': 'healthy',
-        'service': 'databricks-mcp',
-        'databricks_configured': bool(os.environ.get('DATABRICKS_HOST')),
-    }
-    
-    # Since we set DATABRICKS_HOST in mock_env_vars, it should be True
-    assert expected_result['status'] == 'healthy'
-    assert expected_result['service'] == 'databricks-mcp'
-    assert expected_result['databricks_configured'] == True
+    @pytest.mark.unit
+    def test_core_tools_loading(self, mcp_server, mock_env_vars):
+        """Test that core tools load correctly."""
+        load_core_tools(mcp_server)
+        
+        # Should only have the health tool
+        tools = mcp_server._tool_manager._tools
+        assert 'health' in tools
+        assert len(tools) == 1  # Only health tool exists
