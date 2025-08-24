@@ -1,0 +1,117 @@
+{
+  "unity_catalog": {
+    "catalogs": [
+      {
+        "name": "catalog1",
+        "catalog_type": "MANAGED_CATALOG",
+        "comment": "Test catalog 1",
+        "owner": "test@example.com",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "properties": {}
+      },
+      {
+        "name": "catalog2",
+        "catalog_type": "MANAGED_CATALOG",
+        "comment": "Test catalog 2",
+        "owner": "test@example.com",
+        "created_at": "2024-01-02T00:00:00Z",
+        "updated_at": "2024-01-02T00:00:00Z",
+        "properties": {}
+      }
+    ],
+    "schemas": [
+      {
+        "name": "schema1",
+        "comment": "Test schema 1",
+        "owner": "test@example.com",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "properties": {}
+      }
+    ],
+    "tables": [
+      {
+        "name": "table1",
+        "table_type": "MANAGED",
+        "comment": "Test table 1",
+        "owner": "test@example.com",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "properties": {}
+      }
+    ]
+  },
+  "sql_operations": {
+    "warehouses": [
+      {
+        "id": "warehouse1",
+        "name": "Test Warehouse 1",
+        "state": "RUNNING",
+        "cluster_size": "Small",
+        "min_num_clusters": 1,
+        "max_num_clusters": 1
+      }
+    ],
+    "queries": [
+      {
+        "query_id": "query1",
+        "query_text": "SELECT * FROM test_table LIMIT 10",
+        "status": "FINISHED",
+        "result_count": 10
+      }
+    ]
+  },
+  "jobs_pipelines": {
+    "jobs": [
+      {
+        "job_id": 123,
+        "job_name": "Test Job 1",
+        "state": "RUNNING",
+        "creator_user_name": "test@example.com",
+        "created_time": 1640995200000
+      }
+    ],
+    "pipelines": [
+      {
+        "pipeline_id": "pipeline1",
+        "name": "Test Pipeline 1",
+        "state": "RUNNING",
+        "creator_user_name": "test@example.com",
+        "created_time": 1640995200000
+      }
+    ]
+  },
+  "dashboards": {
+    "dashboards": [
+      {
+        "id": "dashboard1",
+        "name": "Test Dashboard 1",
+        "path": "/test/dashboard1",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+      }
+    ]
+  },
+  "data_management": {
+    "volumes": [
+      {
+        "name": "volume1",
+        "full_name": "catalog.schema.volume1",
+        "volume_type": "EXTERNAL",
+        "owner": "test@example.com",
+        "created_at": "2024-01-01T00:00:00Z"
+      }
+    ]
+  },
+  "governance": {
+    "policies": [
+      {
+        "name": "policy1",
+        "policy_type": "DATA_ACCESS",
+        "description": "Test policy 1",
+        "owner": "test@example.com"
+      }
+    ]
+  }
+}

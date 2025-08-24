@@ -24,5 +24,20 @@ def mcp_server():
 @pytest.fixture
 def mock_workspace_client():
     """Mock Databricks WorkspaceClient."""
-    with patch('databricks.sdk.WorkspaceClient') as mock:
-        yield mock
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_uc, \
+         patch('server.tools.sql_operations.WorkspaceClient') as mock_sql, \
+         patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_jobs, \
+         patch('server.tools.dashboards.WorkspaceClient') as mock_dash, \
+         patch('server.tools.data_management.WorkspaceClient') as mock_data, \
+         patch('server.tools.governance.WorkspaceClient') as mock_gov:
+        
+        # Return a single mock that all patches will use
+        mock_client = Mock()
+        mock_uc.return_value = mock_client
+        mock_sql.return_value = mock_client
+        mock_jobs.return_value = mock_client
+        mock_dash.return_value = mock_client
+        mock_data.return_value = mock_client
+        mock_gov.return_value = mock_client
+        
+        yield mock_client
