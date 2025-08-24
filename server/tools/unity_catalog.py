@@ -3,6 +3,7 @@
 import os
 
 from databricks.sdk import WorkspaceClient
+from .utils import sanitize_error_message
 
 
 def load_uc_tools(mcp_server):
@@ -53,8 +54,9 @@ def load_uc_tools(mcp_server):
       }
 
     except Exception as e:
-      print(f'❌ Error listing catalogs: {str(e)}')
-      return {'success': False, 'error': f'Error: {str(e)}', 'catalogs': [], 'count': 0}
+      sanitized_error = sanitize_error_message(str(e))
+      print(f'❌ Error listing catalogs: {sanitized_error}')
+      return {'success': False, 'error': f'Error: {sanitized_error}', 'catalogs': [], 'count': 0}
 
   @mcp_server.tool
   def describe_uc_catalog(catalog_name: str) -> dict:

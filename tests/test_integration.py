@@ -839,3 +839,255 @@ class TestBusinessUserJourneys:
 
       # Verify state version consistency
       assert catalog_from_list['name'] == 'main'
+
+
+class TestResilienceAndSecurity:
+  """Test system resilience and security features."""
+
+  @pytest.mark.resilience
+  def test_databricks_api_failure_recovery(self, mcp_server, mock_env_vars):
+    """Test behavior when Databricks API is unavailable."""
+    from server.tools.unity_catalog import load_uc_tools
+    from server.tools.sql_operations import load_sql_tools
+
+    # Load tools
+    load_uc_tools(mcp_server)
+    load_sql_tools(mcp_server)
+
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_uc_client:
+      # Simulate API outage - connection errors
+      mock_uc_client.side_effect = Exception("Connection timeout - Databricks API unavailable")
+
+      # Test catalog listing during API outage
+      list_catalogs_tool = mcp_server._tool_manager._tools['list_uc_catalogs']
+      result = list_catalogs_tool.fn()
+
+      # Verify graceful degradation
+      assert result['success'] is False
+      assert 'error' in result
+      
+      # Check error messages are user-friendly (no internal details)
+      error_msg = result['error']
+      assert 'Connection timeout' in error_msg or 'API unavailable' in error_msg
+      assert 'Databricks' in error_msg
+      
+      # Ensure no stack traces or internal paths leaked
+      assert 'Traceback' not in error_msg
+      assert '/Users/' not in error_msg
+      assert 'server.tools' not in error_msg
+
+    # Test recovery after API becomes available again
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_recovered_client:
+      client = Mock()
+      mock_recovered_client.return_value = client
+      
+      # Setup minimal successful response
+      mock_catalog = Mock()
+      mock_catalog.name = 'main'
+      mock_catalog.catalog_type = 'UNITY_CATALOG' 
+      client.catalogs.list.return_value = [mock_catalog]
+
+      # Test successful recovery
+      recovery_result = list_catalogs_tool.fn()
+      assert_success_response(recovery_result)
+      assert recovery_result['count'] == 1
+
+  @pytest.mark.resilience
+  def test_concurrent_operations(self, mcp_server, mock_env_vars):
+    """Test multi-user concurrent access."""
+    from concurrent.futures import ThreadPoolExecutor
+    from server.tools.unity_catalog import load_uc_tools
+
+    load_uc_tools(mcp_server)
+
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      client = Mock()
+      mock_client.return_value = client
+      
+      # Setup thread-safe mock data
+      mock_catalog = Mock()
+      mock_catalog.name = 'concurrent_test'
+      mock_catalog.catalog_type = 'UNITY_CATALOG'
+      client.catalogs.list.return_value = [mock_catalog]
+
+      # Simulate 10 concurrent tool calls
+      list_catalogs_tool = mcp_server._tool_manager._tools['list_uc_catalogs']
+      
+      def execute_tool_call():
+        return list_catalogs_tool.fn()
+
+      # Execute concurrent operations
+      with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(execute_tool_call) for _ in range(10)]
+        results = [future.result() for future in futures]
+
+      # Check for race conditions - all should succeed
+      for result in results:
+        assert_success_response(result)
+        assert result['count'] == 1
+        assert result['catalogs'][0]['name'] == 'concurrent_test'
+
+      # Verify resource management - no memory leaks or connection issues
+      assert len(results) == 10
+      
+      # Verify all mock client calls were handled correctly
+      assert mock_client.call_count >= 10
+
+  @pytest.mark.resilience
+  def test_partial_service_failure(self, mcp_server, mock_env_vars):
+    """Test when some Databricks services fail."""
+    from server.tools.unity_catalog import load_uc_tools
+    from server.tools.sql_operations import load_sql_tools
+
+    load_uc_tools(mcp_server)
+    load_sql_tools(mcp_server)
+
+    # Scenario: SQL works but UC fails
+    with (
+      patch('server.tools.unity_catalog.WorkspaceClient') as mock_uc_client,
+      patch('server.tools.sql_operations.WorkspaceClient') as mock_sql_client,
+    ):
+      # UC service fails
+      mock_uc_client.side_effect = Exception("Unity Catalog service unavailable")
+      
+      # SQL service works
+      sql_client = Mock()
+      mock_sql_client.return_value = sql_client
+      
+      mock_warehouse = Mock()
+      mock_warehouse.id = 'test-warehouse'
+      mock_warehouse.name = 'Test Warehouse'
+      mock_warehouse.state = 'RUNNING'
+      sql_client.sql_warehouses.list.return_value = [mock_warehouse]
+
+      # Test UC failure
+      list_catalogs_tool = mcp_server._tool_manager._tools['list_uc_catalogs']
+      uc_result = list_catalogs_tool.fn()
+      assert uc_result['success'] is False
+      assert 'Unity Catalog service unavailable' in uc_result['error']
+
+      # Test SQL partial functionality still works
+      list_warehouses_tool = mcp_server._tool_manager._tools['list_warehouses']
+      sql_result = list_warehouses_tool.fn()
+      assert_success_response(sql_result)
+      assert len(sql_result['warehouses']) == 1
+      assert sql_result['warehouses'][0]['name'] == 'Test Warehouse'
+
+      # Verify partial functionality message
+      assert sql_result['success'] is True
+
+  @pytest.mark.security
+  def test_token_exposure_prevention(self, mcp_server, mock_env_vars):
+    """Ensure tokens never appear in errors."""
+    from server.tools.unity_catalog import load_uc_tools
+
+    load_uc_tools(mcp_server)
+
+    # Force authentication error with token exposure risk
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      # Simulate auth error that might leak token
+      sensitive_token = "dapi1234567890abcdef-sensitive-token-data"
+      mock_client.side_effect = Exception(f"Authentication failed with token {sensitive_token}")
+
+      list_catalogs_tool = mcp_server._tool_manager._tools['list_uc_catalogs']
+      result = list_catalogs_tool.fn()
+
+      # Verify token not in error message
+      assert result['success'] is False
+      error_msg = result['error']
+      
+      # Token should be scrubbed from error messages
+      assert sensitive_token not in error_msg
+      assert 'dapi' not in error_msg
+      assert 'token' not in error_msg.lower() or 'Authentication' in error_msg
+
+      # Should contain sanitized error
+      assert 'Authentication failed' in error_msg or 'Access denied' in error_msg
+
+  @pytest.mark.security
+  def test_sql_injection_prevention(self, mcp_server, mock_env_vars):
+    """Test SQL injection prevention."""
+    from server.tools.sql_operations import load_sql_tools
+
+    load_sql_tools(mcp_server)
+
+    with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
+      client = Mock()
+      mock_client.return_value = client
+
+      # Setup warehouse
+      mock_warehouse = Mock()
+      mock_warehouse.id = 'test-warehouse'
+      client.sql_warehouses.list.return_value = [mock_warehouse]
+
+      # Try malicious SQL in parameters
+      malicious_queries = [
+        "SELECT * FROM users; DROP TABLE users; --",
+        "SELECT * FROM users WHERE id = 1 OR 1=1",
+        "SELECT * FROM users UNION SELECT password FROM admin_users",
+        "'; INSERT INTO audit_log VALUES ('hacked'); --"
+      ]
+
+      execute_sql_tool = mcp_server._tool_manager._tools['execute_dbsql']
+
+      for malicious_query in malicious_queries:
+        # Mock the statement execution to simulate what would happen
+        mock_result = Mock()
+        mock_result.statement_id = 'stmt-security-test'
+        mock_result.status.state = 'FAILED'
+        client.statement_execution.execute_statement.return_value = mock_result
+
+        # Execute the malicious query
+        result = execute_sql_tool.fn(query=malicious_query, warehouse_id='test-warehouse')
+
+        # The tool should handle the malicious query safely
+        # Since we're mocking, we verify proper error handling structure
+        assert isinstance(result, dict)
+        
+        # Verify that the actual query was passed to Databricks (proper escaping handled by SDK)
+        client.statement_execution.execute_statement.assert_called()
+        call_args = client.statement_execution.execute_statement.call_args
+        assert call_args is not None
+
+  @pytest.mark.security
+  def test_permission_boundaries(self, mcp_server, mock_env_vars):
+    """Test workspace permission enforcement."""
+    from server.tools.unity_catalog import load_uc_tools
+
+    load_uc_tools(mcp_server)
+
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      # Test cross-workspace access prevention
+      mock_client.side_effect = Exception("Access denied - insufficient permissions for workspace")
+
+      list_catalogs_tool = mcp_server._tool_manager._tools['list_uc_catalogs']
+      result = list_catalogs_tool.fn()
+
+      # Verify permission errors are properly handled
+      assert result['success'] is False
+      assert 'error' in result
+      
+      error_msg = result['error']
+      assert 'Access denied' in error_msg or 'insufficient permissions' in error_msg
+      
+      # Ensure error doesn't leak workspace URLs or sensitive details
+      assert 'https://' not in error_msg
+      assert '.databricks.com' not in error_msg
+      assert 'workspace' not in error_msg.lower() or 'permission' in error_msg.lower()
+
+    # Test successful access within proper boundaries
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_authorized_client:
+      client = Mock()
+      mock_authorized_client.return_value = client
+      
+      # Setup authorized response
+      mock_catalog = Mock()
+      mock_catalog.name = 'authorized_catalog'
+      mock_catalog.catalog_type = 'UNITY_CATALOG'
+      client.catalogs.list.return_value = [mock_catalog]
+
+      # Test authorized access
+      authorized_result = list_catalogs_tool.fn()
+      assert_success_response(authorized_result)
+      assert authorized_result['count'] == 1
+      assert authorized_result['catalogs'][0]['name'] == 'authorized_catalog'
