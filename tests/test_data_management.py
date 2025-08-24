@@ -108,8 +108,54 @@ class TestDataManagementTools:
             assert result['locations'][0]['name'] == "test-location"
             assert result['locations'][0]['url'] == "s3://bucket/path"
     
-    # Note: list_volumes and create_volume tools are not implemented yet
-    # These tests will be added when those tools are implemented
+    @pytest.mark.unit
+    def test_list_volumes(self, mcp_server, mock_env_vars):
+        """Test listing Unity Catalog volumes."""
+        with patch('server.tools.data_management.WorkspaceClient') as mock_client:
+            # Mock volumes
+            mock_volume = Mock()
+            mock_volume.name = "test-volume"
+            mock_volume.catalog_name = "main"
+            mock_volume.schema_name = "default"
+            mock_volume.volume_type = "EXTERNAL"
+            mock_volume.storage_location = "s3://bucket/volume"
+            mock_volume.owner = "test@example.com"
+            mock_volume.created_time = 1234567890
+            mock_volume.updated_time = 1234567890
+            mock_volume.comment = "Test volume"
+            mock_volume.properties = {}
+            
+            mock_client.return_value.volumes.list.return_value = [mock_volume]
+            
+            load_data_tools(mcp_server)
+            tool = mcp_server._tool_manager._tools['list_volumes']
+            result = tool.fn(catalog_name="main", schema_name="default")
+            
+            assert_success_response(result)
+            assert result['count'] == 1
+            assert result['volumes'][0]['name'] == "test-volume"
+            assert result['volumes'][0]['volume_type'] == "EXTERNAL"
+    
+    @pytest.mark.unit
+    def test_create_volume(self, mcp_server, mock_env_vars):
+        """Test creating a Unity Catalog volume."""
+        with patch('server.tools.data_management.WorkspaceClient') as mock_client:
+            mock_client.return_value.volumes.create.return_value = None
+            
+            load_data_tools(mcp_server)
+            tool = mcp_server._tool_manager._tools['create_volume']
+            result = tool.fn(
+                catalog_name="main",
+                schema_name="default",
+                volume_name="new-volume",
+                volume_type="EXTERNAL",
+                storage_location="s3://bucket/new-volume"
+            )
+            
+            assert_success_response(result)
+            assert result['volume_name'] == "new-volume"
+            assert result['volume_type'] == "EXTERNAL"
+            assert result['message'] == 'Volume new-volume created successfully in main.default'
     
     @pytest.mark.unit
     def test_delete_dbfs_path(self, mcp_server, mock_env_vars):
@@ -125,8 +171,26 @@ class TestDataManagementTools:
             assert result['path'] == "/test/file.txt"
             assert result['message'] == 'Path /test/file.txt deleted successfully'
     
-    # Note: copy_dbfs_file tool is not implemented yet
-    # This test will be added when that tool is implemented
+    @pytest.mark.unit
+    def test_copy_dbfs_file(self, mcp_server, mock_env_vars):
+        """Test copying a DBFS file."""
+        with patch('server.tools.data_management.WorkspaceClient') as mock_client:
+            # Mock file operations
+            mock_reader = Mock()
+            mock_reader.read.return_value = b"test content"
+            mock_writer = Mock()
+            
+            mock_client.return_value.dbfs.read.return_value.__enter__.return_value = mock_reader
+            mock_client.return_value.dbfs.write.return_value.__enter__.return_value = mock_writer
+            
+            load_data_tools(mcp_server)
+            tool = mcp_server._tool_manager._tools['copy_dbfs_file']
+            result = tool.fn(source_path="/test/file.txt", destination_path="/test/copy.txt")
+            
+            assert_success_response(result)
+            assert result['source_path'] == "/test/file.txt"
+            assert result['destination_path'] == "/test/copy.txt"
+            assert result['message'] == 'File copied successfully from /test/file.txt to /test/copy.txt'
     
     @pytest.mark.unit
     def test_move_dbfs_path(self, mcp_server, mock_env_vars):

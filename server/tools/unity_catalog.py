@@ -112,6 +112,49 @@ def load_uc_tools(mcp_server):
             return {'success': False, 'error': f'Error: {str(e)}'}
 
     @mcp_server.tool
+    def list_uc_schemas(catalog_name: str) -> dict:
+        """List all schemas within a specific catalog.
+
+        Args:
+            catalog_name: Name of the catalog to list schemas from
+
+        Returns:
+            Dictionary containing list of schemas with their details
+        """
+        try:
+            # Initialize Databricks SDK
+            w = WorkspaceClient(
+                host=os.environ.get('DATABRICKS_HOST'), 
+                token=os.environ.get('DATABRICKS_TOKEN')
+            )
+
+            # List schemas in the catalog
+            schemas = w.schemas.list(catalog_name=catalog_name)
+            
+            schema_list = []
+            for schema in schemas:
+                schema_list.append({
+                    'name': schema.name,
+                    'comment': schema.comment,
+                    'owner': schema.owner,
+                    'created_at': schema.created_at,
+                    'updated_at': schema.updated_at,
+                    'properties': schema.properties,
+                })
+
+            return {
+                'success': True,
+                'catalog_name': catalog_name,
+                'schemas': schema_list,
+                'count': len(schema_list),
+                'message': f'Found {len(schema_list)} schema(s) in catalog {catalog_name}',
+            }
+
+        except Exception as e:
+            print(f'❌ Error listing schemas: {str(e)}')
+            return {'success': False, 'error': f'Error: {str(e)}', 'schemas': [], 'count': 0}
+
+    @mcp_server.tool
     def describe_uc_schema(catalog_name: str, schema_name: str, include_columns: bool = False) -> dict:
         """Describe a specific schema within a catalog.
 
@@ -184,6 +227,52 @@ def load_uc_tools(mcp_server):
         except Exception as e:
             print(f'❌ Error describing schema: {str(e)}')
             return {'success': False, 'error': f'Error: {str(e)}'}
+
+    @mcp_server.tool
+    def list_uc_tables(catalog_name: str, schema_name: str) -> dict:
+        """List all tables within a specific schema.
+
+        Args:
+            catalog_name: Name of the catalog
+            schema_name: Name of the schema to list tables from
+
+        Returns:
+            Dictionary containing list of tables with their details
+        """
+        try:
+            # Initialize Databricks SDK
+            w = WorkspaceClient(
+                host=os.environ.get('DATABRICKS_HOST'), 
+                token=os.environ.get('DATABRICKS_TOKEN')
+            )
+
+            # List tables in the schema
+            tables = w.tables.list(catalog_name=catalog_name, schema_name=schema_name)
+            
+            table_list = []
+            for table in tables:
+                table_list.append({
+                    'name': table.name,
+                    'table_type': table.table_type,
+                    'comment': table.comment,
+                    'owner': table.owner,
+                    'created_at': table.created_at,
+                    'updated_at': table.updated_at,
+                    'properties': table.properties,
+                })
+
+            return {
+                'success': True,
+                'catalog_name': catalog_name,
+                'schema_name': schema_name,
+                'tables': table_list,
+                'count': len(table_list),
+                'message': f'Found {len(table_list)} table(s) in schema {catalog_name}.{schema_name}',
+            }
+
+        except Exception as e:
+            print(f'❌ Error listing tables: {str(e)}')
+            return {'success': False, 'error': f'Error: {str(e)}', 'tables': [], 'count': 0}
 
     @mcp_server.tool
     def describe_uc_table(table_name: str, include_lineage: bool = False) -> dict:

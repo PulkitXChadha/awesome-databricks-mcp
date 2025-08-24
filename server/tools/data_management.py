@@ -268,6 +268,43 @@ def load_data_tools(mcp_server):
             return {'success': False, 'error': f'Error: {str(e)}'}
 
     @mcp_server.tool
+    def copy_dbfs_file(source_path: str, destination_path: str) -> dict:
+        """Copy a file in DBFS from source to destination.
+
+        Args:
+            source_path: Source DBFS file path
+            destination_path: Destination DBFS file path
+
+        Returns:
+            Dictionary with operation result or error message
+        """
+        try:
+            # Initialize Databricks SDK
+            w = WorkspaceClient(
+                host=os.environ.get('DATABRICKS_HOST'), 
+                token=os.environ.get('DATABRICKS_TOKEN')
+            )
+
+            # Read source file
+            with w.dbfs.read(source_path) as reader:
+                content = reader.read()
+            
+            # Write to destination
+            with w.dbfs.write(destination_path, overwrite=True) as writer:
+                writer.write(content)
+            
+            return {
+                'success': True,
+                'source_path': source_path,
+                'destination_path': destination_path,
+                'message': f'File copied successfully from {source_path} to {destination_path}',
+            }
+
+        except Exception as e:
+            print(f'❌ Error copying DBFS file: {str(e)}')
+            return {'success': False, 'error': f'Error: {str(e)}'}
+
+    @mcp_server.tool
     def list_external_locations() -> dict:
         """List all external locations configured in the workspace.
 
@@ -306,6 +343,113 @@ def load_data_tools(mcp_server):
         except Exception as e:
             print(f'❌ Error listing external locations: {str(e)}')
             return {'success': False, 'error': f'Error: {str(e)}', 'locations': [], 'count': 0}
+
+    @mcp_server.tool
+    def list_volumes(catalog_name: str, schema_name: str) -> dict:
+        """List all volumes within a specific schema.
+
+        Args:
+            catalog_name: Name of the catalog
+            schema_name: Name of the schema to list volumes from
+
+        Returns:
+            Dictionary containing list of volumes with their details
+        """
+        try:
+            # Initialize Databricks SDK
+            w = WorkspaceClient(
+                host=os.environ.get('DATABRICKS_HOST'), 
+                token=os.environ.get('DATABRICKS_TOKEN')
+            )
+
+            # List volumes in the schema
+            volumes = w.volumes.list(catalog_name=catalog_name, schema_name=schema_name)
+            
+            volume_list = []
+            for volume in volumes:
+                volume_list.append({
+                    'name': volume.name,
+                    'volume_type': volume.volume_type,
+                    'storage_location': volume.storage_location,
+                    'owner': volume.owner,
+                    'created_time': volume.created_time,
+                    'updated_time': volume.updated_time,
+                    'comment': volume.comment,
+                    'properties': volume.properties,
+                })
+
+            return {
+                'success': True,
+                'catalog_name': catalog_name,
+                'schema_name': schema_name,
+                'volumes': volume_list,
+                'count': len(volume_list),
+                'message': f'Found {len(volume_list)} volume(s) in schema {catalog_name}.{schema_name}',
+            }
+
+        except Exception as e:
+            print(f'❌ Error listing volumes: {str(e)}')
+            return {'success': False, 'error': f'Error: {str(e)}', 'volumes': [], 'count': 0}
+
+    @mcp_server.tool
+    def create_volume(
+        catalog_name: str, 
+        schema_name: str, 
+        volume_name: str, 
+        volume_type: str = "EXTERNAL",
+        storage_location: str = None,
+        comment: str = None
+    ) -> dict:
+        """Create a new Unity Catalog volume.
+
+        Args:
+            catalog_name: Name of the catalog
+            schema_name: Name of the schema
+            volume_name: Name of the volume to create
+            volume_type: Type of volume (EXTERNAL, MANAGED) - default: EXTERNAL
+            storage_location: Storage location for external volumes
+            comment: Optional comment for the volume
+
+        Returns:
+            Dictionary with operation result or error message
+        """
+        try:
+            # Initialize Databricks SDK
+            w = WorkspaceClient(
+                host=os.environ.get('DATABRICKS_HOST'), 
+                token=os.environ.get('DATABRICKS_TOKEN')
+            )
+
+            # Prepare volume configuration
+            volume_config = {
+                'name': volume_name,
+                'volume_type': volume_type,
+                'comment': comment,
+            }
+            
+            if storage_location:
+                volume_config['storage_location'] = storage_location
+
+            # Create the volume
+            volume = w.volumes.create(
+                catalog_name=catalog_name,
+                schema_name=schema_name,
+                **volume_config
+            )
+
+            return {
+                'success': True,
+                'volume_name': volume_name,
+                'catalog_name': catalog_name,
+                'schema_name': schema_name,
+                'volume_type': volume_type,
+                'storage_location': storage_location,
+                'message': f'Volume {volume_name} created successfully in {catalog_name}.{schema_name}',
+            }
+
+        except Exception as e:
+            print(f'❌ Error creating volume: {str(e)}')
+            return {'success': False, 'error': f'Error: {str(e)}'}
 
     @mcp_server.tool
     def describe_external_location(location_name: str) -> dict:
