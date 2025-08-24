@@ -37,8 +37,11 @@ def my_tool(param1: str, param2: int) -> dict:
 - Use single quotes for strings
 - 2-space indentation
 - Line length: 100 characters
-- Follow ruff linting rules defined in pyproject.toml
-description:
-globs:
-alwaysApply: false
----
+- Follow ruff linting rules defined in [pyproject.toml](mdc:pyproject.toml)
+
+### Python Best Practices
+- Use Python 3.11+ features and type hints
+- Follow Google docstring convention
+- Use Pydantic for data validation
+- Implement proper error handling with try-catch blocks
+- Use async/await for I/O operations when appropriate

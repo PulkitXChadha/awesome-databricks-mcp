@@ -52,7 +52,9 @@ export function MyComponent({ title, onAction }: ComponentProps) {
 - Follow React best practices and hooks guidelines
 - Implement proper accessibility features (ARIA labels, keyboard navigation)
 - Use descriptive variable names with camelCase convention
-description:
-globs:
-alwaysApply: false
----
+
+### TypeScript Best Practices
+- Enable strict mode in [tsconfig.json](mdc:client/tsconfig.json)
+- Use proper type definitions for all props and state
+- Leverage utility types (Partial, Pick, Omit) for cleaner code
+- Implement proper error handling with type guards

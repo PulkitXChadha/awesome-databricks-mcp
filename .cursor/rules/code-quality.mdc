@@ -1,0 +1,109 @@
+# Code Quality Standards
+
+## Python Code Quality
+
+### Linting and Formatting
+- **Linter**: ruff for fast Python linting and formatting
+- **Configuration**: See [pyproject.toml](mdc:pyproject.toml) for ruff settings
+- **Line Length**: Maximum 100 characters
+- **Indentation**: 2 spaces (no tabs)
+- **Quotes**: Single quotes for strings
+
+### Code Style Rules
+```python
+# Good: Single quotes, 2-space indentation
+def process_data(data: dict) -> list:
+  """Process input data and return results."""
+  if not data:
+    return []
+  
+  return [item for item in data.values() if item]
+
+# Bad: Double quotes, 4-space indentation
+def process_data(data: dict) -> list:
+    """Process input data and return results."""
+    if not data:
+        return []
+    
+    return [item for item in data.values() if item]
+```
+
+### Type Hints
+- **Required**: Use type hints for all function parameters and return values
+- **Optional**: Use Optional[] for nullable parameters
+- **Collections**: Use list[Type], dict[KeyType, ValueType] syntax
+- **Import**: `from typing import Optional, Union, Any`
+
+### Documentation
+- **Docstrings**: Use Google docstring format
+- **Function Docs**: Document parameters, return values, and exceptions
+- **Class Docs**: Document class purpose and usage
+- **Module Docs**: Document module purpose and exports
+
+## TypeScript Code Quality
+
+### Linting and Formatting
+- **Linter**: ESLint with TypeScript support
+- **Formatter**: Prettier for consistent code formatting
+- **Configuration**: See [client/package.json](mdc:client/package.json) for scripts
+
+### Code Style Rules
+```tsx
+// Good: Consistent formatting, descriptive names
+interface UserProfile {
+  id: string
+  name: string
+  email: string
+}
+
+const handleUserUpdate = (user: UserProfile): void => {
+  // Implementation
+}
+
+// Bad: Inconsistent formatting, unclear names
+interface UserProfile{
+id:string,
+name:string,
+email:string
+}
+
+const updateUser = (u:UserProfile)=>{
+// Implementation
+}
+```
+
+### TypeScript Best Practices
+- **Strict Mode**: Enable all strict TypeScript options
+- **Interface over Type**: Prefer interfaces for object shapes
+- **Utility Types**: Use Partial, Pick, Omit for type manipulation
+- **Generic Types**: Use generics for reusable components
+
+## General Code Quality
+
+### Naming Conventions
+- **Python**: snake_case for functions and variables, PascalCase for classes
+- **TypeScript**: camelCase for variables and functions, PascalCase for components
+- **Constants**: UPPER_SNAKE_CASE for constants
+- **Files**: kebab-case for file names
+
+### Code Organization
+- **Imports**: Group imports (standard library, third-party, local)
+- **Functions**: Keep functions focused and single-purpose
+- **Classes**: Use composition over inheritance
+- **Modules**: Organize related functionality into modules
+
+### Error Handling
+- **Python**: Use try-catch blocks with specific exception types
+- **TypeScript**: Use proper error boundaries and error types
+- **Logging**: Log errors with appropriate log levels
+- **User Experience**: Provide meaningful error messages
+
+### Performance Considerations
+- **Python**: Use list comprehensions over loops when appropriate
+- **TypeScript**: Use React.memo and useCallback for performance
+- **Caching**: Implement caching for expensive operations
+- **Lazy Loading**: Use lazy loading for large components or modules
+description:
+globs:
+alwaysApply: false
+---

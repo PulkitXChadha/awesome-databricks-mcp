@@ -72,7 +72,8 @@
 - Enable debug logging in FastAPI
 - Use `debugpy` for Python debugging
 - Check browser console for frontend issues
-description:
-globs:
-alwaysApply: false
----
+
+### Package Management
+- **Python**: Use `uv` commands for dependency management
+- **Node.js**: Use `bun` commands for frontend dependencies
+- **Lock Files**: Always commit lock files for reproducible builds

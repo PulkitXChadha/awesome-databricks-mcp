@@ -1,0 +1,114 @@
+# Testing Guidelines
+
+## Python Backend Testing
+
+### Test Structure
+- **Test Directory**: `tests/` contains all Python test files
+- **Test Files**: Follow naming convention `test_*.py`
+- **Fixtures**: Use `tests/fixtures/` for test data and mocks
+- **Configuration**: [pytest.ini](mdc:pytest.ini) for pytest configuration
+
+### Testing Framework
+- **Framework**: pytest with pytest-asyncio for async tests
+- **Coverage**: Generate coverage reports with pytest-cov
+- **Mocking**: Use pytest-mock for mocking dependencies
+- **Fixtures**: Leverage conftest.py for shared test fixtures
+
+### Test Patterns
+```python
+import pytest
+from unittest.mock import Mock
+
+def test_databricks_job_listing(mock_workspace_client):
+    """Test job listing functionality."""
+    # Arrange
+    mock_client = Mock()
+    mock_client.jobs.list.return_value = [{"id": "123", "name": "Test Job"}]
+    
+    # Act
+    result = list_databricks_jobs(mock_client)
+    
+    # Assert
+    assert len(result) == 1
+    assert result[0]["id"] == "123"
+```
+
+### Running Tests
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=server
+
+# Run specific test file
+pytest tests/test_core.py
+
+# Run tests in watch mode
+pytest-watch
+```
+
+## TypeScript Frontend Testing
+
+### Test Structure
+- **Framework**: React Testing Library with Jest
+- **Test Files**: Co-locate tests with components or use `__tests__/` directories
+- **Mocking**: Mock API calls and external dependencies
+
+### Testing Patterns
+```tsx
+import { render, screen, fireEvent } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MyComponent } from './MyComponent'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+  },
+})
+
+test('renders component with correct title', () => {
+  render(
+    <QueryClientProvider client={queryClient}>
+      <MyComponent title="Test Title" onAction={() => {}} />
+    </QueryClientProvider>
+  )
+  
+  expect(screen.getByText('Test Title')).toBeInTheDocument()
+})
+```
+
+### Running Frontend Tests
+```bash
+# Run tests in watch mode
+cd client && bun test
+
+# Run tests once
+cd client && bun test --run
+
+# Run tests with coverage
+cd client && bun test --coverage
+```
+
+## Test Best Practices
+
+### General Guidelines
+- **Test Coverage**: Aim for >80% code coverage
+- **Test Isolation**: Each test should be independent
+- **Descriptive Names**: Use clear, descriptive test names
+- **Arrange-Act-Assert**: Follow AAA pattern for test structure
+- **Mock External Dependencies**: Don't test external services in unit tests
+
+### Integration Testing
+- **API Endpoints**: Test complete request-response cycles
+- **Database Operations**: Use test databases or mocks
+- **External Services**: Mock Databricks API calls in tests
+
+### Performance Testing
+- **Load Testing**: Test MCP server performance under load
+- **Memory Usage**: Monitor memory usage in long-running tests
+- **Response Times**: Ensure API responses meet performance requirements
+description:
+globs:
+alwaysApply: false
+---

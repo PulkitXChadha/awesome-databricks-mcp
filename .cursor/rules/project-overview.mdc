@@ -15,6 +15,7 @@ This is a full-stack application that implements the Model Context Protocol (MCP
 - [tools.py](mdc:server/tools.py) - Python functions exposed as MCP tools
 - [prompts.py](mdc:server/prompts.py) - Dynamic prompt loading from markdown files
 - [routers/](mdc:server/routers/) - API endpoints for frontend communication
+- [services/](mdc:server/services/) - Business logic and external service integration
 
 ### Frontend (`client/`)
 - [App.tsx](mdc:client/src/App.tsx) - Main React application entry point
@@ -33,7 +34,9 @@ This is a full-stack application that implements the Model Context Protocol (MCP
 3. Use `./run_app_local.sh` for local development
 4. Use `./deploy.sh` to deploy to Databricks Apps
 5. MCP tools and prompts are automatically loaded and exposed
-description:
-globs:
-alwaysApply: false
----
+
+## Tech Stack
+- **Backend**: Python 3.11+, FastAPI, FastMCP, Databricks SDK
+- **Frontend**: React 18, TypeScript 5.2, Vite, TailwindCSS, Radix UI
+- **Package Managers**: uv (Python), bun (Node.js)
+- **Testing**: pytest, React Testing Library

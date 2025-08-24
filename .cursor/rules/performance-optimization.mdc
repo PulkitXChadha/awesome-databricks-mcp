@@ -1,0 +1,186 @@
+# Performance Optimization Guidelines
+
+## Backend Performance
+
+### FastAPI Optimization
+- **Async Operations**: Use async/await for I/O operations
+- **Database Queries**: Optimize database queries and use connection pooling
+- **Caching**: Implement Redis or in-memory caching for frequently accessed data
+- **Response Compression**: Enable gzip compression for large responses
+
+### MCP Server Performance
+```python
+# Good: Async tool implementation with caching
+from functools import lru_cache
+import asyncio
+
+@mcp_server.tool()
+async def get_workspace_info(workspace_id: str) -> dict:
+  """Get workspace information with caching."""
+  cache_key = f"workspace_{workspace_id}"
+  
+  # Check cache first
+  cached_result = await cache.get(cache_key)
+  if cached_result:
+    return cached_result
+  
+  # Fetch from Databricks API
+  result = await fetch_workspace_data(workspace_id)
+  
+  # Cache for 5 minutes
+  await cache.set(cache_key, result, ttl=300)
+  return result
+
+# Bad: Synchronous blocking operations
+@mcp_server.tool()
+def get_workspace_info(workspace_id: str) -> dict:
+  """Get workspace information."""
+  # This blocks the event loop
+  result = fetch_workspace_data_sync(workspace_id)
+  return result
+```
+
+### Memory Management
+- **Connection Pooling**: Reuse database and API connections
+- **Streaming**: Use streaming responses for large datasets
+- **Memory Monitoring**: Monitor memory usage and implement cleanup
+- **Resource Limits**: Set appropriate limits for concurrent requests
+
+## Frontend Performance
+
+### React Optimization
+- **Component Memoization**: Use React.memo for expensive components
+- **Callback Memoization**: Use useCallback for event handlers
+- **Value Memoization**: Use useMemo for expensive calculations
+- **Code Splitting**: Implement dynamic imports for route-based code splitting
+
+### Performance Patterns
+```tsx
+// Good: Optimized component with memoization
+import { memo, useCallback, useMemo } from 'react'
+
+interface DataTableProps {
+  data: DataRow[]
+  onRowClick: (id: string) => void
+}
+
+export const DataTable = memo(function DataTable({ data, onRowClick }: DataTableProps) {
+  // Memoize expensive calculation
+  const processedData = useMemo(() => {
+    return data.map(row => ({
+      ...row,
+      processed: expensiveCalculation(row)
+    }))
+  }, [data])
+  
+  // Memoize callback to prevent unnecessary re-renders
+  const handleRowClick = useCallback((id: string) => {
+    onRowClick(id)
+  }, [onRowClick])
+  
+  return (
+    <table className="w-full">
+      {processedData.map(row => (
+        <tr key={row.id} onClick={() => handleRowClick(row.id)}>
+          {/* Row content */}
+        </tr>
+      ))}
+    </table>
+  )
+})
+
+// Bad: No optimization, re-renders on every parent update
+export function DataTable({ data, onRowClick }: DataTableProps) {
+  return (
+    <table className="w-full">
+      {data.map(row => (
+        <tr key={row.id} onClick={() => onRowClick(row.id)}>
+          {/* Row content */}
+        </tr>
+      ))}
+    </table>
+  )
+}
+```
+
+### Bundle Optimization
+- **Tree Shaking**: Remove unused code from production bundles
+- **Dynamic Imports**: Lazy load components and routes
+- **Bundle Analysis**: Use tools like webpack-bundle-analyzer
+- **Code Splitting**: Split code by routes and features
+
+## API Performance
+
+### Request Optimization
+- **Batch Operations**: Combine multiple requests into single calls
+- **Pagination**: Implement proper pagination for large datasets
+- **Field Selection**: Allow clients to specify required fields
+- **Response Caching**: Cache API responses appropriately
+
+### Database Performance
+```python
+# Good: Optimized database query with pagination
+@mcp_server.tool()
+async def list_databricks_jobs(
+  limit: int = 100,
+  offset: int = 0,
+  status: str = None
+) -> dict:
+  """List Databricks jobs with pagination and filtering."""
+  
+  # Build query with proper limits
+  query_params = {
+    'limit': min(limit, 1000),  # Cap maximum limit
+    'offset': max(offset, 0)
+  }
+  
+  if status:
+    query_params['status'] = status
+  
+  # Execute optimized query
+  jobs = await databricks_client.jobs.list(**query_params)
+  
+  return {
+    'jobs': jobs,
+    'pagination': {
+      'limit': query_params['limit'],
+      'offset': query_params['offset'],
+      'total': len(jobs)
+    }
+  }
+
+# Bad: No pagination or limits
+@mcp_server.tool()
+async def list_databricks_jobs() -> list:
+  """List all Databricks jobs."""
+  # This could return thousands of jobs
+  return await databricks_client.jobs.list()
+```
+
+## Monitoring and Profiling
+
+### Performance Metrics
+- **Response Times**: Monitor API response times and identify bottlenecks
+- **Throughput**: Measure requests per second and concurrent users
+- **Error Rates**: Track error rates and response codes
+- **Resource Usage**: Monitor CPU, memory, and network usage
+
+### Profiling Tools
+- **Python**: Use cProfile, line_profiler, or memory_profiler
+- **Frontend**: Use React DevTools Profiler and Performance tab
+- **Network**: Use browser Network tab and tools like Lighthouse
+- **APM**: Consider application performance monitoring tools
+
+### Optimization Checklist
+- [ ] Implement async/await for I/O operations
+- [ ] Add caching for frequently accessed data
+- [ ] Optimize database queries and add indexes
+- [ ] Use React.memo and useCallback appropriately
+- [ ] Implement code splitting and lazy loading
+- [ ] Monitor and profile performance bottlenecks
+- [ ] Set up performance budgets and alerts
+- [ ] Test performance under load
+description:
+globs:
+alwaysApply: false
+---
