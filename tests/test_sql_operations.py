@@ -56,7 +56,9 @@ class TestSQLOperations:
             
             assert_success_response(result)
             assert result['row_count'] == 2
-            assert len(result['data'][0]) == 2
+            assert 'data' in result
+            assert 'columns' in result['data']
+            assert 'rows' in result['data']
     
     @pytest.mark.unit
     def test_list_warehouses_empty(self, mcp_server, mock_env_vars):
@@ -94,7 +96,7 @@ class TestSQLOperations:
             assert 'error' in result
     
     @pytest.mark.unit
-    def test_get_warehouse_status(self, mcp_server, mock_env_vars):
+    def test_get_sql_warehouse(self, mcp_server, mock_env_vars):
         """Test getting warehouse status."""
         with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
             # Mock warehouse status
@@ -108,7 +110,7 @@ class TestSQLOperations:
             mock_client.return_value.sql_warehouses.get.return_value = mock_warehouse
             
             load_sql_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['get_warehouse_status']
+            tool = mcp_server._tool_manager._tools['get_sql_warehouse']
             result = tool.fn(warehouse_id="test-warehouse")
             
             assert_success_response(result)
@@ -116,29 +118,29 @@ class TestSQLOperations:
             assert result['warehouse']['state'] == "RUNNING"
     
     @pytest.mark.unit
-    def test_start_warehouse(self, mcp_server, mock_env_vars):
+    def test_start_sql_warehouse(self, mcp_server, mock_env_vars):
         """Test starting a warehouse."""
         with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
             mock_client.return_value.sql_warehouses.start.return_value = None
             
             load_sql_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['start_warehouse']
+            tool = mcp_server._tool_manager._tools['start_sql_warehouse']
             result = tool.fn(warehouse_id="test-warehouse")
             
             assert_success_response(result)
             assert result['warehouse_id'] == "test-warehouse"
-            assert result['message'] == "Warehouse start initiated"
+            assert result['message'] == "Warehouse test-warehouse started successfully"
     
     @pytest.mark.unit
-    def test_stop_warehouse(self, mcp_server, mock_env_vars):
+    def test_stop_sql_warehouse(self, mcp_server, mock_env_vars):
         """Test stopping a warehouse."""
         with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
             mock_client.return_value.sql_warehouses.stop.return_value = None
             
             load_sql_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['stop_warehouse']
+            tool = mcp_server._tool_manager._tools['stop_sql_warehouse']
             result = tool.fn(warehouse_id="test-warehouse")
             
             assert_success_response(result)
             assert result['warehouse_id'] == "test-warehouse"
-            assert result['message'] == "Warehouse stop initiated"
+            assert result['message'] == "Warehouse test-warehouse stopped successfully"

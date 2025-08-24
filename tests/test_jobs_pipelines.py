@@ -29,21 +29,21 @@ class TestJobsAndPipelines:
             assert result['jobs'][0]['name'] == 'Test Job'
     
     @pytest.mark.unit 
-    def test_run_job_now(self, mcp_server, mock_env_vars):
-        """Test running a job."""
+    def test_submit_job_run(self, mcp_server, mock_env_vars):
+        """Test submitting a job run."""
         with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
             # Mock job run
             mock_run = Mock()
-            mock_run.run_id = 456
+            mock_run.run_id = "456"
             
-            mock_client.return_value.jobs.run_now.return_value = mock_run
+            mock_client.return_value.jobs.submit_run.return_value = mock_run
             
             load_job_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['run_job_now']
-            result = tool.fn(job_id=123)
+            tool = mcp_server._tool_manager._tools['submit_job_run']
+            result = tool.fn(job_id="123")
             
             assert_success_response(result)
-            assert result['run_id'] == 456
+            assert result['run_id'] == "456"
     
     @pytest.mark.unit
     def test_list_pipelines(self, mcp_server, mock_env_vars):
@@ -68,7 +68,7 @@ class TestJobsAndPipelines:
             assert result['pipelines'][0]['name'] == 'Test Pipeline'
     
     @pytest.mark.unit
-    def test_get_job_details(self, mcp_server, mock_env_vars):
+    def test_get_job(self, mcp_server, mock_env_vars):
         """Test getting job details."""
         with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
             # Mock job details
@@ -83,15 +83,15 @@ class TestJobsAndPipelines:
             mock_client.return_value.jobs.get.return_value = mock_job
             
             load_job_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['get_job_details']
-            result = tool.fn(job_id=123)
+            tool = mcp_server._tool_manager._tools['get_job']
+            result = tool.fn(job_id="123")
             
             assert_success_response(result)
             assert result['job']['job_id'] == 123
             assert result['job']['name'] == "Test Job"
     
     @pytest.mark.unit
-    def test_get_pipeline_details(self, mcp_server, mock_env_vars):
+    def test_get_pipeline(self, mcp_server, mock_env_vars):
         """Test getting pipeline details."""
         with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
             # Mock pipeline details
@@ -105,7 +105,7 @@ class TestJobsAndPipelines:
             mock_client.return_value.pipelines.get.return_value = mock_pipeline
             
             load_job_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['get_pipeline_details']
+            tool = mcp_server._tool_manager._tools['get_pipeline']
             result = tool.fn(pipeline_id="pipeline-123")
             
             assert_success_response(result)
@@ -159,29 +159,29 @@ class TestJobsAndPipelines:
             assert result['runs'][0]['state'] == "COMPLETED"
     
     @pytest.mark.unit
-    def test_stop_job_run(self, mcp_server, mock_env_vars):
-        """Test stopping a job run."""
+    def test_cancel_job_run(self, mcp_server, mock_env_vars):
+        """Test canceling a job run."""
         with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
             mock_client.return_value.jobs.cancel_run.return_value = None
             
             load_job_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['stop_job_run']
-            result = tool.fn(run_id=456)
+            tool = mcp_server._tool_manager._tools['cancel_job_run']
+            result = tool.fn(run_id="456")
             
             assert_success_response(result)
-            assert result['run_id'] == 456
-            assert result['message'] == "Job run stop initiated"
+            assert result['run_id'] == "456"
+            assert result['message'] == "Job run 456 cancelled successfully"
     
     @pytest.mark.unit
-    def test_stop_pipeline_run(self, mcp_server, mock_env_vars):
-        """Test stopping a pipeline run."""
+    def test_stop_pipeline_update(self, mcp_server, mock_env_vars):
+        """Test stopping a pipeline update."""
         with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
             mock_client.return_value.pipelines.stop.return_value = None
             
             load_job_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['stop_pipeline_run']
+            tool = mcp_server._tool_manager._tools['stop_pipeline_update']
             result = tool.fn(pipeline_id="pipeline-123")
             
             assert_success_response(result)
             assert result['pipeline_id'] == "pipeline-123"
-            assert result['message'] == "Pipeline stop initiated"
+            assert result['message'] == "Pipeline update stopped successfully for pipeline-123"
