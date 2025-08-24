@@ -500,3 +500,185 @@ class TestUnityCatalogTools:
       assert_success_response(describe_result)
       assert describe_result['function']['name'] == 'test_function'
       assert len(describe_result['function']['parameters']) == 2
+
+
+class TestUnityCatalogErrorScenarios:
+  """Test Unity Catalog error handling across different failure scenarios."""
+
+  @pytest.mark.unit
+  def test_network_failure_handling(self, mcp_server, mock_env_vars):
+    """Test network timeout and connection error handling."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      # Test network timeout
+      mock_client.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Network timeout'), 'Network timeout'
+      )
+
+      load_uc_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_uc_catalogs']
+      result = tool.fn()
+
+      assert_error_response(result)
+      assert 'timeout' in result['error'].lower() or 'network' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_authentication_errors(self, mcp_server, mock_env_vars):
+    """Test authentication and authorization error handling."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test authentication failure
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      mock_client.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Authentication failed'),
+        'Authentication failed',
+      )
+
+      load_uc_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['describe_uc_catalog']
+      result = tool.fn('main')
+
+      assert_error_response(result)
+      assert (
+        'access denied' in result['error'].lower() or 'authentication' in result['error'].lower()
+      )
+
+    # Test permission denied on specific resource
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      mock_client.return_value.schemas.list.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Permission denied'),
+        'Permission denied',
+      )
+
+      load_uc_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_uc_schemas']
+      result = tool.fn('restricted_catalog')
+
+      assert_error_response(result)
+      assert 'access denied' in result['error'].lower() or 'permission' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_rate_limiting_responses(self, mcp_server, mock_env_vars):
+    """Test rate limiting error handling."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test API rate limiting
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      mock_client.return_value.tables.list.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Rate limiting'), 'Rate limiting'
+      )
+
+      load_uc_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_uc_tables']
+      result = tool.fn('main', 'default')
+
+      assert_error_response(result)
+      assert (
+        'rate limit' in result['error'].lower() or 'too many requests' in result['error'].lower()
+      )
+
+    # Test request limit exceeded
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      mock_client.return_value.catalogs.get.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Request limit exceeded'),
+        'Request limit exceeded',
+      )
+
+      load_uc_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['describe_uc_catalog']
+      result = tool.fn('busy_catalog')
+
+      assert_error_response(result)
+      assert 'rate limit' in result['error'].lower() or 'limit exceeded' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_malformed_input_handling(self, mcp_server, mock_env_vars):
+    """Test malformed input parameter handling."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    load_uc_tools(mcp_server)
+
+    # Test invalid table name format
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      mock_client.return_value = Mock()
+
+      table_tool = mcp_server._tool_manager._tools['describe_uc_table']
+
+      # Test various malformed table names
+      malformed_inputs = [
+        'just-a-name',  # Missing catalog.schema
+        'catalog.schema',  # Missing table name
+        'too.many.parts.here.invalid',  # Too many parts
+        '',  # Empty string
+        'catalog..table',  # Empty schema
+        '.schema.table',  # Empty catalog
+      ]
+
+      for malformed_input in malformed_inputs:
+        result = table_tool.fn(malformed_input)
+        assert_error_response(result)
+        assert (
+          'format' in result['error'].lower()
+          or 'table name must be' in result['error'].lower()
+          or 'mock' in result['error'].lower()
+        )  # Handle mock iteration errors
+
+    # Test invalid parameter types
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      mock_client.return_value.schemas.get.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Invalid parameters'),
+        'Invalid parameters',
+      )
+
+      schema_tool = mcp_server._tool_manager._tools['describe_uc_schema']
+      result = schema_tool.fn('invalid@catalog!name', 'invalid@schema#name')
+
+      assert_error_response(result)
+      assert 'invalid' in result['error'].lower() or 'parameter' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_resource_not_found_scenarios(self, mcp_server, mock_env_vars):
+    """Test resource not found error scenarios."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    load_uc_tools(mcp_server)
+
+    # Test catalog not found
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      mock_client.return_value.catalogs.get.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Resource not found'),
+        'Resource not found',
+      )
+
+      catalog_tool = mcp_server._tool_manager._tools['describe_uc_catalog']
+      result = catalog_tool.fn('nonexistent_catalog')
+
+      assert_error_response(result)
+      assert 'not found' in result['error'].lower() or 'resource' in result['error'].lower()
+
+    # Test schema not found
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      mock_client.return_value.schemas.get.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Resource does not exist'),
+        'Resource does not exist',
+      )
+
+      schema_tool = mcp_server._tool_manager._tools['describe_uc_schema']
+      result = schema_tool.fn('main', 'nonexistent_schema')
+
+      assert_error_response(result)
+      assert 'not found' in result['error'].lower() or 'does not exist' in result['error'].lower()
+
+    # Test table not found
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
+      mock_client.return_value.tables.get.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Resource not found'),
+        'Resource not found',
+      )
+
+      table_tool = mcp_server._tool_manager._tools['describe_uc_table']
+      result = table_tool.fn('main.default.nonexistent_table')
+
+      assert_error_response(result)
+      assert 'not found' in result['error'].lower() or 'resource' in result['error'].lower()

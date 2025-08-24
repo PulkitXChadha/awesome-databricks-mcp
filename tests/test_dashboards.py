@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from server.tools.dashboards import load_dashboard_tools
-from tests.utils import assert_success_response
+from tests.utils import assert_error_response, assert_success_response
 
 
 class TestDashboardTools:
@@ -304,3 +304,163 @@ class TestDashboardTools:
       result = get_tool.fn(dashboard_id='export-123')
 
       assert_success_response(result)
+
+
+class TestDashboardErrorScenarios:
+  """Test Dashboard error handling across different failure scenarios."""
+
+  @pytest.mark.unit
+  def test_dashboard_network_failures(self, mcp_server, mock_env_vars):
+    """Test dashboard operations network failure handling."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test dashboard listing timeout
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Network timeout'), 'Network timeout'
+      )
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_lakeview_dashboards']
+      result = tool.fn()
+
+      assert_error_response(result)
+      assert 'timeout' in result['error'].lower() or 'network' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_dashboard_authentication_errors(self, mcp_server, mock_env_vars):
+    """Test dashboard access authentication errors."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test dashboard access denied
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Permission denied'),
+        'Permission denied',
+      )
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['get_lakeview_dashboard']
+      result = tool.fn(dashboard_id='restricted-dashboard-123')
+
+      assert_error_response(result)
+      assert 'access denied' in result['error'].lower() or 'permission' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_dashboard_rate_limiting(self, mcp_server, mock_env_vars):
+    """Test dashboard operations rate limiting."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test dashboard creation rate limiting
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Rate limiting'), 'Rate limiting'
+      )
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['create_lakeview_dashboard']
+
+      dashboard_config = {'name': 'High Volume Dashboard', 'description': 'Test'}
+      result = tool.fn(dashboard_config=dashboard_config)
+
+      assert_error_response(result)
+      assert (
+        'rate limit' in result['error'].lower() or 'too many requests' in result['error'].lower()
+      )
+
+  @pytest.mark.unit
+  def test_dashboard_malformed_input_handling(self, mcp_server, mock_env_vars):
+    """Test malformed dashboard parameter handling."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    load_dashboard_tools(mcp_server)
+
+    # Test invalid dashboard configuration
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Invalid parameters'),
+        'Invalid parameters',
+      )
+
+      create_tool = mcp_server._tool_manager._tools['create_lakeview_dashboard']
+
+      # Test malformed dashboard configurations
+      malformed_configs = [
+        {},  # Empty configuration
+        {'name': ''},  # Empty name
+        {'description': 'No name provided'},  # Missing name
+        {'name': 123, 'description': 'Invalid name type'},  # Wrong type
+        {'name': 'Test', 'layout': 'invalid'},  # Invalid layout format
+      ]
+
+      for config in malformed_configs:
+        result = create_tool.fn(dashboard_config=config)
+        assert_error_response(result)
+        assert 'invalid' in result['error'].lower() or 'parameter' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_dashboard_resource_not_found(self, mcp_server, mock_env_vars):
+    """Test dashboard resource not found scenarios."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    load_dashboard_tools(mcp_server)
+
+    # Test dashboard not found operations
+    dashboard_operations = [
+      ('get_lakeview_dashboard', {'dashboard_id': 'nonexistent-dashboard-999'}),
+      (
+        'update_lakeview_dashboard',
+        {'dashboard_id': 'nonexistent-dashboard-999', 'updates': {'name': 'Updated'}},
+      ),
+      ('delete_lakeview_dashboard', {'dashboard_id': 'nonexistent-dashboard-999'}),
+      (
+        'share_lakeview_dashboard',
+        {
+          'dashboard_id': 'nonexistent-dashboard-999',
+          'share_config': {'users': ['test@example.com']},
+        },
+      ),
+      ('get_dashboard_permissions', {'dashboard_id': 'nonexistent-dashboard-999'}),
+    ]
+
+    for tool_name, params in dashboard_operations:
+      with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+        mock_client.side_effect = simulate_databricks_error(
+          next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Resource not found'),
+          'Resource not found',
+        )
+
+        tool = mcp_server._tool_manager._tools[tool_name]
+        result = tool.fn(**params)
+
+        assert_error_response(result)
+        assert 'not found' in result['error'].lower() or 'resource' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_legacy_dashboard_errors(self, mcp_server, mock_env_vars):
+    """Test legacy dashboard error scenarios."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    load_dashboard_tools(mcp_server)
+
+    # Test legacy dashboard authentication errors
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Authentication failed'),
+        'Authentication failed',
+      )
+
+      legacy_operations = [
+        ('list_dashboards', {}),
+        ('get_dashboard', {'dashboard_id': 'legacy-123'}),
+        ('delete_dashboard', {'dashboard_id': 'legacy-123'}),
+      ]
+
+      for tool_name, params in legacy_operations:
+        tool = mcp_server._tool_manager._tools[tool_name]
+        result = tool.fn(**params)
+
+        assert_error_response(result)
+        assert (
+          'access denied' in result['error'].lower() or 'authentication' in result['error'].lower()
+        )

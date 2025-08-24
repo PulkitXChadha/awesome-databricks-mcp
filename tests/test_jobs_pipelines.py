@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from server.tools.jobs_pipelines import load_job_tools
-from tests.utils import assert_success_response
+from tests.utils import assert_error_response, assert_success_response
 
 
 class TestJobsAndPipelines:
@@ -389,3 +389,159 @@ class TestJobsAndPipelines:
       assert any(job['name'] == 'ETL Job' for job in list_result['jobs'])
       assert any(job['name'] == 'ML Training' for job in list_result['jobs'])
       assert any(job['name'] == 'Data Quality Check' for job in list_result['jobs'])
+
+
+class TestJobsPipelinesErrorScenarios:
+  """Test Jobs and Pipelines error handling across different failure scenarios."""
+
+  @pytest.mark.unit
+  def test_job_network_failures(self, mcp_server, mock_env_vars):
+    """Test job operations network failure handling."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test job listing timeout
+    with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
+      mock_client.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Network timeout'), 'Network timeout'
+      )
+
+      load_job_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_jobs']
+      result = tool.fn()
+
+      assert_error_response(result)
+      assert 'timeout' in result['error'].lower() or 'network' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_job_authentication_errors(self, mcp_server, mock_env_vars):
+    """Test job access authentication errors."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test job access denied
+    with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
+      mock_client.return_value.jobs.get.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Permission denied'),
+        'Permission denied',
+      )
+
+      load_job_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['get_job']
+      result = tool.fn(job_id='restricted-job-123')
+
+      assert_error_response(result)
+      assert 'access denied' in result['error'].lower() or 'permission' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_pipeline_rate_limiting(self, mcp_server, mock_env_vars):
+    """Test pipeline operations rate limiting."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test pipeline listing rate limiting
+    with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
+      mock_client.return_value.pipelines.list_pipelines.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Rate limiting'), 'Rate limiting'
+      )
+
+      load_job_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_pipelines']
+      result = tool.fn()
+
+      assert_error_response(result)
+      assert (
+        'rate limit' in result['error'].lower() or 'too many requests' in result['error'].lower()
+      )
+
+  @pytest.mark.unit
+  def test_job_malformed_input_handling(self, mcp_server, mock_env_vars):
+    """Test malformed job parameter handling."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    load_job_tools(mcp_server)
+
+    # Test invalid job configuration
+    with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
+      mock_client.return_value.jobs.create.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Invalid parameters'),
+        'Invalid parameters',
+      )
+
+      create_tool = mcp_server._tool_manager._tools['create_job']
+
+      # Test malformed job configurations
+      malformed_configs = [
+        {},  # Empty configuration
+        {'name': ''},  # Empty name
+        {'name': 'Test Job'},  # Missing required fields
+        {'name': 'Test Job', 'tasks': []},  # Empty tasks
+        {'name': 'Test Job', 'tasks': 'invalid'},  # Invalid tasks format
+      ]
+
+      for config in malformed_configs:
+        result = create_tool.fn(job_config=config)
+        assert_error_response(result)
+        assert 'invalid' in result['error'].lower() or 'parameter' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_job_resource_not_found(self, mcp_server, mock_env_vars):
+    """Test job resource not found scenarios."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    load_job_tools(mcp_server)
+
+    # Test job not found operations
+    job_operations = [
+      ('get_job', {'job_id': 'nonexistent-job-999'}),
+      ('delete_job', {'job_id': 'nonexistent-job-999'}),
+      ('list_job_runs', {'job_id': 'nonexistent-job-999'}),
+      ('cancel_job_run', {'run_id': 'nonexistent-run-999'}),
+    ]
+
+    for tool_name, params in job_operations:
+      with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
+        # Mock all job methods that could be called
+        error_exception = simulate_databricks_error(
+          next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Resource not found'),
+          'Resource not found',
+        )
+        mock_client.return_value.jobs.get.side_effect = error_exception
+        mock_client.return_value.jobs.delete.side_effect = error_exception
+        mock_client.return_value.jobs.list_runs.side_effect = error_exception
+        mock_client.return_value.jobs.get_run.side_effect = error_exception
+        mock_client.return_value.jobs.cancel_run.side_effect = error_exception
+
+        tool = mcp_server._tool_manager._tools[tool_name]
+        result = tool.fn(**params)
+
+        assert_error_response(result)
+        assert 'not found' in result['error'].lower() or 'resource' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_pipeline_resource_not_found(self, mcp_server, mock_env_vars):
+    """Test pipeline resource not found scenarios."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    load_job_tools(mcp_server)
+
+    # Test pipeline not found operations
+    pipeline_operations = [
+      ('get_pipeline', {'pipeline_id': 'nonexistent-pipeline-999'}),
+      ('delete_pipeline', {'pipeline_id': 'nonexistent-pipeline-999'}),
+      ('list_pipeline_runs', {'pipeline_id': 'nonexistent-pipeline-999'}),
+    ]
+
+    for tool_name, params in pipeline_operations:
+      with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client:
+        # Mock all pipeline methods that could be called
+        error_exception = simulate_databricks_error(
+          next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Resource not found'),
+          'Resource not found',
+        )
+        mock_client.return_value.pipelines.get.side_effect = error_exception
+        mock_client.return_value.pipelines.delete.side_effect = error_exception
+        mock_client.return_value.pipelines.list_pipeline_runs.side_effect = error_exception
+
+        tool = mcp_server._tool_manager._tools[tool_name]
+        result = tool.fn(**params)
+
+        assert_error_response(result)
+        assert 'not found' in result['error'].lower() or 'resource' in result['error'].lower()

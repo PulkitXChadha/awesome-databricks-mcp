@@ -1,6 +1,5 @@
 """Test core MCP tools."""
 
-
 import pytest
 
 from server.tools.core import load_core_tools

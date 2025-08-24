@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from server.tools.sql_operations import load_sql_tools
-from tests.utils import assert_success_response, load_mock_response
+from tests.utils import assert_error_response, assert_success_response, load_mock_response
 
 
 class TestSQLOperations:
@@ -230,3 +230,129 @@ class TestSQLOperations:
       result = tool.fn()
       end_time = time.time()
       assert (end_time - start_time) < 2.0
+
+
+class TestSQLOperationsErrorScenarios:
+  """Test SQL operations error handling across different failure scenarios."""
+
+  @pytest.mark.unit
+  def test_comprehensive_network_failures(self, mcp_server, mock_env_vars):
+    """Test comprehensive network failure handling."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test connection timeout on SQL execution
+    with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
+      mock_client.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Network timeout'), 'Network timeout'
+      )
+
+      load_sql_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['execute_dbsql']
+      result = tool.fn(query='SELECT * FROM test_table', warehouse_id='test-warehouse')
+
+      assert_error_response(result)
+      assert 'timeout' in result['error'].lower() or 'network' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_warehouse_authentication_errors(self, mcp_server, mock_env_vars):
+    """Test warehouse access authentication errors."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test warehouse access denied
+    with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
+      mock_client.return_value.sql_warehouses.get.side_effect = simulate_databricks_error(
+        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Permission denied'),
+        'Permission denied',
+      )
+
+      load_sql_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['get_sql_warehouse']
+      result = tool.fn(warehouse_id='restricted-warehouse')
+
+      assert_error_response(result)
+      assert 'access denied' in result['error'].lower() or 'permission' in result['error'].lower()
+
+  @pytest.mark.unit
+  def test_sql_execution_rate_limiting(self, mcp_server, mock_env_vars):
+    """Test SQL execution rate limiting scenarios."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    # Test query execution rate limiting
+    with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
+      mock_client.return_value.statement_execution.execute_statement.side_effect = (
+        simulate_databricks_error(
+          next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Rate limiting'), 'Rate limiting'
+        )
+      )
+
+      load_sql_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['execute_dbsql']
+      result = tool.fn(query='SELECT COUNT(*) FROM large_table', warehouse_id='busy-warehouse')
+
+      assert_error_response(result)
+      assert (
+        'rate limit' in result['error'].lower() or 'too many requests' in result['error'].lower()
+      )
+
+  @pytest.mark.unit
+  def test_sql_malformed_queries(self, mcp_server, mock_env_vars):
+    """Test malformed SQL query handling."""
+    load_sql_tools(mcp_server)
+
+    # Test SQL syntax errors via mock response
+    with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
+      # Mock SQL execution failure
+      error_response = Mock()
+      error_response.status.state = 'FAILED'
+      error_response.status.error = Mock(message='SQL syntax error: Invalid query syntax')
+
+      mock_client.return_value.statement_execution.execute_statement.return_value = error_response
+
+      sql_tool = mcp_server._tool_manager._tools['execute_dbsql']
+
+      malformed_queries = [
+        'SELCT * FROM table',  # Typo in SELECT
+        'SELECT * FROM',  # Incomplete query
+        'SELECT * FROM table WHERE',  # Incomplete WHERE
+        '',  # Empty query
+        'DROP TABLE production_data',  # Potentially dangerous query
+      ]
+
+      for bad_query in malformed_queries:
+        result = sql_tool.fn(query=bad_query, warehouse_id='test-warehouse')
+        assert_error_response(result)
+        # SQL errors come through the status.error mechanism
+        assert 'error' in result
+
+  @pytest.mark.unit
+  def test_warehouse_not_found_scenarios(self, mcp_server, mock_env_vars):
+    """Test warehouse not found error scenarios."""
+    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
+
+    load_sql_tools(mcp_server)
+
+    # Test nonexistent warehouse operations
+    warehouse_operations = [
+      ('get_sql_warehouse', {'warehouse_id': 'nonexistent-warehouse'}),
+      ('start_sql_warehouse', {'warehouse_id': 'nonexistent-warehouse'}),
+      ('stop_sql_warehouse', {'warehouse_id': 'nonexistent-warehouse'}),
+      ('delete_sql_warehouse', {'warehouse_id': 'nonexistent-warehouse'}),
+    ]
+
+    for tool_name, params in warehouse_operations:
+      with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
+        # Mock all warehouse methods that could be called
+        error_exception = simulate_databricks_error(
+          next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Resource not found'),
+          'Resource not found',
+        )
+        mock_client.return_value.sql_warehouses.get.side_effect = error_exception
+        mock_client.return_value.sql_warehouses.start.side_effect = error_exception
+        mock_client.return_value.sql_warehouses.stop.side_effect = error_exception
+        mock_client.return_value.sql_warehouses.delete.side_effect = error_exception
+
+        tool = mcp_server._tool_manager._tools[tool_name]
+        result = tool.fn(**params)
+
+        assert_error_response(result)
+        assert 'not found' in result['error'].lower() or 'resource' in result['error'].lower()

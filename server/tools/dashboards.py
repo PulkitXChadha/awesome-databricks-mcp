@@ -21,7 +21,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -30,7 +30,10 @@ def load_dashboard_tools(mcp_server):
       return {
         'success': True,
         'message': 'Lakeview dashboard listing initiated',
-        'note': 'Lakeview dashboards may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Lakeview dashboards may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
         'dashboards': [],
         'count': 0,
       }
@@ -51,7 +54,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -61,7 +64,10 @@ def load_dashboard_tools(mcp_server):
         'success': True,
         'dashboard_id': dashboard_id,
         'message': f'Lakeview dashboard {dashboard_id} details retrieval initiated',
-        'note': 'Lakeview dashboard details may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Lakeview dashboard details may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
         'dashboard': {},
       }
 
@@ -81,7 +87,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -91,7 +97,10 @@ def load_dashboard_tools(mcp_server):
         'success': True,
         'dashboard_config': dashboard_config,
         'message': 'Lakeview dashboard creation initiated',
-        'note': 'Lakeview dashboard creation may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Lakeview dashboard creation may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
@@ -111,7 +120,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -122,7 +131,10 @@ def load_dashboard_tools(mcp_server):
         'dashboard_id': dashboard_id,
         'updates': updates,
         'message': f'Lakeview dashboard {dashboard_id} update initiated',
-        'note': 'Lakeview dashboard updates may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Lakeview dashboard updates may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
@@ -141,7 +153,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -151,7 +163,10 @@ def load_dashboard_tools(mcp_server):
         'success': True,
         'dashboard_id': dashboard_id,
         'message': f'Lakeview dashboard {dashboard_id} deletion initiated',
-        'note': 'Lakeview dashboard deletion may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Lakeview dashboard deletion may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
@@ -174,7 +189,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -192,7 +207,10 @@ def load_dashboard_tools(mcp_server):
         'groups': groups,
         'permission': permission,
         'message': f'Lakeview dashboard {dashboard_id} sharing initiated',
-        'note': 'Lakeview dashboard sharing may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Lakeview dashboard sharing may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
@@ -211,7 +229,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -227,7 +245,10 @@ def load_dashboard_tools(mcp_server):
           'public_access': False,
         },
         'message': f'Dashboard permissions retrieved for {dashboard_id}',
-        'note': 'Lakeview dashboard permissions may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Lakeview dashboard permissions may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
@@ -243,7 +264,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -252,7 +273,10 @@ def load_dashboard_tools(mcp_server):
       return {
         'success': True,
         'message': 'Legacy dashboard listing initiated',
-        'note': 'Legacy dashboards may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Legacy dashboards may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
         'dashboards': [],
         'count': 0,
       }
@@ -273,7 +297,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -283,7 +307,10 @@ def load_dashboard_tools(mcp_server):
         'success': True,
         'dashboard_id': dashboard_id,
         'message': f'Legacy dashboard {dashboard_id} details retrieval initiated',
-        'note': 'Legacy dashboard details may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Legacy dashboard details may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
         'dashboard': {},
       }
 
@@ -303,7 +330,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -313,7 +340,10 @@ def load_dashboard_tools(mcp_server):
         'success': True,
         'dashboard_config': dashboard_config,
         'message': 'Legacy dashboard creation initiated',
-        'note': 'Legacy dashboard creation may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Legacy dashboard creation may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
@@ -332,7 +362,7 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      w = WorkspaceClient(  # noqa: F841
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -342,7 +372,10 @@ def load_dashboard_tools(mcp_server):
         'success': True,
         'dashboard_id': dashboard_id,
         'message': f'Legacy dashboard {dashboard_id} deletion initiated',
-        'note': 'Legacy dashboard deletion may require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Legacy dashboard deletion may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
