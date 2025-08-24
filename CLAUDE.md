@@ -4,20 +4,105 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Databricks MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with Databricks workspaces. It's built as a hybrid application combining:
+This is a **simplified** Databricks MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with Databricks workspaces. The project has been deliberately simplified to prioritize maintainability and clarity:
 - **MCP Server**: FastAPI backend with integrated MCP server using FastMCP
 - **Web Interface**: React TypeScript frontend for MCP discovery and testing
-- **Modular Tools**: 100+ tools organized across 8 specialized modules for Databricks operations
-- **OAuth Integration**: Secure authentication via Databricks Apps deployment
+- **Modular Tools**: 100+ tools organized across 8 specialized modules for Databricks operations- **OAuth Integration**: Secure authentication via Databricks Apps deployment
 
 ## Architecture
 
-The MCP server architecture consists of:
+The simplified MCP server architecture consists of:
 - **FastAPI backend** (`server/app.py`) with integrated MCP server via FastMCP
 - **Modular tools system** (`server/tools/`) with specialized modules for different Databricks operations  
 - **React frontend** (`client/`) for web-based MCP discovery and testing
 - **MCP proxy** (`dba_mcp_proxy/`) for Claude CLI integration with OAuth handling
 - **Prompts system** (`prompts/`) where markdown files become MCP prompts
+
+## 🚨 SENIOR DEVELOPER GUIDELINES 🚨
+
+**CRITICAL: This project follows SIMPLE, MAINTAINABLE patterns. DO NOT over-engineer!**
+
+### Code Philosophy
+1. **SIMPLE over CLEVER**: Write obvious code that any developer can understand
+2. **EXPLICIT over IMPLICIT**: Prefer clear, direct implementations over abstractions
+3. **FLAT over NESTED**: Avoid deep inheritance, complex factories, or excessive abstraction layers
+4. **FOCUSED over GENERIC**: Write code for the specific use case, not hypothetical future needs
+
+### Forbidden Patterns (DO NOT ADD THESE)
+❌ **Abstract base classes** or complex inheritance hierarchies
+❌ **Factory patterns** or dependency injection containers
+❌ **Decorators for cross-cutting concerns** (logging, caching, performance monitoring)
+❌ **Complex configuration classes** with nested structures
+❌ **Async/await patterns** unless absolutely necessary
+❌ **Connection pooling** or caching layers
+❌ **Generic "framework" code** or reusable utilities
+❌ **Complex error handling systems** or custom exceptions
+❌ **Performance optimization** patterns (premature optimization)
+❌ **Enterprise patterns** like singleton, observer, strategy, etc.
+
+### Required Patterns (ALWAYS USE THESE)
+✅ **Direct function calls** - no indirection or abstraction layers
+✅ **Simple classes** with clear, single responsibilities
+✅ **Environment variables** for configuration (no complex config objects)
+✅ **Explicit imports** - import exactly what you need
+✅ **Basic error handling** with try/catch and simple return dictionaries
+✅ **Straightforward control flow** - avoid complex conditional logic
+✅ **Standard library first** - only add dependencies when absolutely necessary
+
+### Implementation Rules
+1. **One concept per file**: Each module should have a single, clear purpose
+2. **Functions over classes**: Prefer functions unless you need state management
+3. **Direct SDK calls**: Call Databricks SDK directly, no wrapper layers
+4. **Simple data structures**: Use dicts and lists, avoid custom data classes
+5. **Basic testing**: Simple unit tests with basic mocking, no complex test frameworks
+6. **Minimal dependencies**: Only add new dependencies if critically needed
+
+### Code Review Questions
+Before adding any code, ask yourself:
+- "Is this the simplest way to solve this problem?"
+- "Would a new developer understand this immediately?"
+- "Am I adding abstraction for a real need or hypothetical flexibility?"
+- "Can I solve this with standard library or existing dependencies?"
+- "Does this follow the existing patterns in the codebase?"
+
+### Examples of Good vs Bad Code
+
+**❌ BAD (Over-engineered):**
+```python
+class AbstractDatabricksClientFactory(ABC):
+    @abstractmethod
+    def create_client(self) -> WorkspaceClient: ...
+
+class ConfigurableDatabricksClientFactory(AbstractDatabricksClientFactory):
+    def __init__(self, config: DatabricksConfig): ...
+```
+
+**✅ GOOD (Simple):**
+```python
+def get_workspace_client() -> WorkspaceClient:
+    host = os.getenv('DATABRICKS_HOST')
+    token = os.getenv('DATABRICKS_TOKEN')
+    return WorkspaceClient(host=host, token=token)
+```
+
+**❌ BAD (Complex configuration):**
+```python
+class DatabaseConfig(BaseModel):
+    host: str = Field(..., description="Database host")
+
+class AppConfig(BaseSettings):
+    database: DatabaseConfig
+    security: SecurityConfig
+    monitoring: MonitoringConfig
+```
+
+**✅ GOOD (Direct environment variables):**
+```python
+class Config:
+    def __init__(self):
+        self.host = os.getenv('DATABRICKS_HOST')
+        self.token = os.getenv('DATABRICKS_TOKEN')
+```
 
 ## Development Commands
 
@@ -74,6 +159,8 @@ All changes auto-reload via file watchers in `./watch.sh`.
 - **Python**: Use `uv add/remove` for dependencies, never edit pyproject.toml manually
 - **Frontend**: Use `bun add/remove` for dependencies, never edit package.json manually
 - Always check if dependencies already exist before adding new ones
+- **Principle**: Only add dependencies if absolutely critical
+
 
 ## Tool System Architecture
 
@@ -100,6 +187,12 @@ def load_module_tools(mcp_server):
         # Implementation using Databricks SDK
         return {"result": "data"}
 ```
+
+**Key principles:**
+- Direct Databricks SDK calls (no wrappers)
+- Simple error handling with try/catch
+- Return dictionaries with consistent structure
+- No decorators, no abstractions, no magic
 
 ## MCP Integration
 
@@ -269,10 +362,83 @@ curl http://localhost:8000/mcp/
 echo "What MCP prompts are available from databricks-mcp?" | claude
 ```
 
-## Documentation
+## Simplified Testing
 
-Reference documentation in `docs/` directory:
-- `docs/databricks_apis/` - Databricks SDK integration guides
-- `docs/unity_catalog_tools.md` - Unity Catalog operations reference
-- `docs/core-tools.md` - Core tool documentation
-- `claude_scripts/README.md` - Testing tools documentation
+### Basic Testing Suite
+
+The project includes a **focused** test suite with essential tests only:
+- **Unit Tests**: Basic component testing with simple mocks
+- **Tool Tests**: Individual MCP tool functionality
+- **API Tests**: Basic FastAPI endpoint testing
+
+### Running Tests
+
+```bash
+# Run all tests (simple and fast)
+make test
+
+# Or directly with uv
+uv run pytest tests/ -v
+```
+
+### Test Structure
+
+Tests use minimal pytest configuration:
+- **9 test files** covering core functionality
+- **Basic markers**: unit, tools, integration
+- **Simple fixtures**: Basic mocking utilities only
+- **No coverage requirements**: Focus on functionality, not metrics
+
+### Writing Tests
+
+Follow the **simple pattern**:
+```python
+def test_your_feature(mcp_server, mock_env_vars):
+    """Test your feature."""
+    # Load tools
+    load_tools(mcp_server)
+
+    # Mock Databricks SDK calls
+    with patch('server.tools.module.get_workspace_client') as mock_client:
+        mock_client.return_value.some_api.method.return_value = expected_data
+
+        # Test the tool
+        tool = mcp_server._tools['tool_name']
+        result = tool.func()
+
+        # Basic assertions
+        assert result['status'] == 'success'
+```
+
+**Testing principles:**
+- Keep tests simple and focused
+- Mock external dependencies (Databricks SDK)
+- Test success and error cases only
+- No complex test infrastructure or frameworks
+
+## Summary: What Makes This Project "Senior Developer Approved"
+
+✅ **Readable**: Any developer can understand the code immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each module has a single, clear responsibility
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Solves the specific problem without over-engineering
+
+When in doubt, choose the **simpler** solution. Your future self (and your teammates) will thank you.
+
+---
+
+# Important Instruction Reminders
+
+**For Claude Code when working on this project:**
+
+1. **Do what has been asked; nothing more, nothing less**
+2. **NEVER create files unless absolutely necessary for achieving the goal**
+3. **ALWAYS prefer editing an existing file to creating a new one**
+4. **NEVER proactively create documentation files (*.md) or README files**
+5. **Follow the SIMPLE patterns established in this codebase**
+6. **When in doubt, ask "Is this the simplest way?" before implementing**
+
+This project is intentionally simplified. **Respect that simplicity.**
+
+- /clear
