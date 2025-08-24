@@ -166,6 +166,36 @@ claude mcp add databricks-mcp -- \
 
 ## Testing
 
+### Running Tests
+
+#### Python Tests
+```bash
+# Run all tests
+uv run pytest
+
+# Run specific test file
+uv run pytest tests/test_basic_functionality.py
+
+# Run single test
+uv run pytest tests/test_e2e_examples.py::test_specific_function
+
+# Run tests by marker
+uv run pytest -m unit        # Unit tests only
+uv run pytest -m integration # Integration tests
+uv run pytest -m e2e         # End-to-end tests
+uv run pytest -m "not slow"  # Skip slow tests
+
+# Run with coverage
+uv run pytest --cov=server --cov-report=html
+```
+
+#### Frontend Tests
+```bash
+cd client
+bun run lint    # Lint TypeScript code
+bun run format  # Format with prettier
+```
+
 ### Comprehensive Testing Suite
 The `claude_scripts/` directory contains testing tools:
 - **curl tests**: Direct HTTP testing with session handling
