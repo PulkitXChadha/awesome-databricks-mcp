@@ -16,12 +16,12 @@ def mock_env_vars(monkeypatch):
   env_vars = {
     'DATABRICKS_HOST': 'https://test.cloud.databricks.com',
     'DATABRICKS_TOKEN': 'test-token-12345',
-    'DATABRICKS_SQL_WAREHOUSE_ID': 'test-warehouse'
+    'DATABRICKS_SQL_WAREHOUSE_ID': 'test-warehouse',
   }
-  
+
   for key, value in env_vars.items():
     monkeypatch.setenv(key, value)
-  
+
   return env_vars
 
 

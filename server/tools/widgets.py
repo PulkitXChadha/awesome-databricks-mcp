@@ -969,7 +969,7 @@ def load_widget_tools(mcp_server):
     """Create a counter widget for displaying a single KPI."""
     return create_counter_widget(title, value_field, dataset_query, aggregation, None, position)
 
-  # Filter widgets (unique to widgets module)  
+  # Filter widgets (unique to widgets module)
   @mcp_server.tool
   def create_date_filter(
     title: str, field_name: str, dataset_query: str, position: Optional[dict] = None

@@ -632,30 +632,27 @@ class TestWidgetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock current dashboard with existing widgets
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Existing Chart'}
       ]
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
-      
+
       mock_client.return_value = mock_workspace
 
       widget_spec = {
         'type': 'counter',
         'name': 'New Counter Widget',
-        'parameters': {'title': 'Total Users'}
+        'parameters': {'title': 'Total Users'},
       }
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['add_widget_to_dashboard']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_spec=widget_spec
-      )
+      result = tool.fn(dashboard_id='dashboard-123', widget_spec=widget_spec)
 
       assert_success_response(result)
       assert result['dashboard_id'] == 'dashboard-123'
@@ -663,7 +660,10 @@ class TestWidgetManagementTools:
       assert result['widget_type'] == 'counter'
       assert result['dashboard_type'] == 'lakeview'
       assert 'widget_id' in result
-      assert result['message'] == 'Successfully added widget New Counter Widget to lakeview dashboard dashboard-123'
+      assert (
+        result['message']
+        == 'Successfully added widget New Counter Widget to lakeview dashboard dashboard-123'
+      )
 
       # Verify widget was added to dashboard
       mock_workspace.lakeview.update.assert_called_once()
@@ -680,26 +680,19 @@ class TestWidgetManagementTools:
       mock_workspace = Mock()
       mock_dashboard = Mock()
       mock_dashboard.widgets = []
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
-      
+
       mock_client.return_value = mock_workspace
 
-      widget_spec = {
-        'type': 'chart',
-        'name': 'Sales Chart',
-        'parameters': {'chart_type': 'bar'}
-      }
+      widget_spec = {'type': 'chart', 'name': 'Sales Chart', 'parameters': {'chart_type': 'bar'}}
 
       load_dashboard_tools(mcp_server)
-      
+
       # Test adding widget without dataset (simpler case)
       tool = mcp_server._tool_manager._tools['add_widget_to_dashboard']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_spec=widget_spec
-      )
+      result = tool.fn(dashboard_id='dashboard-123', widget_spec=widget_spec)
 
       assert_success_response(result)
       assert result['widget_name'] == 'Sales Chart'
@@ -715,7 +708,7 @@ class TestWidgetManagementTools:
       mock_workspace = Mock()
       mock_dashboard = Mock()
       mock_dashboard.widgets = []
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
       mock_client.return_value = mock_workspace
@@ -738,44 +731,40 @@ class TestWidgetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock dashboard with existing widgets
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1', 'title': 'Old Title'},
-        {'widget_id': 'widget_2', 'type': 'table', 'name': 'Table 1'}
+        {'widget_id': 'widget_2', 'type': 'table', 'name': 'Table 1'},
       ]
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
-      
+
       mock_client.return_value = mock_workspace
 
-      updates = {
-        'title': 'Updated Chart Title',
-        'parameters': {'color_scheme': 'blue'}
-      }
+      updates = {'title': 'Updated Chart Title', 'parameters': {'color_scheme': 'blue'}}
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['update_dashboard_widget']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_id='widget_1',
-        updates=updates
-      )
+      result = tool.fn(dashboard_id='dashboard-123', widget_id='widget_1', updates=updates)
 
       assert_success_response(result)
       assert result['dashboard_id'] == 'dashboard-123'
       assert result['widget_id'] == 'widget_1'
       assert result['updates_applied'] == updates
       assert result['dashboard_type'] == 'lakeview'
-      assert result['message'] == 'Successfully updated widget widget_1 in lakeview dashboard dashboard-123'
+      assert (
+        result['message']
+        == 'Successfully updated widget widget_1 in lakeview dashboard dashboard-123'
+      )
 
       # Verify update was called with modified widgets
       mock_workspace.lakeview.update.assert_called_once()
       call_args = mock_workspace.lakeview.update.call_args
       updated_widgets = call_args[1]['widgets']
-      
+
       # Find the updated widget
       updated_widget = next(w for w in updated_widgets if w['widget_id'] == 'widget_1')
       assert updated_widget['title'] == 'Updated Chart Title'
@@ -787,13 +776,11 @@ class TestWidgetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock dashboard with existing widgets (without target widget)
       mock_dashboard = Mock()
-      mock_dashboard.widgets = [
-        {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1'}
-      ]
-      
+      mock_dashboard.widgets = [{'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1'}]
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_client.return_value = mock_workspace
 
@@ -802,9 +789,7 @@ class TestWidgetManagementTools:
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['update_dashboard_widget']
       result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_id='nonexistent_widget',
-        updates=updates
+        dashboard_id='dashboard-123', widget_id='nonexistent_widget', updates=updates
       )
 
       assert_error_response(result)
@@ -820,20 +805,12 @@ class TestWidgetManagementTools:
       tool = mcp_server._tool_manager._tools['update_dashboard_widget']
 
       # Test missing updates
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_id='widget_1',
-        updates=None
-      )
+      result = tool.fn(dashboard_id='dashboard-123', widget_id='widget_1', updates=None)
       assert_error_response(result)
       assert 'updates dictionary is required' in result['error']
 
       # Test empty updates
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_id='widget_1',
-        updates={}
-      )
+      result = tool.fn(dashboard_id='dashboard-123', widget_id='widget_1', updates={})
       assert_error_response(result)
       assert 'updates dictionary is required' in result['error']
 
@@ -843,26 +820,23 @@ class TestWidgetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock dashboard with existing widgets
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1'},
         {'widget_id': 'widget_2', 'type': 'table', 'name': 'Table 1'},
-        {'widget_id': 'widget_3', 'type': 'counter', 'name': 'Counter 1'}
+        {'widget_id': 'widget_3', 'type': 'counter', 'name': 'Counter 1'},
       ]
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
-      
+
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['remove_dashboard_widget']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_id='widget_2'
-      )
+      result = tool.fn(dashboard_id='dashboard-123', widget_id='widget_2')
 
       assert_success_response(result)
       assert result['dashboard_id'] == 'dashboard-123'
@@ -870,13 +844,16 @@ class TestWidgetManagementTools:
       assert result['removed_widget']['widget_id'] == 'widget_2'
       assert result['remaining_widgets'] == 2
       assert result['dashboard_type'] == 'lakeview'
-      assert result['message'] == 'Successfully removed widget widget_2 from lakeview dashboard dashboard-123'
+      assert (
+        result['message']
+        == 'Successfully removed widget widget_2 from lakeview dashboard dashboard-123'
+      )
 
       # Verify update was called with remaining widgets
       mock_workspace.lakeview.update.assert_called_once()
       call_args = mock_workspace.lakeview.update.call_args
       remaining_widgets = call_args[1]['widgets']
-      
+
       # Verify correct widgets remain
       assert len(remaining_widgets) == 2
       widget_ids = [w['widget_id'] for w in remaining_widgets]
@@ -890,22 +867,17 @@ class TestWidgetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock dashboard with existing widgets (without target widget)
       mock_dashboard = Mock()
-      mock_dashboard.widgets = [
-        {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1'}
-      ]
-      
+      mock_dashboard.widgets = [{'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1'}]
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['remove_dashboard_widget']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_id='nonexistent_widget'
-      )
+      result = tool.fn(dashboard_id='dashboard-123', widget_id='nonexistent_widget')
 
       assert_error_response(result)
       assert 'Widget nonexistent_widget not found in dashboard dashboard-123' in result['error']
@@ -916,32 +888,28 @@ class TestWidgetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock Lakeview API failure
-      mock_workspace.lakeview.get.side_effect = AttributeError("'WorkspaceClient' object has no attribute 'lakeview'")
-      
+      mock_workspace.lakeview.get.side_effect = AttributeError(
+        "'WorkspaceClient' object has no attribute 'lakeview'"
+      )
+
       # Mock legacy dashboard API success
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'legacy_widget_1', 'type': 'chart', 'name': 'Legacy Chart'}
       ]
-      
+
       mock_workspace.dashboards.get.return_value = mock_dashboard
       mock_workspace.dashboards.update.return_value = Mock()
-      
+
       mock_client.return_value = mock_workspace
 
-      widget_spec = {
-        'type': 'table',
-        'name': 'Legacy Table Widget'
-      }
+      widget_spec = {'type': 'table', 'name': 'Legacy Table Widget'}
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['add_widget_to_dashboard']
-      result = tool.fn(
-        dashboard_id='legacy-dashboard-123',
-        widget_spec=widget_spec
-      )
+      result = tool.fn(dashboard_id='legacy-dashboard-123', widget_spec=widget_spec)
 
       assert_success_response(result)
       assert result['dashboard_type'] == 'legacy'
@@ -955,16 +923,16 @@ class TestDatasetManagementTools:
   def test_create_dashboard_dataset(self, mcp_server, mock_env_vars):
     """Test creating dataset for dashboard."""
     load_dashboard_tools(mcp_server)
-    
+
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock the workspace client and statement execution
       mock_workspace = Mock()
-      
+
       # Mock successful query validation response
       mock_response = Mock()
       mock_response.status = Mock()
       mock_response.status.state = 'SUCCEEDED'
-      
+
       mock_workspace.statement_execution.execute_statement.return_value = mock_response
       mock_client.return_value = mock_workspace
 
@@ -973,7 +941,7 @@ class TestDatasetManagementTools:
         dashboard_id='dashboard-123',
         name='Sales Dataset',
         query='SELECT * FROM sales_table',
-        warehouse_id='warehouse-456'
+        warehouse_id='warehouse-456',
       )
 
       assert_success_response(result)
@@ -982,24 +950,27 @@ class TestDatasetManagementTools:
       assert result['warehouse_id'] == 'warehouse-456'
       assert result['query'] == 'SELECT * FROM sales_table'
       assert 'dataset_id' in result
-      assert 'Successfully created dataset Sales Dataset for dashboard dashboard-123' in result['message']
+      assert (
+        'Successfully created dataset Sales Dataset for dashboard dashboard-123'
+        in result['message']
+      )
 
   @pytest.mark.unit
   def test_create_dataset_with_env_warehouse(self, mcp_server, mock_env_vars, monkeypatch):
     """Test creating dataset using environment warehouse ID."""
     monkeypatch.setenv('DATABRICKS_SQL_WAREHOUSE_ID', 'env-warehouse-789')
-    
+
     load_dashboard_tools(mcp_server)
-    
+
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock the workspace client and statement execution
       mock_workspace = Mock()
-      
+
       # Mock successful query validation response
       mock_response = Mock()
       mock_response.status = Mock()
       mock_response.status.state = 'SUCCEEDED'
-      
+
       mock_workspace.statement_execution.execute_statement.return_value = mock_response
       mock_client.return_value = mock_workspace
 
@@ -1007,7 +978,7 @@ class TestDatasetManagementTools:
       result = tool.fn(
         dashboard_id='dashboard-123',
         name='User Actions',
-        query='SELECT user_id, action FROM user_actions'
+        query='SELECT user_id, action FROM user_actions',
       )
 
       assert_success_response(result)
@@ -1018,16 +989,14 @@ class TestDatasetManagementTools:
     """Test creating dataset without warehouse ID."""
     # Remove warehouse from environment
     monkeypatch.delenv('DATABRICKS_SQL_WAREHOUSE_ID', raising=False)
-    
+
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       mock_client.return_value = Mock()
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
       result = tool.fn(
-        dashboard_id='dashboard-123',
-        name='Test Dataset',
-        query='SELECT * FROM test_table'
+        dashboard_id='dashboard-123', name='Test Dataset', query='SELECT * FROM test_table'
       )
 
       assert_error_response(result)
@@ -1037,18 +1006,18 @@ class TestDatasetManagementTools:
   def test_create_dataset_invalid_query(self, mcp_server, mock_env_vars):
     """Test creating dataset with invalid query."""
     load_dashboard_tools(mcp_server)
-    
+
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock the workspace client to simulate query validation failure
       mock_workspace = Mock()
-      
+
       # Mock failed query validation response
       mock_response = Mock()
       mock_response.status = Mock()
       mock_response.status.state = 'FAILED'
       mock_response.status.error = Mock()
       mock_response.status.error.message = 'Invalid SQL syntax: missing FROM clause'
-      
+
       mock_workspace.statement_execution.execute_statement.return_value = mock_response
       mock_client.return_value = mock_workspace
 
@@ -1057,7 +1026,7 @@ class TestDatasetManagementTools:
         dashboard_id='dashboard-123',
         name='Invalid Dataset',
         query='SELECT *',
-        warehouse_id='warehouse-456'
+        warehouse_id='warehouse-456',
       )
 
       assert_error_response(result)
@@ -1070,19 +1039,16 @@ class TestDatasetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock successful statement execution
       mock_response = Mock()
       mock_response.status.state = 'SUCCEEDED'
       mock_response.duration = '2.3s'
       mock_response.statement_id = 'stmt_123'
-      
+
       # Mock result data
-      mock_response.result.data_array = [
-        ['1', 'John Doe', '100.0'],
-        ['2', 'Jane Smith', '150.0']
-      ]
-      
+      mock_response.result.data_array = [['1', 'John Doe', '100.0'], ['2', 'Jane Smith', '150.0']]
+
       # Mock result schema
       mock_column_1 = Mock()
       mock_column_1.name = 'id'
@@ -1090,18 +1056,16 @@ class TestDatasetManagementTools:
       mock_column_2.name = 'name'
       mock_column_3 = Mock()
       mock_column_3.name = 'value'
-      
+
       mock_response.result.schema.columns = [mock_column_1, mock_column_2, mock_column_3]
-      
+
       mock_workspace.statement_execution.execute_statement.return_value = mock_response
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['test_dataset_query']
       result = tool.fn(
-        query='SELECT id, name, value FROM users',
-        warehouse_id='warehouse-456',
-        limit=5
+        query='SELECT id, name, value FROM users', warehouse_id='warehouse-456', limit=5
       )
 
       assert_success_response(result)
@@ -1120,27 +1084,23 @@ class TestDatasetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock successful statement execution
       mock_response = Mock()
       mock_response.status.state = 'SUCCEEDED'
       mock_response.result.data_array = []
       mock_response.result.schema.columns = []
-      
+
       mock_workspace.statement_execution.execute_statement.return_value = mock_response
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['test_dataset_query']
-      result = tool.fn(
-        query='SELECT * FROM large_table',
-        warehouse_id='warehouse-456',
-        limit=10
-      )
+      result = tool.fn(query='SELECT * FROM large_table', warehouse_id='warehouse-456', limit=10)
 
       assert_success_response(result)
       assert result['test_query'] == 'SELECT * FROM large_table LIMIT 10;'
-      
+
       # Verify execute_statement was called with modified query
       call_args = mock_workspace.statement_execution.execute_statement.call_args
       assert call_args[1]['statement'] == 'SELECT * FROM large_table LIMIT 10;'
@@ -1151,22 +1111,19 @@ class TestDatasetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock failed statement execution
       mock_response = Mock()
       mock_response.status.state = 'FAILED'
       mock_response.status.error = Mock()
       mock_response.status.error.message = 'Table not found: invalid_table'
-      
+
       mock_workspace.statement_execution.execute_statement.return_value = mock_response
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['test_dataset_query']
-      result = tool.fn(
-        query='SELECT * FROM invalid_table',
-        warehouse_id='warehouse-456'
-      )
+      result = tool.fn(query='SELECT * FROM invalid_table', warehouse_id='warehouse-456')
 
       assert_error_response(result)
       assert 'Query execution failed: Table not found: invalid_table' in result['error']
@@ -1177,7 +1134,7 @@ class TestDatasetManagementTools:
     """Test query testing without warehouse ID."""
     # Remove warehouse from environment
     monkeypatch.delenv('DATABRICKS_SQL_WAREHOUSE_ID', raising=False)
-    
+
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       mock_client.return_value = Mock()
 
@@ -1194,17 +1151,16 @@ class TestDatasetManagementTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock execution exception
-      mock_workspace.statement_execution.execute_statement.side_effect = Exception('Network timeout')
+      mock_workspace.statement_execution.execute_statement.side_effect = Exception(
+        'Network timeout'
+      )
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['test_dataset_query']
-      result = tool.fn(
-        query='SELECT * FROM test_table',
-        warehouse_id='warehouse-456'
-      )
+      result = tool.fn(query='SELECT * FROM test_table', warehouse_id='warehouse-456')
 
       assert_error_response(result)
       assert 'SQL execution failed: Network timeout' in result['error']
@@ -1222,10 +1178,7 @@ class TestWidgetCreationTools:
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['create_bar_chart']
       result = tool.fn(
-        dataset_name='sales_data',
-        x_field='region',
-        y_field='revenue',
-        title='Revenue by Region'
+        dataset_name='sales_data', x_field='region', y_field='revenue', title='Revenue by Region'
       )
 
       assert_success_response(result)
@@ -1244,10 +1197,7 @@ class TestWidgetCreationTools:
     load_dashboard_tools(mcp_server)
     tool = mcp_server._tool_manager._tools['create_line_chart']
     result = tool.fn(
-      dataset_name='time_series',
-      x_field='date',
-      y_field='value',
-      color_field='category'
+      dataset_name='time_series', x_field='date', y_field='value', color_field='category'
     )
 
     assert_success_response(result)
@@ -1263,10 +1213,7 @@ class TestWidgetCreationTools:
     load_dashboard_tools(mcp_server)
     tool = mcp_server._tool_manager._tools['create_area_chart']
     result = tool.fn(
-      dataset_name='cumulative_data',
-      x_field='month',
-      y_field='cumulative_sales',
-      stacked=True
+      dataset_name='cumulative_data', x_field='month', y_field='cumulative_sales', stacked=True
     )
 
     assert_success_response(result)
@@ -1285,7 +1232,7 @@ class TestWidgetCreationTools:
       dataset_name='market_share',
       category_field='company',
       value_field='market_share_pct',
-      show_percentages=True
+      show_percentages=True,
     )
 
     assert_success_response(result)
@@ -1305,7 +1252,7 @@ class TestWidgetCreationTools:
       value_field='total_revenue',
       aggregation='sum',
       format_type='currency',
-      color='green'
+      color='green',
     )
 
     assert_success_response(result)
@@ -1326,7 +1273,7 @@ class TestWidgetCreationTools:
       columns=['customer_id', 'name', 'email', 'signup_date'],
       page_size=50,
       sortable=True,
-      searchable=True
+      searchable=True,
     )
 
     assert_success_response(result)
@@ -1347,7 +1294,7 @@ class TestWidgetCreationTools:
       x_field='advertising_spend',
       y_field='revenue',
       color_field='channel',
-      size_field='impressions'
+      size_field='impressions',
     )
 
     assert_success_response(result)
@@ -1364,10 +1311,7 @@ class TestWidgetCreationTools:
     load_dashboard_tools(mcp_server)
     tool = mcp_server._tool_manager._tools['create_histogram']
     result = tool.fn(
-      dataset_name='distribution_data',
-      value_field='user_age',
-      bins=25,
-      color='purple'
+      dataset_name='distribution_data', value_field='user_age', bins=25, color='purple'
     )
 
     assert_success_response(result)
@@ -1382,10 +1326,7 @@ class TestWidgetCreationTools:
     load_dashboard_tools(mcp_server)
     tool = mcp_server._tool_manager._tools['create_combo_chart']
     result = tool.fn(
-      dataset_name='mixed_metrics',
-      x_field='month',
-      bar_field='revenue',
-      line_field='profit_margin'
+      dataset_name='mixed_metrics', x_field='month', bar_field='revenue', line_field='profit_margin'
     )
 
     assert_success_response(result)
@@ -1405,7 +1346,7 @@ class TestWidgetCreationTools:
       row_fields=['region', 'product'],
       column_fields=['quarter'],
       value_fields=['revenue', 'units_sold'],
-      aggregations={'revenue': 'sum', 'units_sold': 'sum'}
+      aggregations={'revenue': 'sum', 'units_sold': 'sum'},
     )
 
     assert_success_response(result)
@@ -1426,7 +1367,7 @@ class TestWidgetCreationTools:
       value_field='current_value',
       comparison_field='previous_value',
       show_percentage=True,
-      format_type='percentage'
+      format_type='percentage',
     )
 
     assert_success_response(result)
@@ -1445,7 +1386,7 @@ class TestWidgetCreationTools:
       mock_workspace = Mock()
       mock_dashboard = Mock()
       mock_dashboard.widgets = []
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
       mock_client.return_value = mock_workspace
@@ -1453,17 +1394,14 @@ class TestWidgetCreationTools:
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['create_bar_chart']
       result = tool.fn(
-        dataset_name='sales_data',
-        x_field='region',
-        y_field='revenue',
-        dashboard_id='dashboard-123'
+        dataset_name='sales_data', x_field='region', y_field='revenue', dashboard_id='dashboard-123'
       )
 
       assert_success_response(result)
       assert result['dashboard_id'] == 'dashboard-123'
       assert result['widget_id'] is not None
       assert result['dashboard_type'] == 'lakeview'
-      
+
       # Verify add_widget_to_dashboard was called
       mock_workspace.lakeview.get.assert_called_once_with(dashboard_id='dashboard-123')
       mock_workspace.lakeview.update.assert_called_once()
@@ -1481,7 +1419,7 @@ class TestFilterWidgets:
       dataset_name='products',
       filter_field='category',
       multi_select=True,
-      default_values=['Electronics', 'Books']
+      default_values=['Electronics', 'Books'],
     )
 
     assert_success_response(result)
@@ -1499,7 +1437,7 @@ class TestFilterWidgets:
     result = tool.fn(
       dataset_name='events',
       date_field='event_date',
-      default_range={'start': '2023-01-01', 'end': '2023-12-31'}
+      default_range={'start': '2023-01-01', 'end': '2023-12-31'},
     )
 
     assert_success_response(result)
@@ -1520,7 +1458,7 @@ class TestFilterWidgets:
       min_value=0.0,
       max_value=100.0,
       step=5.0,
-      default_value=50.0
+      default_value=50.0,
     )
 
     assert_success_response(result)
@@ -1541,7 +1479,7 @@ class TestFilterWidgets:
       dataset_name='users',
       text_field='username',
       placeholder='Search users...',
-      case_sensitive=False
+      case_sensitive=False,
     )
 
     assert_success_response(result)
@@ -1566,7 +1504,7 @@ class TestSpecialtyWidgets:
       longitude_field='lng',
       color_field='temperature',
       size_field='population',
-      map_style='satellite'
+      map_style='satellite',
     )
 
     assert_success_response(result)
@@ -1587,7 +1525,7 @@ class TestSpecialtyWidgets:
       content='# Dashboard Title\n\nThis dashboard shows key metrics.',
       content_type='markdown',
       text_size='large',
-      text_color='primary'
+      text_color='primary',
     )
 
     assert_success_response(result)
@@ -1607,7 +1545,7 @@ class TestSpecialtyWidgets:
       image_url='https://example.com/logo.png',
       alt_text='Company Logo',
       fit_type='contain',
-      link_url='https://example.com'
+      link_url='https://example.com',
     )
 
     assert_success_response(result)
@@ -1626,7 +1564,7 @@ class TestSpecialtyWidgets:
     result = tool.fn(
       iframe_url='https://example.com/embed',
       sandbox_attributes=['allow-scripts', 'allow-same-origin'],
-      allow_fullscreen=True
+      allow_fullscreen=True,
     )
 
     assert_success_response(result)
@@ -1646,25 +1584,22 @@ class TestLayoutAndPositioningTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock dashboard with existing widgets
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'widget_1', 'type': 'chart', 'position': {'width': 6, 'height': 4}},
         {'widget_id': 'widget_2', 'type': 'counter', 'position': {'width': 3, 'height': 2}},
-        {'widget_id': 'widget_3', 'type': 'table', 'position': {'width': 9, 'height': 6}}
+        {'widget_id': 'widget_3', 'type': 'table', 'position': {'width': 9, 'height': 6}},
       ]
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        layout_type='grid'
-      )
+      result = tool.fn(dashboard_id='dashboard-123', layout_type='grid')
 
       assert_success_response(result)
       assert result['dashboard_id'] == 'dashboard-123'
@@ -1677,7 +1612,7 @@ class TestLayoutAndPositioningTools:
       mock_workspace.lakeview.update.assert_called_once()
       call_args = mock_workspace.lakeview.update.call_args
       updated_widgets = call_args[1]['widgets']
-      
+
       # Check that widgets have been repositioned
       assert len(updated_widgets) == 3
       for widget in updated_widgets:
@@ -1691,37 +1626,34 @@ class TestLayoutAndPositioningTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock dashboard with widgets
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'widget_1', 'position': {'height': 4}},
-        {'widget_id': 'widget_2', 'position': {'height': 3}}
+        {'widget_id': 'widget_2', 'position': {'height': 3}},
       ]
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        layout_type='vertical'
-      )
+      result = tool.fn(dashboard_id='dashboard-123', layout_type='vertical')
 
       assert_success_response(result)
       assert result['layout_type'] == 'vertical'
-      
+
       # Verify widgets are stacked vertically
       call_args = mock_workspace.lakeview.update.call_args
       updated_widgets = call_args[1]['widgets']
-      
+
       # First widget should be at y=0
       assert updated_widgets[0]['position']['x'] == 0
       assert updated_widgets[0]['position']['y'] == 0
       assert updated_widgets[0]['position']['width'] == 12
-      
+
       # Second widget should be below first
       assert updated_widgets[1]['position']['x'] == 0
       assert updated_widgets[1]['position']['y'] == 4  # height of first widget
@@ -1732,33 +1664,30 @@ class TestLayoutAndPositioningTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock dashboard with widgets
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'widget_1', 'position': {'height': 4}},
         {'widget_id': 'widget_2', 'position': {'height': 4}},
-        {'widget_id': 'widget_3', 'position': {'height': 4}}
+        {'widget_id': 'widget_3', 'position': {'height': 4}},
       ]
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        layout_type='horizontal'
-      )
+      result = tool.fn(dashboard_id='dashboard-123', layout_type='horizontal')
 
       assert_success_response(result)
       assert result['layout_type'] == 'horizontal'
-      
+
       # Verify widgets are arranged horizontally
       call_args = mock_workspace.lakeview.update.call_args
       updated_widgets = call_args[1]['widgets']
-      
+
       # Widgets should be side by side with equal width (12/3 = 4)
       expected_width = 4
       for i, widget in enumerate(updated_widgets):
@@ -1772,34 +1701,31 @@ class TestLayoutAndPositioningTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock dashboard with widgets of different heights
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'widget_1', 'position': {'height': 4}},
         {'widget_id': 'widget_2', 'position': {'height': 2}},
         {'widget_id': 'widget_3', 'position': {'height': 6}},
-        {'widget_id': 'widget_4', 'position': {'height': 3}}
+        {'widget_id': 'widget_4', 'position': {'height': 3}},
       ]
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        layout_type='masonry'
-      )
+      result = tool.fn(dashboard_id='dashboard-123', layout_type='masonry')
 
       assert_success_response(result)
       assert result['layout_type'] == 'masonry'
-      
+
       # Verify widgets are arranged in 3 columns (4 grid units each)
       call_args = mock_workspace.lakeview.update.call_args
       updated_widgets = call_args[1]['widgets']
-      
+
       for widget in updated_widgets:
         # All widgets should have width of 4 (12/3 columns)
         assert widget['position']['width'] == 4
@@ -1813,16 +1739,13 @@ class TestLayoutAndPositioningTools:
       mock_workspace = Mock()
       mock_dashboard = Mock()
       mock_dashboard.widgets = [{'widget_id': 'widget_1'}]
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        layout_type='invalid_layout'
-      )
+      result = tool.fn(dashboard_id='dashboard-123', layout_type='invalid_layout')
 
       assert_error_response(result)
       assert 'Unknown layout type: invalid_layout' in result['error']
@@ -1834,16 +1757,13 @@ class TestLayoutAndPositioningTools:
       mock_workspace = Mock()
       mock_dashboard = Mock()
       mock_dashboard.widgets = []
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        layout_type='grid'
-      )
+      result = tool.fn(dashboard_id='dashboard-123', layout_type='grid')
 
       assert_error_response(result)
       assert 'No widgets found in dashboard to layout' in result['error']
@@ -1854,13 +1774,13 @@ class TestLayoutAndPositioningTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock dashboard with existing widgets
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'widget_1', 'position': {'x': 0, 'y': 0, 'width': 6, 'height': 4}}
       ]
-      
+
       mock_workspace.lakeview.get.return_value = mock_dashboard
       mock_workspace.lakeview.update.return_value = Mock()
       mock_client.return_value = mock_workspace
@@ -1869,11 +1789,7 @@ class TestLayoutAndPositioningTools:
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['reposition_widget']
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_id='widget_1',
-        position=new_position
-      )
+      result = tool.fn(dashboard_id='dashboard-123', widget_id='widget_1', position=new_position)
 
       assert_success_response(result)
       assert result['dashboard_id'] == 'dashboard-123'
@@ -1892,15 +1808,11 @@ class TestLayoutAndPositioningTools:
       {'x': 0, 'y': 0, 'width': 6},  # missing height
       {'x': 0, 'y': 0, 'height': 4},  # missing width
       {'x': 0, 'width': 6, 'height': 4},  # missing y
-      {'y': 0, 'width': 6, 'height': 4}  # missing x
+      {'y': 0, 'width': 6, 'height': 4},  # missing x
     ]
 
     for pos in incomplete_positions:
-      result = tool.fn(
-        dashboard_id='dashboard-123',
-        widget_id='widget_1',
-        position=pos
-      )
+      result = tool.fn(dashboard_id='dashboard-123', widget_id='widget_1', position=pos)
       assert_error_response(result)
       assert 'Position must include' in result['error']
 
@@ -1908,7 +1820,7 @@ class TestLayoutAndPositioningTools:
     result = tool.fn(
       dashboard_id='dashboard-123',
       widget_id='widget_1',
-      position={'x': -1, 'y': 0, 'width': 6, 'height': 4}
+      position={'x': -1, 'y': 0, 'width': 6, 'height': 4},
     )
     assert_error_response(result)
     assert 'x and y must be non-negative' in result['error']
@@ -1917,7 +1829,7 @@ class TestLayoutAndPositioningTools:
     result = tool.fn(
       dashboard_id='dashboard-123',
       widget_id='widget_1',
-      position={'x': 0, 'y': 0, 'width': 0, 'height': 4}
+      position={'x': 0, 'y': 0, 'width': 0, 'height': 4},
     )
     assert_error_response(result)
     assert 'width and height must be positive' in result['error']
@@ -1926,7 +1838,7 @@ class TestLayoutAndPositioningTools:
     result = tool.fn(
       dashboard_id='dashboard-123',
       widget_id='widget_1',
-      position={'x': 8, 'y': 0, 'width': 6, 'height': 4}
+      position={'x': 8, 'y': 0, 'width': 6, 'height': 4},
     )
     assert_error_response(result)
     assert 'Widget extends beyond 12-column grid' in result['error']
@@ -1937,26 +1849,25 @@ class TestLayoutAndPositioningTools:
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       # Mock workspace client
       mock_workspace = Mock()
-      
+
       # Mock Lakeview API failure
-      mock_workspace.lakeview.get.side_effect = AttributeError("'WorkspaceClient' object has no attribute 'lakeview'")
-      
+      mock_workspace.lakeview.get.side_effect = AttributeError(
+        "'WorkspaceClient' object has no attribute 'lakeview'"
+      )
+
       # Mock legacy dashboard API success
       mock_dashboard = Mock()
       mock_dashboard.widgets = [
         {'widget_id': 'legacy_widget_1', 'position': {'width': 6, 'height': 4}}
       ]
-      
+
       mock_workspace.dashboards.get.return_value = mock_dashboard
       mock_workspace.dashboards.update.return_value = Mock()
       mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
-      result = tool.fn(
-        dashboard_id='legacy-dashboard-123',
-        layout_type='grid'
-      )
+      result = tool.fn(dashboard_id='legacy-dashboard-123', layout_type='grid')
 
       assert_success_response(result)
       assert result['dashboard_type'] == 'legacy'
@@ -1975,7 +1886,10 @@ class TestWidgetCreationErrors:
     widget_tests = [
       ('create_bar_chart', {'dataset_name': 'test', 'x_field': 'x'}),  # missing y_field
       ('create_line_chart', {'dataset_name': 'test', 'x_field': 'x'}),  # missing y_field
-      ('create_pie_chart', {'dataset_name': 'test', 'category_field': 'cat'}),  # missing value_field
+      (
+        'create_pie_chart',
+        {'dataset_name': 'test', 'category_field': 'cat'},
+      ),  # missing value_field
       ('create_counter_widget', {'dataset_name': 'test'}),  # missing value_field
       ('create_data_table', {'dataset_name': 'test'}),  # missing columns
       ('create_scatter_plot', {'dataset_name': 'test', 'x_field': 'x'}),  # missing y_field
@@ -2009,7 +1923,7 @@ class TestWidgetCreationErrors:
         dataset_name='sales_data',
         x_field='region',
         y_field='revenue',
-        dashboard_id='nonexistent-dashboard'
+        dashboard_id='nonexistent-dashboard',
       )
 
       assert_error_response(result)

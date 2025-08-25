@@ -135,8 +135,8 @@ class TestMCPProtocolCompliance:
       prompts = mcp_server._prompt_manager._prompts
 
       # Should have expected prompts loaded
-      expected_prompts = ['build_ldp_pipeline', 'performance_optimization']
-      assert len(prompts) >= 2
+      expected_prompts = ['build_ldp_pipeline', 'performance_optimization', 'build_lakeview_dashboard']
+      assert len(prompts) >= 3
 
       for prompt_name in expected_prompts:
         assert prompt_name in prompts
@@ -149,6 +149,7 @@ class TestMCPProtocolCompliance:
 
     assert 'build_ldp_pipeline' in prompt_file_names
     assert 'performance_optimization' in prompt_file_names
+    assert 'build_lakeview_dashboard' in prompt_file_names
 
     # Verify prompt file contents can be loaded
     for prompt_file in prompt_files:
@@ -347,9 +348,9 @@ class TestMCPProtocolCompliance:
       prompts = mcp_server._prompt_manager._prompts
 
       # Verify prompt registration structure
-      assert len(prompts) >= 2
+      assert len(prompts) >= 3
 
-      expected_prompts = ['build_ldp_pipeline', 'performance_optimization']
+      expected_prompts = ['build_ldp_pipeline', 'performance_optimization', 'build_lakeview_dashboard']
       for prompt_name in expected_prompts:
         assert prompt_name in prompts
         prompt = prompts[prompt_name]
@@ -359,7 +360,7 @@ class TestMCPProtocolCompliance:
 
     # Test prompt file structure compliance
     prompt_files = list(Path('prompts').glob('*.md'))
-    assert len(prompt_files) >= 2
+    assert len(prompt_files) >= 3
 
     for prompt_file in prompt_files:
       with open(prompt_file, 'r') as f:
@@ -376,6 +377,51 @@ class TestMCPProtocolCompliance:
 
       # Content should be substantial
       assert len(content.strip()) > 50  # Meaningful prompt content
+
+  @pytest.mark.mcp
+  def test_build_lakeview_dashboard_prompt_content(self, mcp_server, mock_env_vars):
+    """Test build lakeview dashboard prompt contains required sections."""
+    # Load prompts into the MCP server
+    load_prompts(mcp_server)
+
+    # Read build lakeview dashboard prompt content
+    dashboard_prompt_path = Path('prompts/build_lakeview_dashboard.md')
+    assert dashboard_prompt_path.exists(), 'Build lakeview dashboard prompt file should exist'
+
+    with open(dashboard_prompt_path, 'r') as f:
+      content = f.read()
+
+    # Verify required sections are present
+    required_sections = [
+      '# Build Lakeview Dashboard',
+      '## Core Mission',
+      '## Workflow Process',
+      '## Widget Selection Guide',
+      '## Data Validation Requirements',
+      '## Layout Best Practices',
+      '## TODO List Management',
+      '## Error Handling Instructions',
+    ]
+
+    for section in required_sections:
+      assert section in content, f'Build lakeview dashboard prompt missing required section: {section}'
+
+    # Verify widget types are documented
+    widget_types = ['Bar Charts', 'Line Charts', 'Counters', 'Data Tables', 'Filter Widgets']
+
+    for widget_type in widget_types:
+      assert widget_type in content, f'Build lakeview dashboard prompt missing widget type: {widget_type}'
+
+    # Verify prompt references actual MCP tools
+    mcp_tools = [
+      'execute_dbsql',
+      'list_uc_catalogs',
+      'create_bar_chart_widget',
+      'create_lakeview_dashboard',
+    ]
+
+    for tool in mcp_tools:
+      assert tool in content, f'Build lakeview dashboard prompt missing MCP tool reference: {tool}'
 
   @pytest.mark.mcp
   def test_protocol_response_structure(self, mcp_server, mock_env_vars):
@@ -654,4 +700,4 @@ class TestMCPProtocolCompliance:
 
     # Verify minimum tool coverage for Databricks operations
     assert server_info['tool_count'] >= 60  # Should have comprehensive tool set
-    assert server_info['prompt_count'] >= 2  # Should have business prompts
+    assert server_info['prompt_count'] >= 3  # Should have business prompts
