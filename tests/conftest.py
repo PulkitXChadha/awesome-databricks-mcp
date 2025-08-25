@@ -13,9 +13,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 @pytest.fixture
 def mock_env_vars(monkeypatch):
   """Set test environment variables."""
-  monkeypatch.setenv('DATABRICKS_HOST', 'https://test.cloud.databricks.com')
-  monkeypatch.setenv('DATABRICKS_TOKEN', 'test-token-12345')
-  monkeypatch.setenv('DATABRICKS_SQL_WAREHOUSE_ID', 'test-warehouse')
+  env_vars = {
+    'DATABRICKS_HOST': 'https://test.cloud.databricks.com',
+    'DATABRICKS_TOKEN': 'test-token-12345',
+    'DATABRICKS_SQL_WAREHOUSE_ID': 'test-warehouse'
+  }
+  
+  for key, value in env_vars.items():
+    monkeypatch.setenv(key, value)
+  
+  return env_vars
 
 
 @pytest.fixture
