@@ -30,31 +30,39 @@ def load_dashboard_tools(mcp_server):
       try:
         # Use the lakeview API to list dashboards (correct method name is 'list')
         for dashboard in w.lakeview.list():
-          dashboards.append({
-            'dashboard_id': dashboard.dashboard_id,
-            'name': dashboard.name,
-            'description': getattr(dashboard, 'description', None),
-            'created_time': getattr(dashboard, 'created_time', None),
-            'updated_time': getattr(dashboard, 'updated_time', None),
-            'owner': getattr(dashboard, 'owner', None),
-            'status': getattr(dashboard, 'status', None),
-            'type': 'lakeview'
-          })
+          dashboards.append(
+            {
+              'dashboard_id': dashboard.dashboard_id,
+              'name': dashboard.name,
+              'description': getattr(dashboard, 'description', None),
+              'created_time': getattr(dashboard, 'created_time', None),
+              'updated_time': getattr(dashboard, 'updated_time', None),
+              'owner': getattr(dashboard, 'owner', None),
+              'status': getattr(dashboard, 'status', None),
+              'type': 'lakeview',
+            }
+          )
       except AttributeError:
         # Fallback: try alternative API paths if lakeview is not available
         try:
           # Try legacy dashboard API as fallback
           for dashboard in w.dashboards.list():
-            dashboards.append({
-              'dashboard_id': getattr(dashboard, 'id', getattr(dashboard, 'dashboard_id', None)),
-              'name': getattr(dashboard, 'name', None),
-              'description': getattr(dashboard, 'description', None),
-              'created_time': getattr(dashboard, 'created_time', getattr(dashboard, 'created_at', None)),
-              'updated_time': getattr(dashboard, 'updated_time', getattr(dashboard, 'updated_at', None)),
-              'owner': getattr(dashboard, 'owner', getattr(dashboard, 'user', None)),
-              'status': getattr(dashboard, 'status', None),
-              'type': 'legacy'
-            })
+            dashboards.append(
+              {
+                'dashboard_id': getattr(dashboard, 'id', getattr(dashboard, 'dashboard_id', None)),
+                'name': getattr(dashboard, 'name', None),
+                'description': getattr(dashboard, 'description', None),
+                'created_time': getattr(
+                  dashboard, 'created_time', getattr(dashboard, 'created_at', None)
+                ),
+                'updated_time': getattr(
+                  dashboard, 'updated_time', getattr(dashboard, 'updated_at', None)
+                ),
+                'owner': getattr(dashboard, 'owner', getattr(dashboard, 'user', None)),
+                'status': getattr(dashboard, 'status', None),
+                'type': 'legacy',
+              }
+            )
         except (AttributeError, Exception) as fallback_error:
           print(f'⚠️ Fallback dashboard listing failed: {str(fallback_error)}')
           # Return empty list if both methods fail
@@ -65,7 +73,7 @@ def load_dashboard_tools(mcp_server):
         'dashboards': dashboards,
         'count': len(dashboards),
         'message': f'Found {len(dashboards)} dashboard(s)',
-        'note': 'Includes both Lakeview and legacy dashboards if available'
+        'note': 'Includes both Lakeview and legacy dashboards if available',
       }
 
     except Exception as e:
@@ -102,7 +110,7 @@ def load_dashboard_tools(mcp_server):
           return {
             'success': False,
             'error': f'Dashboard not found or API not available: {str(fallback_error)}',
-            'dashboard_id': dashboard_id
+            'dashboard_id': dashboard_id,
           }
 
       # Extract dashboard details with safe attribute access
@@ -114,7 +122,7 @@ def load_dashboard_tools(mcp_server):
         'updated_time': getattr(dashboard, 'updated_time', getattr(dashboard, 'updated_at', None)),
         'owner': getattr(dashboard, 'owner', getattr(dashboard, 'user', None)),
         'status': getattr(dashboard, 'status', None),
-        'type': dashboard_type
+        'type': dashboard_type,
       }
 
       # Add additional fields if available
@@ -153,10 +161,7 @@ def load_dashboard_tools(mcp_server):
 
       # Validate required configuration
       if not dashboard_config.get('name'):
-        return {
-          'success': False,
-          'error': 'Dashboard name is required in dashboard_config'
-        }
+        return {'success': False, 'error': 'Dashboard name is required in dashboard_config'}
 
       # Create dashboard using the Databricks SDK
       try:
@@ -171,7 +176,7 @@ def load_dashboard_tools(mcp_server):
         except (AttributeError, Exception) as fallback_error:
           return {
             'success': False,
-            'error': f'Dashboard creation failed or API not available: {str(fallback_error)}'
+            'error': f'Dashboard creation failed or API not available: {str(fallback_error)}',
           }
 
       # Extract dashboard details
@@ -209,10 +214,7 @@ def load_dashboard_tools(mcp_server):
 
       # Validate updates
       if not updates:
-        return {
-          'success': False,
-          'error': 'No updates provided in updates parameter'
-        }
+        return {'success': False, 'error': 'No updates provided in updates parameter'}
 
       # Update dashboard using the Databricks SDK
       try:
@@ -228,12 +230,12 @@ def load_dashboard_tools(mcp_server):
           return {
             'success': False,
             'error': f'Dashboard update failed or API not available: {str(fallback_error)}',
-            'dashboard_id': dashboard_id
+            'dashboard_id': dashboard_id,
           }
 
       # Extract updated dashboard details
       dashboard_name = getattr(dashboard, 'name', 'Unknown')
-      
+
       return {
         'success': True,
         'dashboard_id': dashboard_id,
@@ -277,7 +279,7 @@ def load_dashboard_tools(mcp_server):
           return {
             'success': False,
             'error': f'Dashboard deletion failed or API not available: {str(fallback_error)}',
-            'dashboard_id': dashboard_id
+            'dashboard_id': dashboard_id,
           }
 
       return {

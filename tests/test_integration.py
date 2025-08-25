@@ -239,16 +239,16 @@ class TestBusinessUserJourneys:
           {'type': 'bar_chart', 'metric': 'transaction_count'},
         ],
       }
-      
+
       # Mock the dashboard creation response
       mock_dashboard = Mock()
       mock_dashboard.dashboard_id = 'dashboard-123'
       mock_dashboard.name = 'Sales Analytics Dashboard'
-      
+
       # Mock the lakeview.create method that the dashboard tool actually calls
       client.lakeview = Mock()
       client.lakeview.create.return_value = mock_dashboard
-      
+
       dashboard_result = create_dashboard_tool.fn(dashboard_config=dashboard_config)
 
       assert_success_response(dashboard_result)
@@ -859,8 +859,8 @@ class TestResilienceAndSecurity:
   @pytest.mark.resilience
   def test_databricks_api_failure_recovery(self, mcp_server, mock_env_vars):
     """Test behavior when Databricks API is unavailable."""
-    from server.tools.unity_catalog import load_uc_tools
     from server.tools.sql_operations import load_sql_tools
+    from server.tools.unity_catalog import load_uc_tools
 
     # Load tools
     load_uc_tools(mcp_server)
@@ -868,7 +868,7 @@ class TestResilienceAndSecurity:
 
     with patch('server.tools.unity_catalog.WorkspaceClient') as mock_uc_client:
       # Simulate API outage - connection errors
-      mock_uc_client.side_effect = Exception("Connection timeout - Databricks API unavailable")
+      mock_uc_client.side_effect = Exception('Connection timeout - Databricks API unavailable')
 
       # Test catalog listing during API outage
       list_catalogs_tool = mcp_server._tool_manager._tools['list_uc_catalogs']
@@ -877,12 +877,12 @@ class TestResilienceAndSecurity:
       # Verify graceful degradation
       assert result['success'] is False
       assert 'error' in result
-      
+
       # Check error messages are user-friendly (no internal details)
       error_msg = result['error']
       assert 'Connection timeout' in error_msg or 'API unavailable' in error_msg
       assert 'Databricks' in error_msg
-      
+
       # Ensure no stack traces or internal paths leaked
       assert 'Traceback' not in error_msg
       assert '/Users/' not in error_msg
@@ -892,11 +892,11 @@ class TestResilienceAndSecurity:
     with patch('server.tools.unity_catalog.WorkspaceClient') as mock_recovered_client:
       client = Mock()
       mock_recovered_client.return_value = client
-      
+
       # Setup minimal successful response
       mock_catalog = Mock()
       mock_catalog.name = 'main'
-      mock_catalog.catalog_type = 'UNITY_CATALOG' 
+      mock_catalog.catalog_type = 'UNITY_CATALOG'
       client.catalogs.list.return_value = [mock_catalog]
 
       # Test successful recovery
@@ -908,6 +908,7 @@ class TestResilienceAndSecurity:
   def test_concurrent_operations(self, mcp_server, mock_env_vars):
     """Test multi-user concurrent access."""
     from concurrent.futures import ThreadPoolExecutor
+
     from server.tools.unity_catalog import load_uc_tools
 
     load_uc_tools(mcp_server)
@@ -915,7 +916,7 @@ class TestResilienceAndSecurity:
     with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
       client = Mock()
       mock_client.return_value = client
-      
+
       # Setup thread-safe mock data
       mock_catalog = Mock()
       mock_catalog.name = 'concurrent_test'
@@ -924,7 +925,7 @@ class TestResilienceAndSecurity:
 
       # Simulate 10 concurrent tool calls
       list_catalogs_tool = mcp_server._tool_manager._tools['list_uc_catalogs']
-      
+
       def execute_tool_call():
         return list_catalogs_tool.fn()
 
@@ -941,15 +942,15 @@ class TestResilienceAndSecurity:
 
       # Verify resource management - no memory leaks or connection issues
       assert len(results) == 10
-      
+
       # Verify all mock client calls were handled correctly
       assert mock_client.call_count >= 10
 
   @pytest.mark.resilience
   def test_partial_service_failure(self, mcp_server, mock_env_vars):
     """Test when some Databricks services fail."""
-    from server.tools.unity_catalog import load_uc_tools
     from server.tools.sql_operations import load_sql_tools
+    from server.tools.unity_catalog import load_uc_tools
 
     load_uc_tools(mcp_server)
     load_sql_tools(mcp_server)
@@ -960,12 +961,12 @@ class TestResilienceAndSecurity:
       patch('server.tools.sql_operations.WorkspaceClient') as mock_sql_client,
     ):
       # UC service fails
-      mock_uc_client.side_effect = Exception("Unity Catalog service unavailable")
-      
+      mock_uc_client.side_effect = Exception('Unity Catalog service unavailable')
+
       # SQL service works
       sql_client = Mock()
       mock_sql_client.return_value = sql_client
-      
+
       mock_warehouse = Mock()
       mock_warehouse.id = 'test-warehouse'
       mock_warehouse.name = 'Test Warehouse'
@@ -998,8 +999,8 @@ class TestResilienceAndSecurity:
     # Force authentication error with token exposure risk
     with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
       # Simulate auth error that might leak token
-      sensitive_token = "dapi1234567890abcdef-sensitive-token-data"
-      mock_client.side_effect = Exception(f"Authentication failed with token {sensitive_token}")
+      sensitive_token = 'dapi1234567890abcdef-sensitive-token-data'
+      mock_client.side_effect = Exception(f'Authentication failed with token {sensitive_token}')
 
       list_catalogs_tool = mcp_server._tool_manager._tools['list_uc_catalogs']
       result = list_catalogs_tool.fn()
@@ -1007,7 +1008,7 @@ class TestResilienceAndSecurity:
       # Verify token not in error message
       assert result['success'] is False
       error_msg = result['error']
-      
+
       # Token should be scrubbed from error messages
       assert sensitive_token not in error_msg
       assert 'dapi' not in error_msg
@@ -1034,10 +1035,10 @@ class TestResilienceAndSecurity:
 
       # Try malicious SQL in parameters
       malicious_queries = [
-        "SELECT * FROM users; DROP TABLE users; --",
-        "SELECT * FROM users WHERE id = 1 OR 1=1",
-        "SELECT * FROM users UNION SELECT password FROM admin_users",
-        "'; INSERT INTO audit_log VALUES ('hacked'); --"
+        'SELECT * FROM users; DROP TABLE users; --',
+        'SELECT * FROM users WHERE id = 1 OR 1=1',
+        'SELECT * FROM users UNION SELECT password FROM admin_users',
+        "'; INSERT INTO audit_log VALUES ('hacked'); --",
       ]
 
       execute_sql_tool = mcp_server._tool_manager._tools['execute_dbsql']
@@ -1055,7 +1056,7 @@ class TestResilienceAndSecurity:
         # The tool should handle the malicious query safely
         # Since we're mocking, we verify proper error handling structure
         assert isinstance(result, dict)
-        
+
         # Verify that the actual query was passed to Databricks (proper escaping handled by SDK)
         client.statement_execution.execute_statement.assert_called()
         call_args = client.statement_execution.execute_statement.call_args
@@ -1070,7 +1071,7 @@ class TestResilienceAndSecurity:
 
     with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client:
       # Test cross-workspace access prevention
-      mock_client.side_effect = Exception("Access denied - insufficient permissions for workspace")
+      mock_client.side_effect = Exception('Access denied - insufficient permissions for workspace')
 
       list_catalogs_tool = mcp_server._tool_manager._tools['list_uc_catalogs']
       result = list_catalogs_tool.fn()
@@ -1078,10 +1079,10 @@ class TestResilienceAndSecurity:
       # Verify permission errors are properly handled
       assert result['success'] is False
       assert 'error' in result
-      
+
       error_msg = result['error']
       assert 'Access denied' in error_msg or 'insufficient permissions' in error_msg
-      
+
       # Ensure error doesn't leak workspace URLs or sensitive details
       assert 'https://' not in error_msg
       assert '.databricks.com' not in error_msg
@@ -1091,7 +1092,7 @@ class TestResilienceAndSecurity:
     with patch('server.tools.unity_catalog.WorkspaceClient') as mock_authorized_client:
       client = Mock()
       mock_authorized_client.return_value = client
-      
+
       # Setup authorized response
       mock_catalog = Mock()
       mock_catalog.name = 'authorized_catalog'
