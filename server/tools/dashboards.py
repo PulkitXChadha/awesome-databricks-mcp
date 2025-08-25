@@ -2345,6 +2345,319 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error creating dashboard dataset: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
+  # Batch Operations
+  
+  @mcp_server.tool
+  def create_multiple_widgets(dashboard_id: str, widget_specs: list) -> dict:
+    """Create multiple widgets in a single operation for efficient dashboard building.
+    
+    Args:
+        dashboard_id: The ID of the dashboard to add widgets to
+        widget_specs: List of widget specification dictionaries, each containing:
+          - type: Widget type (bar_chart, line_chart, counter, etc.)
+          - name: Widget name/title
+          - dataset_name: Dataset or table to use
+          - Additional widget-specific parameters
+    
+    Returns:
+        Dictionary with batch operation results, including success/failure for each widget
+    """
+    try:
+      if not isinstance(widget_specs, list) or len(widget_specs) == 0:
+        return {
+          'success': False,
+          'error': 'widget_specs must be a non-empty list of widget specifications'
+        }
+      
+      results = []
+      successful_widgets = []
+      failed_widgets = []
+      
+      # Process each widget specification
+      for i, widget_spec in enumerate(widget_specs):
+        try:
+          if not isinstance(widget_spec, dict):
+            results.append({
+              'widget_index': i,
+              'success': False,
+              'error': 'Widget specification must be a dictionary'
+            })
+            failed_widgets.append(f"Widget {i}")
+            continue
+          
+          widget_type = widget_spec.get('type')
+          if not widget_type:
+            results.append({
+              'widget_index': i,
+              'success': False,
+              'error': 'Widget type is required'
+            })
+            failed_widgets.append(f"Widget {i}")
+            continue
+          
+          # Map widget types to their creation functions
+          widget_creators = {
+            'bar_chart': lambda spec: create_bar_chart(
+              dataset_name=spec.get('dataset_name'),
+              x_field=spec.get('x_field'),
+              y_field=spec.get('y_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              x_scale_type=spec.get('x_scale_type', 'categorical'),
+              y_scale_type=spec.get('y_scale_type', 'quantitative')
+            ),
+            'line_chart': lambda spec: create_line_chart(
+              dataset_name=spec.get('dataset_name'),
+              x_field=spec.get('x_field'),
+              y_field=spec.get('y_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              color_field=spec.get('color_field'),
+              x_scale_type=spec.get('x_scale_type', 'temporal'),
+              y_scale_type=spec.get('y_scale_type', 'quantitative')
+            ),
+            'area_chart': lambda spec: create_area_chart(
+              dataset_name=spec.get('dataset_name'),
+              x_field=spec.get('x_field'),
+              y_field=spec.get('y_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              color_field=spec.get('color_field'),
+              stacked=spec.get('stacked', True),
+              x_scale_type=spec.get('x_scale_type', 'temporal'),
+              y_scale_type=spec.get('y_scale_type', 'quantitative')
+            ),
+            'pie_chart': lambda spec: create_pie_chart(
+              dataset_name=spec.get('dataset_name'),
+              category_field=spec.get('category_field'),
+              value_field=spec.get('value_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              show_labels=spec.get('show_labels', True),
+              show_percentages=spec.get('show_percentages', True)
+            ),
+            'scatter_plot': lambda spec: create_scatter_plot(
+              dataset_name=spec.get('dataset_name'),
+              x_field=spec.get('x_field'),
+              y_field=spec.get('y_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              color_field=spec.get('color_field'),
+              size_field=spec.get('size_field'),
+              x_scale_type=spec.get('x_scale_type', 'quantitative'),
+              y_scale_type=spec.get('y_scale_type', 'quantitative')
+            ),
+            'histogram': lambda spec: create_histogram(
+              dataset_name=spec.get('dataset_name'),
+              value_field=spec.get('value_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              bins=spec.get('bins', 20),
+              color=spec.get('color', 'steelblue')
+            ),
+            'combo_chart': lambda spec: create_combo_chart(
+              dataset_name=spec.get('dataset_name'),
+              x_field=spec.get('x_field'),
+              bar_field=spec.get('bar_field'),
+              line_field=spec.get('line_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              x_scale_type=spec.get('x_scale_type', 'categorical')
+            ),
+            'counter': lambda spec: create_counter_widget(
+              dataset_name=spec.get('dataset_name'),
+              value_field=spec.get('value_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              aggregation=spec.get('aggregation', 'sum'),
+              format_type=spec.get('format_type', 'number'),
+              color=spec.get('color', 'blue')
+            ),
+            'delta_counter': lambda spec: create_delta_counter(
+              dataset_name=spec.get('dataset_name'),
+              value_field=spec.get('value_field'),
+              comparison_field=spec.get('comparison_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              aggregation=spec.get('aggregation', 'sum'),
+              format_type=spec.get('format_type', 'number'),
+              show_percentage=spec.get('show_percentage', True)
+            ),
+            'data_table': lambda spec: create_data_table(
+              dataset_name=spec.get('dataset_name'),
+              columns=spec.get('columns', []),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              page_size=spec.get('page_size', 25),
+              sortable=spec.get('sortable', True),
+              searchable=spec.get('searchable', True)
+            ),
+            'pivot_table': lambda spec: create_pivot_table(
+              dataset_name=spec.get('dataset_name'),
+              row_fields=spec.get('row_fields', []),
+              column_fields=spec.get('column_fields', []),
+              value_fields=spec.get('value_fields', []),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              aggregations=spec.get('aggregations')
+            ),
+            'dropdown_filter': lambda spec: create_dropdown_filter(
+              dataset_name=spec.get('dataset_name'),
+              filter_field=spec.get('filter_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              multi_select=spec.get('multi_select', False),
+              default_values=spec.get('default_values', [])
+            ),
+            'date_range_filter': lambda spec: create_date_range_filter(
+              dataset_name=spec.get('dataset_name'),
+              date_field=spec.get('date_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              default_range=spec.get('default_range')
+            ),
+            'slider_filter': lambda spec: create_slider_filter(
+              dataset_name=spec.get('dataset_name'),
+              numeric_field=spec.get('numeric_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              min_value=spec.get('min_value'),
+              max_value=spec.get('max_value'),
+              step=spec.get('step'),
+              default_value=spec.get('default_value')
+            ),
+            'text_filter': lambda spec: create_text_filter(
+              dataset_name=spec.get('dataset_name'),
+              text_field=spec.get('text_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              placeholder=spec.get('placeholder'),
+              case_sensitive=spec.get('case_sensitive', False)
+            ),
+            'map_widget': lambda spec: create_map_widget(
+              dataset_name=spec.get('dataset_name'),
+              latitude_field=spec.get('latitude_field'),
+              longitude_field=spec.get('longitude_field'),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              color_field=spec.get('color_field'),
+              size_field=spec.get('size_field'),
+              map_style=spec.get('map_style', 'light')
+            ),
+            'text_widget': lambda spec: create_text_widget(
+              content=spec.get('content', ''),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              content_type=spec.get('content_type', 'markdown'),
+              text_size=spec.get('text_size', 'medium'),
+              text_color=spec.get('text_color', 'default'),
+              background_color=spec.get('background_color', 'transparent')
+            ),
+            'image_widget': lambda spec: create_image_widget(
+              image_url=spec.get('image_url', ''),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              alt_text=spec.get('alt_text'),
+              fit_type=spec.get('fit_type', 'contain'),
+              link_url=spec.get('link_url')
+            ),
+            'iframe_widget': lambda spec: create_iframe_widget(
+              iframe_url=spec.get('iframe_url', ''),
+              dashboard_id=dashboard_id,
+              title=spec.get('title'),
+              position=spec.get('position'),
+              sandbox_attributes=spec.get('sandbox_attributes'),
+              allow_fullscreen=spec.get('allow_fullscreen', True)
+            )
+          }
+          
+          # Check if widget type is supported
+          if widget_type not in widget_creators:
+            results.append({
+              'widget_index': i,
+              'widget_type': widget_type,
+              'success': False,
+              'error': f'Unsupported widget type: {widget_type}. Supported types: {list(widget_creators.keys())}'
+            })
+            failed_widgets.append(f"{widget_type} (index {i})")
+            continue
+          
+          # Call the appropriate widget creation function
+          creator_func = widget_creators[widget_type]
+          creation_result = creator_func(widget_spec)
+          
+          if creation_result.get('success', False):
+            results.append({
+              'widget_index': i,
+              'widget_type': widget_type,
+              'widget_name': widget_spec.get('title', widget_spec.get('name', f'Widget {i}')),
+              'success': True,
+              'widget_id': creation_result.get('widget_id'),
+              'message': creation_result.get('message', f'{widget_type} created successfully')
+            })
+            successful_widgets.append(f"{widget_type} (index {i})")
+          else:
+            results.append({
+              'widget_index': i,
+              'widget_type': widget_type,
+              'success': False,
+              'error': creation_result.get('error', 'Unknown error during widget creation')
+            })
+            failed_widgets.append(f"{widget_type} (index {i})")
+          
+        except Exception as widget_error:
+          results.append({
+            'widget_index': i,
+            'success': False,
+            'error': f'Exception during widget creation: {str(widget_error)}'
+          })
+          failed_widgets.append(f"Widget {i}")
+      
+      # Calculate summary statistics
+      total_widgets = len(widget_specs)
+      successful_count = len(successful_widgets)
+      failed_count = len(failed_widgets)
+      success_rate = (successful_count / total_widgets) * 100 if total_widgets > 0 else 0
+      
+      return {
+        'success': successful_count > 0,  # True if at least one widget was created
+        'dashboard_id': dashboard_id,
+        'total_widgets_requested': total_widgets,
+        'successful_widgets': successful_count,
+        'failed_widgets': failed_count,
+        'success_rate_percentage': round(success_rate, 1),
+        'successful_widget_list': successful_widgets,
+        'failed_widget_list': failed_widgets,
+        'detailed_results': results,
+        'message': f'Batch widget creation completed: {successful_count}/{total_widgets} widgets created successfully ({success_rate:.1f}% success rate)',
+        'recommendation': 'Check detailed_results for specific widget creation errors' if failed_count > 0 else 'All widgets created successfully'
+      }
+      
+    except Exception as e:
+      return {
+        'success': False,
+        'error': f'Batch widget creation failed: {str(e)}',
+        'dashboard_id': dashboard_id
+      }
+
   @mcp_server.tool
   def test_dataset_query(query: str, warehouse_id: str = None, limit: int = 10) -> dict:
     """Test a SQL query before creating dataset.
