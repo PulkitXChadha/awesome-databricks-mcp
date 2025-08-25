@@ -1,0 +1,86 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ dev ]      # Deploy to development
+    tags: [ 'v*' ]         # Deploy to production
+  workflow_dispatch:       # Manual deployment
+    inputs:
+      environment:
+        type: choice
+        options:
+          - development
+          - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_type == 'tag' && 'production' || github.event.inputs.environment || 'development' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup environment
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" || "${{ github.event.inputs.environment }}" == "production" ]]; then
+            echo "DATABRICKS_HOST=${{ secrets.PROD_DATABRICKS_HOST }}" >> $GITHUB_ENV
+            echo "DATABRICKS_TOKEN=${{ secrets.PROD_DATABRICKS_TOKEN }}" >> $GITHUB_ENV
+            echo "DATABRICKS_APP_NAME=${{ secrets.PROD_DATABRICKS_APP_NAME }}" >> $GITHUB_ENV
+            echo "DBA_SOURCE_CODE_PATH=${{ secrets.PROD_DBA_SOURCE_CODE_PATH }}" >> $GITHUB_ENV
+            echo "ENV_NAME=Production" >> $GITHUB_ENV
+          else
+            echo "DATABRICKS_HOST=${{ secrets.DEV_DATABRICKS_HOST }}" >> $GITHUB_ENV
+            echo "DATABRICKS_TOKEN=${{ secrets.DEV_DATABRICKS_TOKEN }}" >> $GITHUB_ENV
+            echo "DATABRICKS_APP_NAME=${{ secrets.DEV_DATABRICKS_APP_NAME }}" >> $GITHUB_ENV
+            echo "DBA_SOURCE_CODE_PATH=${{ secrets.DEV_DBA_SOURCE_CODE_PATH }}" >> $GITHUB_ENV
+            echo "ENV_NAME=Development" >> $GITHUB_ENV
+          fi
+          echo "DATABRICKS_AUTH_TYPE=pat" >> $GITHUB_ENV
+      
+      - name: Install tools
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          echo "$HOME/.databricks/bin" >> $GITHUB_PATH
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+      
+      - name: Build application
+        run: |
+          echo "Building for $ENV_NAME deployment..."
+          uv run python scripts/generate_semver_requirements.py
+          cd client && bun install --frozen-lockfile && bun run build
+      
+      - name: Test connection
+        run: databricks current-user me
+      
+      - name: Deploy to Databricks
+        run: |
+          echo "Deploying $DATABRICKS_APP_NAME to $ENV_NAME..."
+          databricks workspace mkdirs "$DBA_SOURCE_CODE_PATH"
+          databricks sync . "$DBA_SOURCE_CODE_PATH"
+          
+          # Create app if it doesn't exist
+          if ! databricks apps list | grep -q "^$DATABRICKS_APP_NAME "; then
+            echo "Creating new app..."
+            databricks apps create "$DATABRICKS_APP_NAME"
+            sleep 30
+          fi
+          
+          # Deploy the app
+          databricks apps deploy "$DATABRICKS_APP_NAME" --source-code-path "$DBA_SOURCE_CODE_PATH"
+      
+      - name: Get app URL
+        run: |
+          APP_URL=$(databricks apps list --output json | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          apps = data if isinstance(data, list) else data.get('apps', [])
+          for app in apps:
+              if app.get('name') == '$DATABRICKS_APP_NAME':
+                  print(app.get('url', ''))
+                  break
+          ")
+          echo "🚀 Deployed to $ENV_NAME: $APP_URL"
