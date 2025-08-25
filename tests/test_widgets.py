@@ -629,6 +629,526 @@ class TestWidgetErrorHandling:
     assert widget['position']['width'] == 0
 
 
+
+class TestAdvancedWidgetMCPTools:
+  """Tests for advanced widget MCP tools in dashboard module."""
+
+  @pytest.mark.unit
+  def test_create_scatter_plot_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test scatter plot MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_scatter_plot']
+      result = tool.fn(
+        dataset_name='sales_data',
+        x_field='price',
+        y_field='quantity'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'scatter_plot'
+
+  @pytest.mark.unit
+  def test_create_histogram_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test histogram MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_histogram']
+      result = tool.fn(
+        dataset_name='user_data',
+        value_field='age'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'histogram'
+
+  @pytest.mark.unit
+  def test_create_combo_chart_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test combo chart MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_combo_chart']
+      result = tool.fn(
+        dataset_name='revenue_data',
+        x_field='month',
+        bar_field='revenue',
+        line_field='growth_rate'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'combo_chart'
+
+  @pytest.mark.unit
+  def test_create_pivot_table_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test pivot table MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_pivot_table']
+      result = tool.fn(
+        dataset_name='sales_data',
+        row_fields=['region'],
+        column_fields=['quarter'],
+        value_fields=['revenue']
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'pivot_table'
+
+  @pytest.mark.unit
+  def test_create_delta_counter_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test delta counter MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_delta_counter']
+      result = tool.fn(
+        dataset_name='metrics',
+        value_field='current_revenue',
+        comparison_field='previous_revenue'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'delta_counter'
+
+  @pytest.mark.unit
+  def test_create_slider_filter_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test slider filter MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_slider_filter']
+      result = tool.fn(
+        dataset_name='product_data',
+        numeric_field='price'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'slider_filter'
+
+  @pytest.mark.unit
+  def test_create_text_filter_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test text filter MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_text_filter']
+      result = tool.fn(
+        dataset_name='customer_data',
+        text_field='customer_name'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'text_filter'
+
+  @pytest.mark.unit
+  def test_create_map_widget_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test map widget MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_map_widget']
+      result = tool.fn(
+        dataset_name='location_data',
+        latitude_field='lat',
+        longitude_field='lon'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'map_widget'
+
+  @pytest.mark.unit
+  def test_create_text_widget_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test text widget MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_text_widget']
+      result = tool.fn(
+        content='# Dashboard Title\nWelcome to our dashboard'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'text_widget'
+
+  @pytest.mark.unit
+  def test_create_image_widget_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test image widget MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_image_widget']
+      result = tool.fn(
+        image_url='https://company.com/logo.png'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'image_widget'
+
+  @pytest.mark.unit
+  def test_create_iframe_widget_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test iframe widget MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['create_iframe_widget']
+      result = tool.fn(
+        iframe_url='https://example.com/embedded-report'
+      )
+      
+      assert_success_response(result)
+      assert 'widget_spec' in result
+      assert result['widget_spec']['type'] == 'iframe_widget'
+
+  @pytest.mark.unit
+  def test_auto_layout_dashboard_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test auto layout dashboard MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      
+      # Mock dashboard with widgets
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = [
+        {'widget_id': 'widget1', 'position': {'x': 0, 'y': 0, 'width': 6, 'height': 4}},
+        {'widget_id': 'widget2', 'position': {'x': 0, 'y': 4, 'width': 6, 'height': 4}},
+      ]
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_workspace.lakeview.update.return_value = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        layout_type='grid'
+      )
+      
+      assert_success_response(result)
+      assert result['dashboard_id'] == 'dashboard-123'
+      assert result['layout_type'] == 'grid'
+
+  @pytest.mark.unit
+  def test_reposition_widget_mcp_tool(self, mcp_server, mock_env_vars):
+    """Test reposition widget MCP tool."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      
+      # Mock dashboard with existing widget
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = [
+        {'widget_id': 'widget1', 'position': {'x': 0, 'y': 0, 'width': 6, 'height': 4}},
+      ]
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_workspace.lakeview.update.return_value = Mock()
+      mock_client.return_value = mock_workspace
+      
+      tool = mcp_server._tool_manager._tools['reposition_widget']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_id='widget1',
+        position={'x': 6, 'y': 0, 'width': 6, 'height': 4}
+      )
+      
+      assert_success_response(result)
+      assert result['widget_id'] == 'widget1'
+
+  @pytest.mark.unit
+  def test_widgets_module_counter_tool(self, mcp_server, mock_env_vars):
+    """Test counter tool from widgets module."""
+    load_widget_tools(mcp_server)
+    
+    tool = mcp_server._tool_manager._tools['create_counter']
+    result = tool.fn(
+      title='Total Sales',
+      value_field='revenue',
+      dataset_query='SELECT SUM(revenue) as revenue FROM sales'
+    )
+    
+    # Widgets module tools return widget spec directly
+    assert result['type'] == 'counter'
+    assert result['title'] == 'Total Sales'
+    assert 'id' in result
+
+  @pytest.mark.unit
+  def test_widgets_module_date_filter_tool(self, mcp_server, mock_env_vars):
+    """Test date filter tool from widgets module."""
+    load_widget_tools(mcp_server)
+    
+    tool = mcp_server._tool_manager._tools['create_date_filter']
+    result = tool.fn(
+      title='Date Range',
+      field_name='order_date',
+      dataset_query='SELECT order_date FROM orders'
+    )
+    
+    # Widgets module tools return widget spec directly
+    assert result['type'] == 'date_range_filter'
+    assert result['title'] == 'Date Range'
+    assert 'id' in result
+
+  @pytest.mark.unit
+  def test_add_widget_to_lakeview_dashboard_tool(self, mcp_server, mock_env_vars):
+    """Test adding widget to Lakeview dashboard tool."""
+    from tests.utils import assert_success_response
+    
+    load_widget_tools(mcp_server)
+    
+    with patch('server.tools.widgets.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      
+      # Mock existing dashboard
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = []
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_workspace.lakeview.update.return_value = Mock()
+      mock_client.return_value = mock_workspace
+      
+      widget_spec = {
+        'id': 'test_widget',
+        'type': 'bar_chart',
+        'title': 'Test Chart'
+      }
+      
+      tool = mcp_server._tool_manager._tools['add_widget_to_lakeview_dashboard']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_spec=widget_spec
+      )
+      
+      assert_success_response(result)
+      assert result['widget_id'] == 'test_widget'
+
+  @pytest.mark.unit
+  def test_create_lakeview_dashboard_with_widgets_tool(self, mcp_server, mock_env_vars):
+    """Test creating Lakeview dashboard with widgets tool."""
+    from tests.utils import assert_success_response
+    
+    load_widget_tools(mcp_server)
+    
+    with patch('server.tools.widgets.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_workspace.lakeview.create.return_value = Mock(dashboard_id='new-dashboard-456')
+      mock_client.return_value = mock_workspace
+      
+      widgets = [
+        {'id': 'widget1', 'type': 'bar_chart', 'title': 'Chart 1'},
+        {'id': 'widget2', 'type': 'counter', 'title': 'Counter 1'}
+      ]
+      
+      tool = mcp_server._tool_manager._tools['create_lakeview_dashboard_with_widgets']
+      result = tool.fn(
+        name='Test Dashboard',
+        description='A test dashboard with widgets',
+        widgets=widgets
+      )
+      
+      assert_success_response(result)
+      assert result['dashboard_id'] == 'new-dashboard-456'
+
+
+class TestAdvancedWidgetIntegration:
+  """Test integration workflows for advanced widget tools."""
+
+  @pytest.mark.unit
+  def test_complete_dashboard_creation_workflow(self, mcp_server, mock_env_vars):
+    """Test complete workflow with advanced widget tools."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_success_response
+    
+    load_dashboard_tools(mcp_server)
+    load_widget_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_dashboard_client:
+      with patch('server.tools.widgets.WorkspaceClient') as mock_widget_client:
+        # Mock workspace clients
+        mock_dashboard_workspace = Mock()
+        mock_widget_workspace = Mock()
+        
+        mock_dashboard_client.return_value = mock_dashboard_workspace
+        mock_widget_client.return_value = mock_widget_workspace
+        
+        # Mock dashboard creation
+        mock_widget_workspace.lakeview.create.return_value = Mock(dashboard_id='new-dashboard-123')
+        
+        # Step 1: Create widgets using various advanced widget tools
+        widgets = [
+          {
+            'id': 'scatter1',
+            'type': 'scatter_plot',
+            'title': 'Price vs Quantity Analysis'
+          },
+          {
+            'id': 'map1',
+            'type': 'map',
+            'title': 'Geographic Distribution'
+          }
+        ]
+        
+        # Step 2: Create dashboard with widgets
+        dashboard_tool = mcp_server._tool_manager._tools['create_lakeview_dashboard_with_widgets']
+        dashboard_result = dashboard_tool.fn(
+          name='Analytics Dashboard',
+          description='Comprehensive analytics with advanced widgets',
+          widgets=widgets
+        )
+        
+        assert_success_response(dashboard_result)
+        dashboard_id = dashboard_result['dashboard_id']
+        
+        # Step 3: Test auto-layout
+        mock_dashboard = Mock()
+        mock_dashboard.widgets = widgets
+        mock_dashboard_workspace.lakeview.get.return_value = mock_dashboard
+        
+        layout_tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
+        layout_result = layout_tool.fn(
+          dashboard_id=dashboard_id,
+          layout_type='grid'
+        )
+        
+        assert_success_response(layout_result)
+
+  @pytest.mark.unit
+  def test_advanced_widget_error_scenarios(self, mcp_server, mock_env_vars):
+    """Test error handling in advanced widget tools."""
+    from server.tools.dashboards import load_dashboard_tools
+    from tests.utils import assert_error_response
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+      mock_workspace.lakeview.get.side_effect = Exception('Dashboard not found')
+      mock_client.return_value = mock_workspace
+      
+      # Test layout tool with non-existent dashboard
+      layout_tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
+      result = layout_tool.fn(dashboard_id='non-existent-dashboard')
+      
+      assert_error_response(result)
+
+  @pytest.mark.unit  
+  def test_all_advanced_widget_tools_available(self, mcp_server, mock_env_vars):
+    """Test that all advanced widget tools are properly registered."""
+    from server.tools.dashboards import load_dashboard_tools
+    
+    load_dashboard_tools(mcp_server)
+    load_widget_tools(mcp_server)
+    
+    expected_advanced_tools = [
+      'create_scatter_plot', 'create_histogram', 'create_combo_chart',
+      'create_pivot_table', 'create_delta_counter', 'create_slider_filter',
+      'create_text_filter', 'create_map_widget', 'create_text_widget',
+      'create_image_widget', 'create_iframe_widget', 'auto_layout_dashboard',
+      'reposition_widget'
+    ]
+    
+    tools = mcp_server._tool_manager._tools
+    
+    for tool_name in expected_advanced_tools:
+      assert tool_name in tools, f"Advanced widget tool '{tool_name}' is not registered"
+    
+    # Also test widgets module specific tools
+    widget_module_tools = [
+      'create_counter', 'create_date_filter', 
+      'add_widget_to_lakeview_dashboard', 'create_lakeview_dashboard_with_widgets'
+    ]
+    
+    for tool_name in widget_module_tools:
+      assert tool_name in tools, f"Widget module tool '{tool_name}' is not registered"
+
+
 if __name__ == '__main__':
   # Run the tests
   pytest.main([__file__, '-v'])

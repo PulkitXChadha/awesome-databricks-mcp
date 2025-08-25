@@ -957,33 +957,7 @@ def load_widget_tools(mcp_server):
       mcp_server: The FastMCP server instance to register tools with
   """
 
-  # Chart widgets
-  @mcp_server.tool
-  def create_bar_chart(
-    title: str, x_field: str, y_field: str, dataset_query: str, position: Optional[dict] = None
-  ) -> dict:
-    """Create a bar chart widget for comparing categorical data."""
-    return create_bar_chart_widget(title, x_field, y_field, dataset_query, position)
-
-  @mcp_server.tool
-  def create_line_chart(
-    title: str, x_field: str, y_field: str, dataset_query: str, position: Optional[dict] = None
-  ) -> dict:
-    """Create a line chart widget for showing trends over time."""
-    return create_line_chart_widget(title, x_field, y_field, dataset_query, position)
-
-  @mcp_server.tool
-  def create_pie_chart(
-    title: str,
-    category_field: str,
-    value_field: str,
-    dataset_query: str,
-    position: Optional[dict] = None,
-  ) -> dict:
-    """Create a pie chart widget for showing proportional data."""
-    return create_pie_chart_widget(title, category_field, value_field, dataset_query, position)
-
-  # Data widgets
+  # Data widgets (unique to widgets module)
   @mcp_server.tool
   def create_counter(
     title: str,
@@ -995,31 +969,7 @@ def load_widget_tools(mcp_server):
     """Create a counter widget for displaying a single KPI."""
     return create_counter_widget(title, value_field, dataset_query, aggregation, None, position)
 
-  @mcp_server.tool
-  def create_data_table(
-    title: str,
-    columns: List[str],
-    dataset_query: str,
-    row_limit: int = 100,
-    position: Optional[dict] = None,
-  ) -> dict:
-    """Create a data table widget for detailed tabular view."""
-    return create_data_table_widget(title, columns, dataset_query, row_limit, position)
-
-  # Filter widgets
-  @mcp_server.tool
-  def create_dropdown_filter(
-    title: str,
-    field_name: str,
-    dataset_query: str,
-    multi_select: bool = False,
-    position: Optional[dict] = None,
-  ) -> dict:
-    """Create a dropdown filter widget for single or multi-select filtering."""
-    return create_dropdown_filter_widget(
-      title, field_name, dataset_query, multi_select, None, position
-    )
-
+  # Filter widgets (unique to widgets module)  
   @mcp_server.tool
   def create_date_filter(
     title: str, field_name: str, dataset_query: str, position: Optional[dict] = None
@@ -1027,7 +977,7 @@ def load_widget_tools(mcp_server):
     """Create a date range filter widget for temporal filtering."""
     return create_date_range_filter_widget(title, field_name, dataset_query, None, None, position)
 
-  # Widget management
+  # Widget management tools (unique to widgets module)
   @mcp_server.tool
   def add_widget_to_lakeview_dashboard(dashboard_id: str, widget_spec: dict) -> dict:
     """Add a widget to an existing Lakeview dashboard."""
