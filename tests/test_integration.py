@@ -239,10 +239,20 @@ class TestBusinessUserJourneys:
           {'type': 'bar_chart', 'metric': 'transaction_count'},
         ],
       }
+      
+      # Mock the dashboard creation response
+      mock_dashboard = Mock()
+      mock_dashboard.dashboard_id = 'dashboard-123'
+      mock_dashboard.name = 'Sales Analytics Dashboard'
+      client.lakeview = Mock()
+      client.lakeview.create_dashboard.return_value = mock_dashboard
+      
       dashboard_result = create_dashboard_tool.fn(dashboard_config=dashboard_config)
 
       assert_success_response(dashboard_result)
-      assert dashboard_result['dashboard_config']['name'] == 'Sales Analytics Dashboard'
+      assert dashboard_result['name'] == 'Sales Analytics Dashboard'
+      assert dashboard_result['dashboard_id'] == 'dashboard-123'
+      assert dashboard_result['type'] == 'lakeview'
 
       # Validate workflow completion
       assert catalog_result['success'] is True

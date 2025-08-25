@@ -21,21 +21,51 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(  # noqa: F841
+      w = WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
-      # Note: Lakeview dashboards may require specific permissions
-      # This is a placeholder for the concept
+      # List Lakeview dashboards using the Databricks SDK
+      dashboards = []
+      try:
+        # Use the lakeview API to list dashboards (correct method name is 'list')
+        for dashboard in w.lakeview.list():
+          dashboards.append({
+            'dashboard_id': dashboard.dashboard_id,
+            'name': dashboard.name,
+            'description': getattr(dashboard, 'description', None),
+            'created_time': getattr(dashboard, 'created_time', None),
+            'updated_time': getattr(dashboard, 'updated_time', None),
+            'owner': getattr(dashboard, 'owner', None),
+            'status': getattr(dashboard, 'status', None),
+            'type': 'lakeview'
+          })
+      except AttributeError:
+        # Fallback: try alternative API paths if lakeview is not available
+        try:
+          # Try legacy dashboard API as fallback
+          for dashboard in w.dashboards.list():
+            dashboards.append({
+              'dashboard_id': getattr(dashboard, 'id', getattr(dashboard, 'dashboard_id', None)),
+              'name': getattr(dashboard, 'name', None),
+              'description': getattr(dashboard, 'description', None),
+              'created_time': getattr(dashboard, 'created_time', getattr(dashboard, 'created_at', None)),
+              'updated_time': getattr(dashboard, 'updated_time', getattr(dashboard, 'updated_at', None)),
+              'owner': getattr(dashboard, 'owner', getattr(dashboard, 'user', None)),
+              'status': getattr(dashboard, 'status', None),
+              'type': 'legacy'
+            })
+        except (AttributeError, Exception) as fallback_error:
+          print(f'⚠️ Fallback dashboard listing failed: {str(fallback_error)}')
+          # Return empty list if both methods fail
+          pass
+
       return {
         'success': True,
-        'message': 'Lakeview dashboard listing initiated',
-        'note': (
-          'Lakeview dashboards may require specific permissions '
-          'and may not be directly accessible via SDK'
-        ),
-        'dashboards': [],
-        'count': 0,
+        'dashboards': dashboards,
+        'count': len(dashboards),
+        'message': f'Found {len(dashboards)} dashboard(s)',
+        'note': 'Includes both Lakeview and legacy dashboards if available'
       }
 
     except Exception as e:
@@ -54,21 +84,51 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(  # noqa: F841
+      w = WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
-      # Note: Lakeview dashboard details may require specific permissions
-      # This is a placeholder for the concept
+      # Get dashboard details using the Databricks SDK
+      try:
+        # Try Lakeview API first (correct method name is 'get')
+        dashboard = w.lakeview.get(dashboard_id=dashboard_id)
+        dashboard_type = 'lakeview'
+      except (AttributeError, Exception):
+        # Fallback to legacy dashboard API
+        try:
+          dashboard = w.dashboards.get(dashboard_id=dashboard_id)
+          dashboard_type = 'legacy'
+        except (AttributeError, Exception) as fallback_error:
+          return {
+            'success': False,
+            'error': f'Dashboard not found or API not available: {str(fallback_error)}',
+            'dashboard_id': dashboard_id
+          }
+
+      # Extract dashboard details with safe attribute access
+      dashboard_details = {
+        'dashboard_id': dashboard_id,
+        'name': getattr(dashboard, 'name', None),
+        'description': getattr(dashboard, 'description', None),
+        'created_time': getattr(dashboard, 'created_time', getattr(dashboard, 'created_at', None)),
+        'updated_time': getattr(dashboard, 'updated_time', getattr(dashboard, 'updated_at', None)),
+        'owner': getattr(dashboard, 'owner', getattr(dashboard, 'user', None)),
+        'status': getattr(dashboard, 'status', None),
+        'type': dashboard_type
+      }
+
+      # Add additional fields if available
+      if hasattr(dashboard, 'layout'):
+        dashboard_details['layout'] = dashboard.layout
+      if hasattr(dashboard, 'widgets'):
+        dashboard_details['widgets'] = dashboard.widgets
+      if hasattr(dashboard, 'permissions'):
+        dashboard_details['permissions'] = dashboard.permissions
+
       return {
         'success': True,
-        'dashboard_id': dashboard_id,
-        'message': f'Lakeview dashboard {dashboard_id} details retrieval initiated',
-        'note': (
-          'Lakeview dashboard details may require specific permissions '
-          'and may not be directly accessible via SDK'
-        ),
-        'dashboard': {},
+        'dashboard': dashboard_details,
+        'message': f'Retrieved details for {dashboard_type} dashboard {dashboard_id}',
       }
 
     except Exception as e:
@@ -87,20 +147,43 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(  # noqa: F841
+      w = WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
-      # Note: Lakeview dashboard creation may require specific permissions
-      # This is a placeholder for the concept
+      # Validate required configuration
+      if not dashboard_config.get('name'):
+        return {
+          'success': False,
+          'error': 'Dashboard name is required in dashboard_config'
+        }
+
+      # Create dashboard using the Databricks SDK
+      try:
+        # Try Lakeview API first (correct method name is 'create')
+        dashboard = w.lakeview.create(**dashboard_config)
+        dashboard_type = 'lakeview'
+      except (AttributeError, Exception):
+        # Fallback to legacy dashboard API
+        try:
+          dashboard = w.dashboards.create(**dashboard_config)
+          dashboard_type = 'legacy'
+        except (AttributeError, Exception) as fallback_error:
+          return {
+            'success': False,
+            'error': f'Dashboard creation failed or API not available: {str(fallback_error)}'
+          }
+
+      # Extract dashboard details
+      dashboard_id = getattr(dashboard, 'dashboard_id', getattr(dashboard, 'id', None))
+      dashboard_name = getattr(dashboard, 'name', dashboard_config.get('name'))
+
       return {
         'success': True,
-        'dashboard_config': dashboard_config,
-        'message': 'Lakeview dashboard creation initiated',
-        'note': (
-          'Lakeview dashboard creation may require specific permissions '
-          'and may not be directly accessible via SDK'
-        ),
+        'dashboard_id': dashboard_id,
+        'name': dashboard_name,
+        'type': dashboard_type,
+        'message': f'Successfully created {dashboard_type} dashboard {dashboard_name} with ID {dashboard_id}',
       }
 
     except Exception as e:
@@ -120,21 +203,44 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(  # noqa: F841
+      w = WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
-      # Note: Lakeview dashboard updates may require specific permissions
-      # This is a placeholder for the concept
+      # Validate updates
+      if not updates:
+        return {
+          'success': False,
+          'error': 'No updates provided in updates parameter'
+        }
+
+      # Update dashboard using the Databricks SDK
+      try:
+        # Try Lakeview API first (correct method name is 'update')
+        dashboard = w.lakeview.update(dashboard_id=dashboard_id, **updates)
+        dashboard_type = 'lakeview'
+      except (AttributeError, Exception):
+        # Fallback to legacy dashboard API
+        try:
+          dashboard = w.dashboards.update(dashboard_id=dashboard_id, **updates)
+          dashboard_type = 'legacy'
+        except (AttributeError, Exception) as fallback_error:
+          return {
+            'success': False,
+            'error': f'Dashboard update failed or API not available: {str(fallback_error)}',
+            'dashboard_id': dashboard_id
+          }
+
+      # Extract updated dashboard details
+      dashboard_name = getattr(dashboard, 'name', 'Unknown')
+      
       return {
         'success': True,
         'dashboard_id': dashboard_id,
-        'updates': updates,
-        'message': f'Lakeview dashboard {dashboard_id} update initiated',
-        'note': (
-          'Lakeview dashboard updates may require specific permissions '
-          'and may not be directly accessible via SDK'
-        ),
+        'name': dashboard_name,
+        'type': dashboard_type,
+        'updates_applied': updates,
+        'message': f'Successfully updated {dashboard_type} dashboard {dashboard_id}',
       }
 
     except Exception as e:
@@ -153,20 +259,32 @@ def load_dashboard_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(  # noqa: F841
+      w = WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
-      # Note: Lakeview dashboard deletion may require specific permissions
-      # This is a placeholder for the concept
+      # Delete dashboard using the Databricks SDK
+      try:
+        # Try Lakeview API first (correct method name is 'trash' for deletion)
+        w.lakeview.trash(dashboard_id=dashboard_id)
+        dashboard_type = 'lakeview'
+      except (AttributeError, Exception):
+        # Fallback to legacy dashboard API
+        try:
+          w.dashboards.delete(dashboard_id=dashboard_id)
+          dashboard_type = 'legacy'
+        except (AttributeError, Exception) as fallback_error:
+          return {
+            'success': False,
+            'error': f'Dashboard deletion failed or API not available: {str(fallback_error)}',
+            'dashboard_id': dashboard_id
+          }
+
       return {
         'success': True,
         'dashboard_id': dashboard_id,
-        'message': f'Lakeview dashboard {dashboard_id} deletion initiated',
-        'note': (
-          'Lakeview dashboard deletion may require specific permissions '
-          'and may not be directly accessible via SDK'
-        ),
+        'type': dashboard_type,
+        'message': f'Successfully deleted {dashboard_type} dashboard {dashboard_id}',
       }
 
     except Exception as e:

@@ -15,37 +15,98 @@ class TestDashboardTools:
   def test_list_lakeview_dashboards(self, mcp_server, mock_env_vars):
     """Test listing Lakeview dashboards."""
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      # Mock dashboard listing (placeholder implementation)
-      mock_client.return_value = Mock()
+      # Mock dashboard listing with actual implementation
+      mock_workspace = Mock()
+      
+      # Mock Lakeview dashboard
+      mock_lakeview_dashboard = Mock()
+      mock_lakeview_dashboard.dashboard_id = 'lakeview-123'
+      mock_lakeview_dashboard.name = 'Sales Analytics'
+      mock_lakeview_dashboard.description = 'Sales team analytics dashboard'
+      mock_lakeview_dashboard.created_time = 1234567890
+      mock_lakeview_dashboard.updated_time = 1234567990
+      mock_lakeview_dashboard.owner = 'sales@example.com'
+      mock_lakeview_dashboard.status = 'active'
+      
+      # Mock legacy dashboard
+      mock_legacy_dashboard = Mock()
+      mock_legacy_dashboard.id = 'legacy-456'
+      mock_legacy_dashboard.name = 'Legacy Report'
+      mock_legacy_dashboard.description = 'Legacy dashboard'
+      mock_legacy_dashboard.created_at = '2023-01-01T00:00:00Z'
+      mock_legacy_dashboard.updated_at = '2023-06-01T00:00:00Z'
+      mock_legacy_dashboard.user = 'legacy@example.com'
+      mock_legacy_dashboard.status = 'active'
+      
+      # Setup mock responses
+      mock_workspace.lakeview.list.return_value = [mock_lakeview_dashboard]
+      mock_workspace.dashboards.list.return_value = [mock_legacy_dashboard]
+      
+      mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['list_lakeview_dashboards']
       result = tool.fn()
 
       assert_success_response(result)
-      assert result['message'] == 'Lakeview dashboard listing initiated'
-      assert result['count'] == 0
+      assert result['message'] == 'Found 1 dashboard(s)'
+      assert result['count'] == 1
+      assert len(result['dashboards']) == 1
+      assert result['dashboards'][0]['dashboard_id'] == 'lakeview-123'
+      assert result['dashboards'][0]['name'] == 'Sales Analytics'
+      assert result['dashboards'][0]['type'] == 'lakeview'
       assert 'note' in result
 
   @pytest.mark.unit
   def test_get_lakeview_dashboard(self, mcp_server, mock_env_vars):
     """Test getting specific Lakeview dashboard."""
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      mock_client.return_value = Mock()
+      # Mock dashboard retrieval with actual implementation
+      mock_workspace = Mock()
+      
+      # Mock Lakeview dashboard
+      mock_dashboard = Mock()
+      mock_dashboard.dashboard_id = 'lakeview-123'
+      mock_dashboard.name = 'Sales Analytics'
+      mock_dashboard.description = 'Sales team analytics dashboard'
+      mock_dashboard.created_time = 1234567890
+      mock_dashboard.updated_time = 1234567990
+      mock_dashboard.owner = 'sales@example.com'
+      mock_dashboard.status = 'active'
+      mock_dashboard.layout = {'widgets': [{'type': 'chart'}]}
+      
+      # Setup mock response
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      
+      mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['get_lakeview_dashboard']
-      result = tool.fn(dashboard_id='dashboard-123')
+      result = tool.fn(dashboard_id='lakeview-123')
 
       assert_success_response(result)
-      assert result['dashboard_id'] == 'dashboard-123'
-      assert result['message'] == 'Lakeview dashboard dashboard-123 details retrieval initiated'
+      assert result['dashboard']['dashboard_id'] == 'lakeview-123'
+      assert result['dashboard']['name'] == 'Sales Analytics'
+      assert result['dashboard']['type'] == 'lakeview'
+      assert result['message'] == 'Retrieved details for lakeview dashboard lakeview-123'
+      assert 'layout' in result['dashboard']
 
   @pytest.mark.unit
   def test_create_lakeview_dashboard(self, mcp_server, mock_env_vars):
     """Test creating Lakeview dashboard."""
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      mock_client.return_value = Mock()
+      # Mock dashboard creation with actual implementation
+      mock_workspace = Mock()
+      
+      # Mock created dashboard
+      mock_dashboard = Mock()
+      mock_dashboard.dashboard_id = 'lakeview-789'
+      mock_dashboard.name = 'New Test Dashboard'
+      
+      # Setup mock response
+      mock_workspace.lakeview.create.return_value = mock_dashboard
+      
+      mock_client.return_value = mock_workspace
 
       dashboard_config = {'name': 'Test Dashboard', 'description': 'Test'}
 
@@ -54,8 +115,10 @@ class TestDashboardTools:
       result = tool.fn(dashboard_config=dashboard_config)
 
       assert_success_response(result)
-      assert result['dashboard_config'] == dashboard_config
-      assert result['message'] == 'Lakeview dashboard creation initiated'
+      assert result['dashboard_id'] == 'lakeview-789'
+      assert result['name'] == 'New Test Dashboard'
+      assert result['type'] == 'lakeview'
+      assert result['message'] == 'Successfully created lakeview dashboard New Test Dashboard with ID lakeview-789'
 
   @pytest.mark.unit
   def test_list_legacy_dashboards(self, mcp_server, mock_env_vars):
@@ -75,32 +138,51 @@ class TestDashboardTools:
   def test_update_lakeview_dashboard(self, mcp_server, mock_env_vars):
     """Test updating Lakeview dashboard."""
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      mock_client.return_value = Mock()
+      # Mock dashboard update with actual implementation
+      mock_workspace = Mock()
+      
+      # Mock updated dashboard
+      mock_dashboard = Mock()
+      mock_dashboard.name = 'Updated Dashboard'
+      
+      # Setup mock response
+      mock_workspace.lakeview.update.return_value = mock_dashboard
+      
+      mock_client.return_value = mock_workspace
 
       updates = {'name': 'Updated Dashboard', 'description': 'Updated'}
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['update_lakeview_dashboard']
-      result = tool.fn(dashboard_id='dashboard-123', updates=updates)
+      result = tool.fn(dashboard_id='lakeview-123', updates=updates)
 
       assert_success_response(result)
-      assert result['dashboard_id'] == 'dashboard-123'
-      assert result['updates'] == updates
-      assert result['message'] == 'Lakeview dashboard dashboard-123 update initiated'
+      assert result['dashboard_id'] == 'lakeview-123'
+      assert result['name'] == 'Updated Dashboard'
+      assert result['type'] == 'lakeview'
+      assert result['updates_applied'] == updates
+      assert result['message'] == 'Successfully updated lakeview dashboard lakeview-123'
 
   @pytest.mark.unit
   def test_delete_lakeview_dashboard(self, mcp_server, mock_env_vars):
     """Test deleting Lakeview dashboard."""
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      mock_client.return_value = Mock()
+      # Mock dashboard deletion with actual implementation
+      mock_workspace = Mock()
+      
+      # Setup mock response (delete methods typically don't return values)
+      mock_workspace.lakeview.delete_dashboard.return_value = None
+      
+      mock_client.return_value = mock_workspace
 
       load_dashboard_tools(mcp_server)
       tool = mcp_server._tool_manager._tools['delete_lakeview_dashboard']
-      result = tool.fn(dashboard_id='dashboard-123')
+      result = tool.fn(dashboard_id='lakeview-123')
 
       assert_success_response(result)
-      assert result['dashboard_id'] == 'dashboard-123'
-      assert result['message'] == 'Lakeview dashboard dashboard-123 deletion initiated'
+      assert result['dashboard_id'] == 'lakeview-123'
+      assert result['type'] == 'lakeview'
+      assert result['message'] == 'Successfully deleted lakeview dashboard lakeview-123'
 
   @pytest.mark.unit
   def test_share_lakeview_dashboard(self, mcp_server, mock_env_vars):
@@ -137,9 +219,8 @@ class TestDashboardTools:
   def test_lakeview_dashboards(self, mcp_server, mock_env_vars):
     """Test Lakeview dashboard operations."""
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      from tests.mock_factory import mock_workspace_client
-
-      client = mock_workspace_client()
+      # Create a mock workspace client
+      client = Mock()
 
       # Setup Lakeview dashboard data
       mock_dashboard = Mock()
@@ -164,13 +245,13 @@ class TestDashboardTools:
         {'user': 'user2@example.com', 'permission': 'EDIT'},
       ]
 
-      # Mock the Lakeview API responses (placeholder structure)
+      # Mock the Lakeview API responses with correct method names
       client.lakeview = Mock()
       client.lakeview.list.return_value = [mock_dashboard]
       client.lakeview.get.return_value = mock_dashboard
       client.lakeview.create.return_value = mock_dashboard
       client.lakeview.update.return_value = mock_dashboard
-      client.lakeview.delete.return_value = {'success': True}
+      client.lakeview.trash.return_value = None
       client.lakeview.get_permissions.return_value = mock_permissions
 
       mock_client.return_value = client
@@ -304,6 +385,77 @@ class TestDashboardTools:
       result = get_tool.fn(dashboard_id='export-123')
 
       assert_success_response(result)
+
+  @pytest.mark.unit
+  def test_list_lakeview_dashboards_fallback(self, mcp_server, mock_env_vars):
+    """Test listing Lakeview dashboards with fallback to legacy API."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock dashboard listing with fallback behavior
+      mock_workspace = Mock()
+      
+      # Mock that Lakeview API is not available (AttributeError)
+      mock_workspace.lakeview.list.side_effect = AttributeError("'WorkspaceClient' object has no attribute 'lakeview'")
+      
+      # Mock legacy dashboard
+      mock_legacy_dashboard = Mock()
+      mock_legacy_dashboard.id = 'legacy-456'
+      mock_legacy_dashboard.name = 'Legacy Report'
+      mock_legacy_dashboard.description = 'Legacy dashboard'
+      mock_legacy_dashboard.created_at = '2023-01-01T00:00:00Z'
+      mock_legacy_dashboard.updated_at = '2023-06-01T00:00:00Z'
+      mock_legacy_dashboard.user = 'legacy@example.com'
+      mock_legacy_dashboard.status = 'active'
+      
+      # Setup mock response for legacy API
+      mock_workspace.dashboards.list.return_value = [mock_legacy_dashboard]
+      
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_lakeview_dashboards']
+      result = tool.fn()
+
+      assert_success_response(result)
+      assert result['message'] == 'Found 1 dashboard(s)'
+      assert result['count'] == 1
+      assert len(result['dashboards']) == 1
+      assert result['dashboards'][0]['dashboard_id'] == 'legacy-456'
+      assert result['dashboards'][0]['name'] == 'Legacy Report'
+      assert result['dashboards'][0]['type'] == 'legacy'
+      assert 'note' in result
+
+  @pytest.mark.unit
+  def test_create_lakeview_dashboard_validation(self, mcp_server, mock_env_vars):
+    """Test dashboard creation validation."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.return_value = Mock()
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['create_lakeview_dashboard']
+      
+      # Test missing name
+      result = tool.fn(dashboard_config={})
+      assert not result['success']
+      assert 'name is required' in result['error']
+      
+      # Test empty name
+      result = tool.fn(dashboard_config={'name': ''})
+      assert not result['success']
+      assert 'name is required' in result['error']
+
+  @pytest.mark.unit
+  def test_update_lakeview_dashboard_validation(self, mcp_server, mock_env_vars):
+    """Test dashboard update validation."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.return_value = Mock()
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['update_lakeview_dashboard']
+      
+      # Test empty updates
+      result = tool.fn(dashboard_id='lakeview-123', updates={})
+      assert not result['success']
+      assert 'No updates provided' in result['error']
 
 
 class TestDashboardErrorScenarios:
