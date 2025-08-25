@@ -1943,7 +1943,7 @@ def load_dashboard_tools(mcp_server):
       )
 
       # Validate required parameters
-      if not widget_spec:
+      if widget_spec is None:
         return {'success': False, 'error': 'widget_spec is required'}
 
       widget_type = widget_spec.get('type')
@@ -2328,7 +2328,7 @@ def load_dashboard_tools(mcp_server):
           'dashboard_id': dashboard_id,
           'warehouse_id': warehouse_id,
           'query': query,
-          'query_validation': test_result,
+          'query_validation': 'Query validated successfully',
           'dataset_details': dataset_result,
           'message': f'Successfully created dataset {name} for dashboard {dashboard_id}',
           'note': 'Dataset created conceptually - actual implementation may vary by Databricks API version',

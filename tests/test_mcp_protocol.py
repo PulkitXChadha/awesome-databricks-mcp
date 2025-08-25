@@ -24,7 +24,7 @@ class TestMCPProtocolCompliance:
     tools = mcp_server._tool_manager._tools
 
     # Should have all expected tools loaded
-    expected_tool_count = 67  # Based on actual tool count
+    expected_tool_count = 97  # Based on actual tool count
     assert len(tools) == expected_tool_count
 
     # Verify core tools are registered

@@ -957,88 +957,67 @@ class TestDatasetManagementTools:
     load_dashboard_tools(mcp_server)
     
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      # Mock the test_dataset_query function by overriding it in the test
-      test_query_tool = mcp_server._tool_manager._tools['test_dataset_query']
+      # Mock the workspace client and statement execution
+      mock_workspace = Mock()
       
-      def mock_test_query(*args, **kwargs):
-        return {
-          'success': True,
-          'row_count': 5,
-          'columns': ['id', 'name', 'value'],
-          'message': 'Query executed successfully'
-        }
+      # Mock successful query validation response
+      mock_response = Mock()
+      mock_response.status = Mock()
+      mock_response.status.state = 'SUCCEEDED'
       
-      original_test_fn = test_query_tool.fn
-      test_query_tool.fn = mock_test_query
-      
-      try:
-        mock_client.return_value = Mock()
+      mock_workspace.statement_execution.execute_statement.return_value = mock_response
+      mock_client.return_value = mock_workspace
 
-        tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
-        result = tool.fn(
-          dashboard_id='dashboard-123',
-          name='Sales Dataset',
-          query='SELECT * FROM sales_table',
-          warehouse_id='warehouse-456'
-        )
+      tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        name='Sales Dataset',
+        query='SELECT * FROM sales_table',
+        warehouse_id='warehouse-456'
+      )
 
-        assert_success_response(result)
-        assert result['dataset_name'] == 'Sales Dataset'
-        assert result['dashboard_id'] == 'dashboard-123'
-        assert result['warehouse_id'] == 'warehouse-456'
-        assert result['query'] == 'SELECT * FROM sales_table'
-        assert 'dataset_id' in result
-        assert 'Successfully created dataset Sales Dataset for dashboard dashboard-123' in result['message']
-        
-      finally:
-        # Restore original function
-        test_query_tool.fn = original_test_fn
+      assert_success_response(result)
+      assert result['dataset_name'] == 'Sales Dataset'
+      assert result['dashboard_id'] == 'dashboard-123'
+      assert result['warehouse_id'] == 'warehouse-456'
+      assert result['query'] == 'SELECT * FROM sales_table'
+      assert 'dataset_id' in result
+      assert 'Successfully created dataset Sales Dataset for dashboard dashboard-123' in result['message']
 
   @pytest.mark.unit
-  def test_create_dataset_with_env_warehouse(self, mcp_server, mock_env_vars):
+  def test_create_dataset_with_env_warehouse(self, mcp_server, mock_env_vars, monkeypatch):
     """Test creating dataset using environment warehouse ID."""
-    mock_env_vars['DATABRICKS_SQL_WAREHOUSE_ID'] = 'env-warehouse-789'
+    monkeypatch.setenv('DATABRICKS_SQL_WAREHOUSE_ID', 'env-warehouse-789')
     
     load_dashboard_tools(mcp_server)
     
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      # Mock the test_dataset_query function by overriding it in the test
-      test_query_tool = mcp_server._tool_manager._tools['test_dataset_query']
+      # Mock the workspace client and statement execution
+      mock_workspace = Mock()
       
-      def mock_test_query(*args, **kwargs):
-        return {
-          'success': True,
-          'row_count': 3,
-          'columns': ['user_id', 'action'],
-          'message': 'Query executed successfully'
-        }
+      # Mock successful query validation response
+      mock_response = Mock()
+      mock_response.status = Mock()
+      mock_response.status.state = 'SUCCEEDED'
       
-      original_test_fn = test_query_tool.fn
-      test_query_tool.fn = mock_test_query
-      
-      try:
-        mock_client.return_value = Mock()
+      mock_workspace.statement_execution.execute_statement.return_value = mock_response
+      mock_client.return_value = mock_workspace
 
-        tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
-        result = tool.fn(
-          dashboard_id='dashboard-123',
-          name='User Actions',
-          query='SELECT user_id, action FROM user_actions'
-        )
+      tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        name='User Actions',
+        query='SELECT user_id, action FROM user_actions'
+      )
 
-        assert_success_response(result)
-        assert result['warehouse_id'] == 'env-warehouse-789'
-        
-      finally:
-        # Restore original function
-        test_query_tool.fn = original_test_fn
+      assert_success_response(result)
+      assert result['warehouse_id'] == 'env-warehouse-789'
 
   @pytest.mark.unit
-  def test_create_dataset_missing_warehouse(self, mcp_server, mock_env_vars):
+  def test_create_dataset_missing_warehouse(self, mcp_server, mock_env_vars, monkeypatch):
     """Test creating dataset without warehouse ID."""
     # Remove warehouse from environment
-    if 'DATABRICKS_SQL_WAREHOUSE_ID' in mock_env_vars:
-      del mock_env_vars['DATABRICKS_SQL_WAREHOUSE_ID']
+    monkeypatch.delenv('DATABRICKS_SQL_WAREHOUSE_ID', raising=False)
     
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       mock_client.return_value = Mock()
@@ -1060,37 +1039,30 @@ class TestDatasetManagementTools:
     load_dashboard_tools(mcp_server)
     
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      # Mock the test_dataset_query function by overriding it in the test
-      test_query_tool = mcp_server._tool_manager._tools['test_dataset_query']
+      # Mock the workspace client to simulate query validation failure
+      mock_workspace = Mock()
       
-      def mock_test_query(*args, **kwargs):
-        return {
-          'success': False,
-          'error': 'Invalid SQL syntax: missing FROM clause',
-          'query': 'SELECT *'
-        }
+      # Mock failed query validation response
+      mock_response = Mock()
+      mock_response.status = Mock()
+      mock_response.status.state = 'FAILED'
+      mock_response.status.error = Mock()
+      mock_response.status.error.message = 'Invalid SQL syntax: missing FROM clause'
       
-      original_test_fn = test_query_tool.fn
-      test_query_tool.fn = mock_test_query
-      
-      try:
-        mock_client.return_value = Mock()
+      mock_workspace.statement_execution.execute_statement.return_value = mock_response
+      mock_client.return_value = mock_workspace
 
-        tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
-        result = tool.fn(
-          dashboard_id='dashboard-123',
-          name='Invalid Dataset',
-          query='SELECT *',
-          warehouse_id='warehouse-456'
-        )
+      tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        name='Invalid Dataset',
+        query='SELECT *',
+        warehouse_id='warehouse-456'
+      )
 
-        assert_error_response(result)
-        assert 'Query validation failed' in result['error']
-        assert 'Invalid SQL syntax: missing FROM clause' in result['error']
-        
-      finally:
-        # Restore original function
-        test_query_tool.fn = original_test_fn
+      assert_error_response(result)
+      assert 'Query validation failed' in result['error']
+      assert 'Invalid SQL syntax: missing FROM clause' in result['error']
 
   @pytest.mark.unit
   def test_test_dataset_query(self, mcp_server, mock_env_vars):
@@ -1201,11 +1173,10 @@ class TestDatasetManagementTools:
       assert result['status'] == 'FAILED'
 
   @pytest.mark.unit
-  def test_test_query_missing_warehouse(self, mcp_server, mock_env_vars):
+  def test_test_query_missing_warehouse(self, mcp_server, mock_env_vars, monkeypatch):
     """Test query testing without warehouse ID."""
     # Remove warehouse from environment
-    if 'DATABRICKS_SQL_WAREHOUSE_ID' in mock_env_vars:
-      del mock_env_vars['DATABRICKS_SQL_WAREHOUSE_ID']
+    monkeypatch.delenv('DATABRICKS_SQL_WAREHOUSE_ID', raising=False)
     
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
       mock_client.return_value = Mock()
