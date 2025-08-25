@@ -244,8 +244,10 @@ class TestBusinessUserJourneys:
       mock_dashboard = Mock()
       mock_dashboard.dashboard_id = 'dashboard-123'
       mock_dashboard.name = 'Sales Analytics Dashboard'
+      
+      # Mock the lakeview.create method that the dashboard tool actually calls
       client.lakeview = Mock()
-      client.lakeview.create_dashboard.return_value = mock_dashboard
+      client.lakeview.create.return_value = mock_dashboard
       
       dashboard_result = create_dashboard_tool.fn(dashboard_config=dashboard_config)
 
