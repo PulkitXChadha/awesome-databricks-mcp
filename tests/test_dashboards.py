@@ -621,3 +621,619 @@ class TestDashboardErrorScenarios:
         assert (
           'access denied' in result['error'].lower() or 'authentication' in result['error'].lower()
         )
+
+
+class TestWidgetManagementTools:
+  """Test widget management operations."""
+
+  @pytest.mark.unit
+  def test_add_widget_to_dashboard(self, mcp_server, mock_env_vars):
+    """Test adding widget to dashboard."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock current dashboard with existing widgets
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = [
+        {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Existing Chart'}
+      ]
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_workspace.lakeview.update.return_value = Mock()
+      
+      mock_client.return_value = mock_workspace
+
+      widget_spec = {
+        'type': 'counter',
+        'name': 'New Counter Widget',
+        'parameters': {'title': 'Total Users'}
+      }
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['add_widget_to_dashboard']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_spec=widget_spec
+      )
+
+      assert_success_response(result)
+      assert result['dashboard_id'] == 'dashboard-123'
+      assert result['widget_name'] == 'New Counter Widget'
+      assert result['widget_type'] == 'counter'
+      assert result['dashboard_type'] == 'lakeview'
+      assert 'widget_id' in result
+      assert result['message'] == 'Successfully added widget New Counter Widget to lakeview dashboard dashboard-123'
+
+      # Verify widget was added to dashboard
+      mock_workspace.lakeview.update.assert_called_once()
+      call_args = mock_workspace.lakeview.update.call_args
+      assert call_args[1]['dashboard_id'] == 'dashboard-123'
+      assert 'widgets' in call_args[1]
+      assert len(call_args[1]['widgets']) == 2  # Original + new widget
+
+  @pytest.mark.unit
+  def test_add_widget_with_dataset(self, mcp_server, mock_env_vars):
+    """Test adding widget with dataset creation."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = []
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_workspace.lakeview.update.return_value = Mock()
+      
+      mock_client.return_value = mock_workspace
+
+      widget_spec = {
+        'type': 'chart',
+        'name': 'Sales Chart',
+        'parameters': {'chart_type': 'bar'}
+      }
+
+      load_dashboard_tools(mcp_server)
+      
+      # Test adding widget without dataset (simpler case)
+      tool = mcp_server._tool_manager._tools['add_widget_to_dashboard']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_spec=widget_spec
+      )
+
+      assert_success_response(result)
+      assert result['widget_name'] == 'Sales Chart'
+      assert result['widget_type'] == 'chart'
+      assert result['dataset_id'] is None  # No dataset created
+      assert result['dataset_name'] is None
+
+  @pytest.mark.unit
+  def test_add_widget_validation(self, mcp_server, mock_env_vars):
+    """Test widget addition validation."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client for successful cases
+      mock_workspace = Mock()
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = []
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_workspace.lakeview.update.return_value = Mock()
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['add_widget_to_dashboard']
+
+      # Test missing widget_spec
+      result = tool.fn(dashboard_id='dashboard-123', widget_spec=None)
+      assert_error_response(result)
+      assert 'widget_spec is required' in result['error']
+
+      # Test empty widget_spec
+      result = tool.fn(dashboard_id='dashboard-123', widget_spec={})
+      assert_success_response(result)  # Should work with minimal spec
+
+  @pytest.mark.unit
+  def test_update_dashboard_widget(self, mcp_server, mock_env_vars):
+    """Test updating widget in dashboard."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock dashboard with existing widgets
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = [
+        {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1', 'title': 'Old Title'},
+        {'widget_id': 'widget_2', 'type': 'table', 'name': 'Table 1'}
+      ]
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_workspace.lakeview.update.return_value = Mock()
+      
+      mock_client.return_value = mock_workspace
+
+      updates = {
+        'title': 'Updated Chart Title',
+        'parameters': {'color_scheme': 'blue'}
+      }
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['update_dashboard_widget']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_id='widget_1',
+        updates=updates
+      )
+
+      assert_success_response(result)
+      assert result['dashboard_id'] == 'dashboard-123'
+      assert result['widget_id'] == 'widget_1'
+      assert result['updates_applied'] == updates
+      assert result['dashboard_type'] == 'lakeview'
+      assert result['message'] == 'Successfully updated widget widget_1 in lakeview dashboard dashboard-123'
+
+      # Verify update was called with modified widgets
+      mock_workspace.lakeview.update.assert_called_once()
+      call_args = mock_workspace.lakeview.update.call_args
+      updated_widgets = call_args[1]['widgets']
+      
+      # Find the updated widget
+      updated_widget = next(w for w in updated_widgets if w['widget_id'] == 'widget_1')
+      assert updated_widget['title'] == 'Updated Chart Title'
+      assert updated_widget['parameters']['color_scheme'] == 'blue'
+
+  @pytest.mark.unit
+  def test_update_widget_not_found(self, mcp_server, mock_env_vars):
+    """Test updating non-existent widget."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock dashboard with existing widgets (without target widget)
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = [
+        {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1'}
+      ]
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_client.return_value = mock_workspace
+
+      updates = {'title': 'Updated Title'}
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['update_dashboard_widget']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_id='nonexistent_widget',
+        updates=updates
+      )
+
+      assert_error_response(result)
+      assert 'Widget nonexistent_widget not found in dashboard dashboard-123' in result['error']
+
+  @pytest.mark.unit
+  def test_update_widget_validation(self, mcp_server, mock_env_vars):
+    """Test widget update validation."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.return_value = Mock()
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['update_dashboard_widget']
+
+      # Test missing updates
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_id='widget_1',
+        updates=None
+      )
+      assert_error_response(result)
+      assert 'updates dictionary is required' in result['error']
+
+      # Test empty updates
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_id='widget_1',
+        updates={}
+      )
+      assert_error_response(result)
+      assert 'updates dictionary is required' in result['error']
+
+  @pytest.mark.unit
+  def test_remove_dashboard_widget(self, mcp_server, mock_env_vars):
+    """Test removing widget from dashboard."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock dashboard with existing widgets
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = [
+        {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1'},
+        {'widget_id': 'widget_2', 'type': 'table', 'name': 'Table 1'},
+        {'widget_id': 'widget_3', 'type': 'counter', 'name': 'Counter 1'}
+      ]
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_workspace.lakeview.update.return_value = Mock()
+      
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['remove_dashboard_widget']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_id='widget_2'
+      )
+
+      assert_success_response(result)
+      assert result['dashboard_id'] == 'dashboard-123'
+      assert result['widget_id'] == 'widget_2'
+      assert result['removed_widget']['widget_id'] == 'widget_2'
+      assert result['remaining_widgets'] == 2
+      assert result['dashboard_type'] == 'lakeview'
+      assert result['message'] == 'Successfully removed widget widget_2 from lakeview dashboard dashboard-123'
+
+      # Verify update was called with remaining widgets
+      mock_workspace.lakeview.update.assert_called_once()
+      call_args = mock_workspace.lakeview.update.call_args
+      remaining_widgets = call_args[1]['widgets']
+      
+      # Verify correct widgets remain
+      assert len(remaining_widgets) == 2
+      widget_ids = [w['widget_id'] for w in remaining_widgets]
+      assert 'widget_1' in widget_ids
+      assert 'widget_3' in widget_ids
+      assert 'widget_2' not in widget_ids
+
+  @pytest.mark.unit
+  def test_remove_widget_not_found(self, mcp_server, mock_env_vars):
+    """Test removing non-existent widget."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock dashboard with existing widgets (without target widget)
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = [
+        {'widget_id': 'widget_1', 'type': 'chart', 'name': 'Chart 1'}
+      ]
+      
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['remove_dashboard_widget']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        widget_id='nonexistent_widget'
+      )
+
+      assert_error_response(result)
+      assert 'Widget nonexistent_widget not found in dashboard dashboard-123' in result['error']
+
+  @pytest.mark.unit
+  def test_widget_operations_fallback_to_legacy(self, mcp_server, mock_env_vars):
+    """Test widget operations falling back to legacy API."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock Lakeview API failure
+      mock_workspace.lakeview.get.side_effect = AttributeError("'WorkspaceClient' object has no attribute 'lakeview'")
+      
+      # Mock legacy dashboard API success
+      mock_dashboard = Mock()
+      mock_dashboard.widgets = [
+        {'widget_id': 'legacy_widget_1', 'type': 'chart', 'name': 'Legacy Chart'}
+      ]
+      
+      mock_workspace.dashboards.get.return_value = mock_dashboard
+      mock_workspace.dashboards.update.return_value = Mock()
+      
+      mock_client.return_value = mock_workspace
+
+      widget_spec = {
+        'type': 'table',
+        'name': 'Legacy Table Widget'
+      }
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['add_widget_to_dashboard']
+      result = tool.fn(
+        dashboard_id='legacy-dashboard-123',
+        widget_spec=widget_spec
+      )
+
+      assert_success_response(result)
+      assert result['dashboard_type'] == 'legacy'
+      assert result['widget_name'] == 'Legacy Table Widget'
+
+
+class TestDatasetManagementTools:
+  """Test dataset management operations."""
+
+  @pytest.mark.unit
+  def test_create_dashboard_dataset(self, mcp_server, mock_env_vars):
+    """Test creating dataset for dashboard."""
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock the test_dataset_query function by overriding it in the test
+      test_query_tool = mcp_server._tool_manager._tools['test_dataset_query']
+      
+      def mock_test_query(*args, **kwargs):
+        return {
+          'success': True,
+          'row_count': 5,
+          'columns': ['id', 'name', 'value'],
+          'message': 'Query executed successfully'
+        }
+      
+      original_test_fn = test_query_tool.fn
+      test_query_tool.fn = mock_test_query
+      
+      try:
+        mock_client.return_value = Mock()
+
+        tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
+        result = tool.fn(
+          dashboard_id='dashboard-123',
+          name='Sales Dataset',
+          query='SELECT * FROM sales_table',
+          warehouse_id='warehouse-456'
+        )
+
+        assert_success_response(result)
+        assert result['dataset_name'] == 'Sales Dataset'
+        assert result['dashboard_id'] == 'dashboard-123'
+        assert result['warehouse_id'] == 'warehouse-456'
+        assert result['query'] == 'SELECT * FROM sales_table'
+        assert 'dataset_id' in result
+        assert 'Successfully created dataset Sales Dataset for dashboard dashboard-123' in result['message']
+        
+      finally:
+        # Restore original function
+        test_query_tool.fn = original_test_fn
+
+  @pytest.mark.unit
+  def test_create_dataset_with_env_warehouse(self, mcp_server, mock_env_vars):
+    """Test creating dataset using environment warehouse ID."""
+    mock_env_vars['DATABRICKS_SQL_WAREHOUSE_ID'] = 'env-warehouse-789'
+    
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock the test_dataset_query function by overriding it in the test
+      test_query_tool = mcp_server._tool_manager._tools['test_dataset_query']
+      
+      def mock_test_query(*args, **kwargs):
+        return {
+          'success': True,
+          'row_count': 3,
+          'columns': ['user_id', 'action'],
+          'message': 'Query executed successfully'
+        }
+      
+      original_test_fn = test_query_tool.fn
+      test_query_tool.fn = mock_test_query
+      
+      try:
+        mock_client.return_value = Mock()
+
+        tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
+        result = tool.fn(
+          dashboard_id='dashboard-123',
+          name='User Actions',
+          query='SELECT user_id, action FROM user_actions'
+        )
+
+        assert_success_response(result)
+        assert result['warehouse_id'] == 'env-warehouse-789'
+        
+      finally:
+        # Restore original function
+        test_query_tool.fn = original_test_fn
+
+  @pytest.mark.unit
+  def test_create_dataset_missing_warehouse(self, mcp_server, mock_env_vars):
+    """Test creating dataset without warehouse ID."""
+    # Remove warehouse from environment
+    if 'DATABRICKS_SQL_WAREHOUSE_ID' in mock_env_vars:
+      del mock_env_vars['DATABRICKS_SQL_WAREHOUSE_ID']
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.return_value = Mock()
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
+      result = tool.fn(
+        dashboard_id='dashboard-123',
+        name='Test Dataset',
+        query='SELECT * FROM test_table'
+      )
+
+      assert_error_response(result)
+      assert 'SQL warehouse ID is required' in result['error']
+
+  @pytest.mark.unit
+  def test_create_dataset_invalid_query(self, mcp_server, mock_env_vars):
+    """Test creating dataset with invalid query."""
+    load_dashboard_tools(mcp_server)
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock the test_dataset_query function by overriding it in the test
+      test_query_tool = mcp_server._tool_manager._tools['test_dataset_query']
+      
+      def mock_test_query(*args, **kwargs):
+        return {
+          'success': False,
+          'error': 'Invalid SQL syntax: missing FROM clause',
+          'query': 'SELECT *'
+        }
+      
+      original_test_fn = test_query_tool.fn
+      test_query_tool.fn = mock_test_query
+      
+      try:
+        mock_client.return_value = Mock()
+
+        tool = mcp_server._tool_manager._tools['create_dashboard_dataset']
+        result = tool.fn(
+          dashboard_id='dashboard-123',
+          name='Invalid Dataset',
+          query='SELECT *',
+          warehouse_id='warehouse-456'
+        )
+
+        assert_error_response(result)
+        assert 'Query validation failed' in result['error']
+        assert 'Invalid SQL syntax: missing FROM clause' in result['error']
+        
+      finally:
+        # Restore original function
+        test_query_tool.fn = original_test_fn
+
+  @pytest.mark.unit
+  def test_test_dataset_query(self, mcp_server, mock_env_vars):
+    """Test SQL query testing functionality."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock successful statement execution
+      mock_response = Mock()
+      mock_response.status.state = 'SUCCEEDED'
+      mock_response.duration = '2.3s'
+      mock_response.statement_id = 'stmt_123'
+      
+      # Mock result data
+      mock_response.result.data_array = [
+        ['1', 'John Doe', '100.0'],
+        ['2', 'Jane Smith', '150.0']
+      ]
+      
+      # Mock result schema
+      mock_column_1 = Mock()
+      mock_column_1.name = 'id'
+      mock_column_2 = Mock()
+      mock_column_2.name = 'name'
+      mock_column_3 = Mock()
+      mock_column_3.name = 'value'
+      
+      mock_response.result.schema.columns = [mock_column_1, mock_column_2, mock_column_3]
+      
+      mock_workspace.statement_execution.execute_statement.return_value = mock_response
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['test_dataset_query']
+      result = tool.fn(
+        query='SELECT id, name, value FROM users',
+        warehouse_id='warehouse-456',
+        limit=5
+      )
+
+      assert_success_response(result)
+      assert result['query'] == 'SELECT id, name, value FROM users'
+      assert result['warehouse_id'] == 'warehouse-456'
+      assert result['execution_time'] == '2.3s'
+      assert result['row_count'] == 2
+      assert result['columns'] == ['id', 'name', 'value']
+      assert len(result['sample_data']) == 2
+      assert result['statement_id'] == 'stmt_123'
+      assert 'Query executed successfully, returned 2 rows' in result['message']
+
+  @pytest.mark.unit
+  def test_test_query_with_limit_addition(self, mcp_server, mock_env_vars):
+    """Test query testing with automatic LIMIT addition."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock successful statement execution
+      mock_response = Mock()
+      mock_response.status.state = 'SUCCEEDED'
+      mock_response.result.data_array = []
+      mock_response.result.schema.columns = []
+      
+      mock_workspace.statement_execution.execute_statement.return_value = mock_response
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['test_dataset_query']
+      result = tool.fn(
+        query='SELECT * FROM large_table',
+        warehouse_id='warehouse-456',
+        limit=10
+      )
+
+      assert_success_response(result)
+      assert result['test_query'] == 'SELECT * FROM large_table LIMIT 10;'
+      
+      # Verify execute_statement was called with modified query
+      call_args = mock_workspace.statement_execution.execute_statement.call_args
+      assert call_args[1]['statement'] == 'SELECT * FROM large_table LIMIT 10;'
+
+  @pytest.mark.unit
+  def test_test_query_execution_failure(self, mcp_server, mock_env_vars):
+    """Test query testing with execution failure."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock failed statement execution
+      mock_response = Mock()
+      mock_response.status.state = 'FAILED'
+      mock_response.status.error = Mock()
+      mock_response.status.error.message = 'Table not found: invalid_table'
+      
+      mock_workspace.statement_execution.execute_statement.return_value = mock_response
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['test_dataset_query']
+      result = tool.fn(
+        query='SELECT * FROM invalid_table',
+        warehouse_id='warehouse-456'
+      )
+
+      assert_error_response(result)
+      assert 'Query execution failed: Table not found: invalid_table' in result['error']
+      assert result['status'] == 'FAILED'
+
+  @pytest.mark.unit
+  def test_test_query_missing_warehouse(self, mcp_server, mock_env_vars):
+    """Test query testing without warehouse ID."""
+    # Remove warehouse from environment
+    if 'DATABRICKS_SQL_WAREHOUSE_ID' in mock_env_vars:
+      del mock_env_vars['DATABRICKS_SQL_WAREHOUSE_ID']
+    
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_client.return_value = Mock()
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['test_dataset_query']
+      result = tool.fn(query='SELECT * FROM test_table')
+
+      assert_error_response(result)
+      assert 'SQL warehouse ID is required' in result['error']
+
+  @pytest.mark.unit
+  def test_test_query_execution_exception(self, mcp_server, mock_env_vars):
+    """Test query testing with execution exception."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace client
+      mock_workspace = Mock()
+      
+      # Mock execution exception
+      mock_workspace.statement_execution.execute_statement.side_effect = Exception('Network timeout')
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['test_dataset_query']
+      result = tool.fn(
+        query='SELECT * FROM test_table',
+        warehouse_id='warehouse-456'
+      )
+
+      assert_error_response(result)
+      assert 'SQL execution failed: Network timeout' in result['error']
