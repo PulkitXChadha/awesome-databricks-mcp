@@ -1,114 +1,189 @@
 # Testing Guidelines
 
-## Python Backend Testing
+## 🚨 SIMPLIFIED TESTING APPROACH 🚨
+
+**CRITICAL: Follow SIMPLE, MAINTAINABLE testing patterns. NO over-engineering!**
+
+### Testing Philosophy
+- **Basic testing** over complex test frameworks
+- **Simple mocks** over sophisticated mocking systems
+- **Functionality focus** over coverage metrics
+- **Essential tests only** over comprehensive test suites
+
+## Python Testing
+
+### Test Framework
+- **Framework**: pytest for simple, fast testing
+- **Configuration**: See [pytest.ini](mcp:pytest.ini) for basic settings
+- **Coverage**: Basic coverage reporting, no strict requirements
+- **Mocking**: Simple unittest.mock, no complex mocking frameworks
 
 ### Test Structure
-- **Test Directory**: `tests/` contains all Python test files
-- **Test Files**: Follow naming convention `test_*.py`
-- **Fixtures**: Use `tests/fixtures/` for test data and mocks
-- **Configuration**: [pytest.ini](mdc:pytest.ini) for pytest configuration
-
-### Testing Framework
-- **Framework**: pytest with pytest-asyncio for async tests
-- **Coverage**: Generate coverage reports with pytest-cov
-- **Mocking**: Use pytest-mock for mocking dependencies
-- **Fixtures**: Leverage conftest.py for shared test fixtures
-
-### Test Patterns
 ```python
-import pytest
-from unittest.mock import Mock
+# Good: Simple, focused test
+def test_your_feature(mcp_server, mock_env_vars):
+    """Test your feature."""
+    # Load tools
+    load_tools(mcp_server)
 
-def test_databricks_job_listing(mock_workspace_client):
-    """Test job listing functionality."""
-    # Arrange
-    mock_client = Mock()
-    mock_client.jobs.list.return_value = [{"id": "123", "name": "Test Job"}]
+    # Mock Databricks SDK calls
+    with patch('server.tools.module.get_workspace_client') as mock_client:
+        mock_client.return_value.some_api.method.return_value = expected_data
+
+        # Test the tool
+        tool = mcp_server._tools['tool_name']
+        result = tool.func()
+
+        # Basic assertions
+        assert result['status'] == 'success'
+
+# Bad: Over-engineered test with complex setup
+class TestFeatureWithComplexSetup:
+    @pytest.fixture(autouse=True)
+    def setup_complex_mocks(self):
+        # Complex mocking setup
+        pass
     
-    # Act
-    result = list_databricks_jobs(mock_client)
-    
-    # Assert
-    assert len(result) == 1
-    assert result[0]["id"] == "123"
+    @pytest.mark.parametrize("input,expected", [
+        # Complex test cases
+    ])
+    def test_feature_with_parameters(self, input, expected):
+        # Complex test logic
+        pass
 ```
+
+### Test Organization
+- **Unit Tests**: Basic component testing with simple mocks
+- **Tool Tests**: Individual MCP tool functionality
+- **API Tests**: Basic FastAPI endpoint testing
+- **Integration Tests**: Simple end-to-end workflows
 
 ### Running Tests
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=server
+# Run all tests (simple and fast)
+uv run pytest tests/ -v
 
 # Run specific test file
-pytest tests/test_core.py
+uv run pytest tests/test_core.py -v
 
-# Run tests in watch mode
-pytest-watch
+# Run single test
+uv run pytest tests/test_core.py::test_specific_function -v
+
+# Run tests by marker
+uv run pytest -m unit        # Unit tests only
+uv run pytest -m integration # Integration tests
+uv run pytest -m "not slow"  # Skip slow tests
 ```
 
-## TypeScript Frontend Testing
+### Test Markers
+- **@pytest.mark.unit**: Basic unit tests
+- **@pytest.mark.tools**: MCP tool tests
+- **@pytest.mark.integration**: Integration tests
+- **@pytest.mark.slow**: Tests that take longer to run
 
-### Test Structure
-- **Framework**: React Testing Library with Jest
-- **Test Files**: Co-locate tests with components or use `__tests__/` directories
-- **Mocking**: Mock API calls and external dependencies
+### Mocking Guidelines
+- **Simple mocks**: Use unittest.mock.patch for basic mocking
+- **Databricks SDK**: Mock external API calls
+- **Environment variables**: Mock environment variables for testing
+- **NO complex mocking frameworks** or sophisticated mock objects
 
-### Testing Patterns
-```tsx
-import { render, screen, fireEvent } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MyComponent } from './MyComponent'
+## Frontend Testing
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: false },
-  },
-})
-
-test('renders component with correct title', () => {
-  render(
-    <QueryClientProvider client={queryClient}>
-      <MyComponent title="Test Title" onAction={() => {}} />
-    </QueryClientProvider>
-  )
-  
-  expect(screen.getByText('Test Title')).toBeInTheDocument()
-})
-```
+### Test Framework
+- **Linting**: ESLint for code quality
+- **Formatting**: Prettier for code formatting
+- **Testing**: Basic component testing (if needed)
+- **NO complex test frameworks** or testing utilities
 
 ### Running Frontend Tests
 ```bash
-# Run tests in watch mode
-cd client && bun test
-
-# Run tests once
-cd client && bun test --run
-
-# Run tests with coverage
-cd client && bun test --coverage
+cd client
+bun run lint    # Lint TypeScript code
+bun run format  # Format with prettier
 ```
 
-## Test Best Practices
+## Comprehensive Testing Suite
 
-### General Guidelines
-- **Test Coverage**: Aim for >80% code coverage
-- **Test Isolation**: Each test should be independent
-- **Descriptive Names**: Use clear, descriptive test names
-- **Arrange-Act-Assert**: Follow AAA pattern for test structure
-- **Mock External Dependencies**: Don't test external services in unit tests
+### Testing Tools
+The `claude_scripts/` directory contains testing tools:
+- **curl tests**: Direct HTTP testing with session handling
+- **proxy tests**: End-to-end MCP proxy testing  
+- **MCP Inspector**: Web-based interactive testing UI
+- **Tool-specific tests**: Individual tool validation scripts
 
-### Integration Testing
-- **API Endpoints**: Test complete request-response cycles
-- **Database Operations**: Use test databases or mocks
-- **External Services**: Mock Databricks API calls in tests
+### API Testing
+- FastAPI docs interface: http://localhost:8000/docs
+- Manual curl testing for endpoints
+- Network tab in browser dev tools for frontend API calls
 
-### Performance Testing
-- **Load Testing**: Test MCP server performance under load
-- **Memory Usage**: Monitor memory usage in long-running tests
-- **Response Times**: Ensure API responses meet performance requirements
-description:
+## Testing Principles
+
+### Keep Tests Simple
+- **Focus on functionality**: Test what the code does, not how it works
+- **Basic assertions**: Use simple assert statements
+- **Minimal setup**: Keep test setup simple and clear
+- **No complex fixtures**: Use basic pytest fixtures only
+
+### Test Coverage
+- **Essential functionality**: Test core features and critical paths
+- **Error cases**: Test basic error handling
+- **NO coverage requirements**: Focus on functionality, not metrics
+- **NO complex test scenarios**: Keep test cases simple
+
+### Writing Tests
+
+Follow the **simple pattern**:
+```python
+def test_your_feature(mcp_server, mock_env_vars):
+    """Test your feature."""
+    # Load tools
+    load_tools(mcp_server)
+
+    # Mock external dependencies
+    with patch('external.dependency') as mock_dep:
+        mock_dep.return_value = expected_data
+
+        # Test the functionality
+        result = your_function()
+
+        # Basic assertions
+        assert result['status'] == 'success'
+        assert 'expected_key' in result
+```
+
+**Testing principles:**
+- Keep tests simple and focused
+- Mock external dependencies (Databricks SDK)
+- Test success and error cases only
+- No complex test infrastructure or frameworks
+
+## Forbidden Testing Patterns
+❌ **Complex test frameworks** or testing utilities
+❌ **Sophisticated mocking systems** or mock objects
+❌ **Complex test scenarios** or parameterized tests
+❌ **Coverage requirements** or metrics-driven testing
+❌ **Performance testing** or load testing
+❌ **Complex test data** or test factories
+
+## Required Testing Patterns
+✅ **Simple pytest tests** with basic assertions
+✅ **Basic mocking** with unittest.mock
+✅ **Functionality focus** over coverage metrics
+✅ **Essential tests only** for core functionality
+✅ **Simple test setup** and teardown
+✅ **Clear test names** and descriptions
+
+## Summary: What Makes Testing "Senior Developer Approved"
+
+✅ **Readable**: Any developer can understand the tests immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each test has a single, clear purpose
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Tests the specific functionality without over-engineering
+
+When in doubt, choose the **simpler** testing approach. Your future self (and your teammates) will thank you.
+
+description: Testing guidelines emphasizing simple, maintainable patterns over complex test frameworks
 globs:
 alwaysApply: false
 ---

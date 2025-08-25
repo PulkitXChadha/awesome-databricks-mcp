@@ -1,5 +1,15 @@
 # Backend Development Guidelines
 
+## 🚨 SIMPLIFIED DEVELOPMENT APPROACH 🚨
+
+**CRITICAL: Follow SIMPLE, MAINTAINABLE patterns. NO over-engineering!**
+
+### Development Philosophy
+- **Direct implementations** over abstractions
+- **Simple functions** over complex class hierarchies
+- **Environment variables** over configuration objects
+- **Standard library first** over custom utilities
+
 ## FastAPI MCP Server Architecture
 
 ### Core Structure
@@ -9,39 +19,110 @@
 
 ### File Organization
 - `server/app.py` - Main application and MCP server setup
-- `server/tools.py` - Python functions decorated with `@mcp_server.tool`
+- `server/tools/` - Modular tool modules with specialized functions
 - `server/prompts.py` - Dynamic loading of markdown prompts from `prompts/` directory
 - `server/routers/` - API endpoints for frontend communication
 - `server/services/` - Business logic and external service integration
 
 ### MCP Tool Development
 ```python
-@mcp_server.tool()
-def my_tool(param1: str, param2: int) -> dict:
-    """Tool description for MCP discovery."""
-    # Implementation here
-    return {"result": "success"}
+# Good: Simple, direct tool implementation
+def load_module_tools(mcp_server):
+    """Register tools from this module."""
+    
+    @mcp_server.tool
+    def my_tool(param1: str, param2: int) -> dict:
+        """Tool description for Claude."""
+        # Direct Databricks SDK call
+        client = get_workspace_client()
+        result = client.some_api.method(param1, param2)
+        return {"result": result}
+
+# Bad: Over-engineered with abstractions
+class ToolFactory:
+    def __init__(self, config: ToolConfig):
+        self.config = config
+    
+    def create_tool(self, tool_type: str) -> BaseTool:
+        # Complex factory logic
+        pass
 ```
 
 ### Configuration Management
 - Load from [config.yaml](mdc:config.yaml) for server settings
 - Environment variables from `.env.local` for local development
-- Use `load_config()` function for centralized configuration
+- Use simple `load_config()` function for centralized configuration
+- **NO complex configuration classes or nested structures**
 
 ### Dependencies
 - Core: FastAPI, FastMCP, Databricks SDK
 - Development: ruff, pytest, watchdog
 - See [pyproject.toml](mdc:pyproject.toml) for complete dependency list
+- **Principle**: Only add dependencies if absolutely critical
 
 ### Code Style
 - Use single quotes for strings
-- 2-space indentation
-- Line length: 100 characters
+- Use tabs for indentation (CLAUDE.md standard)
+- Line length: 80 characters (CLAUDE.md standard)
 - Follow ruff linting rules defined in [pyproject.toml](mdc:pyproject.toml)
 
 ### Python Best Practices
 - Use Python 3.11+ features and type hints
-- Follow Google docstring convention
-- Use Pydantic for data validation
-- Implement proper error handling with try-catch blocks
-- Use async/await for I/O operations when appropriate
+- Use simple, clear docstrings
+- Use Pydantic sparingly (only when needed)
+- Implement basic error handling with try-catch blocks
+- **Avoid async/await unless absolutely necessary**
+- **NO complex error handling systems or custom exceptions**
+
+### Tool System Architecture
+
+The modular tools system (`server/tools/`) is organized into specialized modules:
+- `core.py` - Health checks and basic operations
+- `sql_operations.py` - SQL warehouse and query tools
+- `unity_catalog.py` - Unity Catalog operations (catalogs, schemas, tables)
+- `jobs_pipelines.py` - Job and DLT pipeline management
+- `dashboards.py` - Dashboard management tools
+- `data_management.py` - DBFS and data operations
+- `governance.py` - Governance tools
+
+### Adding New Tools
+Tools are automatically registered when added to modules. Follow existing patterns:
+```python
+def load_module_tools(mcp_server):
+    """Register tools from this module."""
+    
+    @mcp_server.tool
+    def your_new_tool(param: str) -> dict:
+        """Tool description for Claude."""
+        # Implementation using Databricks SDK
+        return {"result": "data"}
+```
+
+**Key principles:**
+- Direct Databricks SDK calls (no wrappers)
+- Simple error handling with try/catch
+- Return dictionaries with consistent structure
+- No decorators, no abstractions, no magic
+
+### Forbidden Patterns
+❌ **Abstract base classes** or complex inheritance hierarchies
+❌ **Factory patterns** or dependency injection containers
+❌ **Decorators for cross-cutting concerns** (logging, caching, performance monitoring)
+❌ **Complex configuration classes** with nested structures
+❌ **Async/await patterns** unless absolutely necessary
+❌ **Connection pooling** or caching layers
+❌ **Generic "framework" code** or reusable utilities
+
+### Required Patterns
+✅ **Direct function calls** - no indirection or abstraction layers
+✅ **Simple classes** with clear, single responsibilities
+✅ **Environment variables** for configuration (no complex config objects)
+✅ **Explicit imports** - import exactly what you need
+✅ **Basic error handling** with try/catch and simple return dictionaries
+✅ **Straightforward control flow** - avoid complex conditional logic
+✅ **Standard library first** - only add dependencies when absolutely necessary
+
+description: Backend development guidelines emphasizing simple, maintainable patterns over complex abstractions
+globs:
+alwaysApply: false
+---
