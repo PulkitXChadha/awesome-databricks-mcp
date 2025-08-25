@@ -48,7 +48,5 @@ def list_databricks_jobs(workspace_id: str = None) -> list[dict]:
 - Use descriptive names and documentation
 - Handle errors gracefully with proper error messages
 - Return structured data that AI assistants can easily parse
-description:
-globs:
-alwaysApply: false
----
+- Use proper type hints for all parameters and return values
+- Implement logging for debugging and monitoring

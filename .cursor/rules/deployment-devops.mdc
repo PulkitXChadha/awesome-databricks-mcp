@@ -1,0 +1,233 @@
+# Deployment and DevOps Guidelines
+
+## Local Development Environment
+
+### Prerequisites
+- **Python**: 3.11+ with uv package manager
+- **Node.js**: Latest LTS with bun package manager
+- **Databricks CLI**: Configured with workspace access
+- **Environment Variables**: `.env.local` file for local configuration
+
+### Local Setup Commands
+```bash
+# Initial setup
+./setup.sh
+
+# Start local development
+./run_app_local.sh
+
+# Watch mode for auto-reload
+./watch.sh
+
+# Check application status
+./app_status.sh
+```
+
+### Local Development URLs
+- **Backend API**: http://localhost:8000
+- **Frontend Dev Server**: http://localhost:5173
+- **MCP Endpoint**: http://localhost:8000/mcp
+- **API Documentation**: http://localhost:8000/docs
+
+## Databricks Apps Deployment
+
+### Deployment Configuration
+- **App Config**: [app.yaml](mdc:app.yaml) defines Databricks App settings
+- **Requirements**: [requirements.txt](mdc:requirements.txt) for Python dependencies
+- **Build Script**: [deploy.sh](mdc:deploy.sh) automates deployment process
+
+### Deployment Process
+```bash
+# Deploy to Databricks Apps
+./deploy.sh
+
+# Check deployment status
+./app_status.sh
+
+# View application logs
+databricks apps logs --app-id <app-id>
+```
+
+### Environment Configuration
+```yaml
+# app.yaml configuration
+name: databricks-mcp-app
+runtime: python3.11
+entrypoint: server.app:app
+resources:
+  memory: 2g
+  cpu: 1
+env:
+  - name: DATABRICKS_HOST
+    value: "{{env.DATABRICKS_HOST}}"
+  - name: DATABRICKS_TOKEN
+    secret: "databricks-token"
+```
+
+## CI/CD Pipeline
+
+### Automated Testing
+- **Pre-deployment Tests**: Run test suite before deployment
+- **Code Quality Checks**: Lint and format code automatically
+- **Security Scanning**: Scan dependencies for vulnerabilities
+- **Integration Tests**: Test MCP tools and API endpoints
+
+### Deployment Stages
+1. **Development**: Local development and testing
+2. **Staging**: Deploy to staging environment for validation
+3. **Production**: Deploy to production Databricks workspace
+4. **Rollback**: Automated rollback on deployment failures
+
+### GitHub Actions Example
+```yaml
+name: Deploy to Databricks
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv sync
+      - name: Run tests
+        run: pytest
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy to Databricks
+        run: ./deploy.sh
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+```
+
+## Monitoring and Observability
+
+### Application Monitoring
+- **Health Checks**: Implement health check endpoints
+- **Metrics Collection**: Collect performance and business metrics
+- **Log Aggregation**: Centralize logs for analysis
+- **Alerting**: Set up alerts for critical issues
+
+### Databricks Monitoring
+```python
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+  """Health check endpoint for monitoring."""
+  try:
+    # Check Databricks connectivity
+    client = WorkspaceClient()
+    client.workspace.list()
+    
+    return {
+      "status": "healthy",
+      "timestamp": datetime.utcnow().isoformat(),
+      "databricks": "connected"
+    }
+  except Exception as e:
+    return {
+      "status": "unhealthy",
+      "timestamp": datetime.utcnow().isoformat(),
+      "error": str(e)
+    }
+```
+
+### Logging Configuration
+```python
+import logging
+from rich.logging import RichHandler
+
+# Configure logging
+logging.basicConfig(
+  level=logging.INFO,
+  format="%(message)s",
+  datefmt="[%X]",
+  handlers=[RichHandler(rich_tracebacks=True)]
+)
+
+logger = logging.getLogger("databricks-mcp")
+
+# Use structured logging
+logger.info("MCP tool called", extra={
+  "tool": "list_jobs",
+  "user": user_id,
+  "workspace": workspace_id
+})
+```
+
+## Security and Compliance
+
+### Secrets Management
+- **Environment Variables**: Use Databricks Apps secrets for sensitive data
+- **Token Rotation**: Implement automatic token rotation
+- **Access Control**: Limit access to deployment scripts and configurations
+- **Audit Logging**: Log all deployment and configuration changes
+
+### Network Security
+- **HTTPS Only**: Enforce HTTPS in production
+- **CORS Configuration**: Configure CORS for frontend-backend communication
+- **Rate Limiting**: Implement rate limiting for API endpoints
+- **IP Whitelisting**: Restrict access to trusted IP ranges
+
+## Troubleshooting
+
+### Common Deployment Issues
+- **Authentication Errors**: Verify Databricks token and permissions
+- **Resource Limits**: Check memory and CPU allocation in app.yaml
+- **Dependency Issues**: Ensure all dependencies are in requirements.txt
+- **Build Failures**: Check build logs and fix compilation errors
+
+### Debug Commands
+```bash
+# Check application logs
+databricks apps logs --app-id <app-id> --follow
+
+# Test MCP endpoint locally
+./run-mcp-proxy.sh
+
+# Validate configuration
+python -c "from server.app import app; print('Config valid')"
+
+# Check frontend build
+cd client && bun run build
+```
+
+### Performance Monitoring
+- **Response Times**: Monitor API response times
+- **Resource Usage**: Track memory and CPU usage
+- **Error Rates**: Monitor error rates and types
+- **User Experience**: Track frontend performance metrics
+
+## Best Practices
+
+### Deployment Checklist
+- [ ] Run full test suite before deployment
+- [ ] Validate configuration files
+- [ ] Check environment variables
+- [ ] Test MCP tools locally
+- [ ] Monitor deployment logs
+- [ ] Verify application health after deployment
+- [ ] Test rollback procedures
+
+### Maintenance
+- **Regular Updates**: Keep dependencies updated
+- **Security Patches**: Apply security patches promptly
+- **Performance Monitoring**: Monitor and optimize performance
+- **Backup Procedures**: Implement backup and recovery procedures
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,149 @@
+# Security and Accessibility Guidelines
+
+## Security Best Practices
+
+### Authentication and Authorization
+- **OAuth Flow**: Use Databricks OAuth for secure authentication
+- **Token Management**: Never hardcode authentication tokens
+- **Environment Variables**: Store sensitive data in `.env.local` (not committed)
+- **API Security**: Validate all input parameters and sanitize data
+
+### Data Security
+- **Input Validation**: Validate all user inputs on both client and server
+- **SQL Injection**: Use parameterized queries and avoid string concatenation
+- **XSS Prevention**: Sanitize HTML content and use proper Content-Type headers
+- **CSRF Protection**: Implement CSRF tokens for state-changing operations
+
+### API Security
+```python
+# Good: Input validation and sanitization
+from pydantic import BaseModel, validator
+
+class UserInput(BaseModel):
+  name: str
+  email: str
+  
+  @validator('email')
+  def validate_email(cls, v):
+    if '@' not in v:
+      raise ValueError('Invalid email format')
+    return v.lower()
+
+# Bad: No validation
+def process_user_data(name, email):
+  # Direct use without validation
+  return {"name": name, "email": email}
+```
+
+### Environment Security
+- **Local Development**: Use `.env.local` for sensitive configuration
+- **Production**: Set environment variables through Databricks Apps
+- **Secrets**: Never commit secrets or API keys to version control
+- **Network Security**: Use HTTPS in production, validate SSL certificates
+
+## Accessibility (a11y) Guidelines
+
+### HTML Semantics
+- **Semantic Elements**: Use proper HTML5 semantic elements
+- **Heading Hierarchy**: Maintain logical heading structure (h1 → h2 → h3)
+- **Landmarks**: Use ARIA landmarks for navigation and content areas
+- **Lists**: Use proper list elements (ul, ol, dl) for list content
+
+### ARIA Attributes
+```tsx
+// Good: Proper ARIA labels and roles
+<button
+  aria-label="Close dialog"
+  aria-expanded={isOpen}
+  onClick={handleClose}
+>
+  <XIcon aria-hidden="true" />
+</button>
+
+// Bad: Missing accessibility attributes
+<button onClick={handleClose}>
+  <XIcon />
+</button>
+```
+
+### Keyboard Navigation
+- **Tab Order**: Ensure logical tab order through the interface
+- **Focus Management**: Manage focus when opening/closing modals
+- **Keyboard Shortcuts**: Provide keyboard alternatives for mouse actions
+- **Skip Links**: Implement skip links for main content navigation
+
+### Screen Reader Support
+- **Alt Text**: Provide descriptive alt text for images
+- **Form Labels**: Associate form controls with proper labels
+- **Error Messages**: Use ARIA-live regions for dynamic content
+- **Status Updates**: Announce status changes to screen readers
+
+### Color and Contrast
+- **Color Contrast**: Ensure sufficient contrast ratios (WCAG AA: 4.5:1)
+- **Color Independence**: Don't rely solely on color to convey information
+- **Dark Mode**: Support both light and dark themes
+- **Focus Indicators**: Provide visible focus indicators for all interactive elements
+
+## React Component Accessibility
+
+### Component Patterns
+```tsx
+// Good: Accessible component with proper ARIA
+interface AccessibleButtonProps {
+  label: string
+  onClick: () => void
+  disabled?: boolean
+}
+
+export function AccessibleButton({ label, onClick, disabled }: AccessibleButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+    >
+      {label}
+    </button>
+  )
+}
+
+// Bad: Missing accessibility attributes
+export function Button({ label, onClick, disabled }: AccessibleButtonProps) {
+  return (
+    <button onClick={onClick} disabled={disabled}>
+      {label}
+    </button>
+  )
+}
+```
+
+### Form Accessibility
+- **Label Association**: Use htmlFor to associate labels with form controls
+- **Error Handling**: Display errors with proper ARIA attributes
+- **Required Fields**: Indicate required fields clearly
+- **Validation**: Provide real-time validation feedback
+
+### Testing Accessibility
+- **Automated Testing**: Use axe-core or similar tools for automated testing
+- **Manual Testing**: Test with keyboard navigation and screen readers
+- **Browser Tools**: Use browser developer tools for accessibility testing
+- **User Testing**: Include users with disabilities in testing processes
+
+## Security Testing
+
+### Vulnerability Scanning
+- **Dependency Scanning**: Regularly scan for vulnerable dependencies
+- **Code Analysis**: Use static analysis tools for security issues
+- **Penetration Testing**: Conduct regular security assessments
+- **Security Headers**: Implement proper security headers (CSP, HSTS, etc.)
+
+### Monitoring and Logging
+- **Security Events**: Log all security-related events
+- **Access Logs**: Monitor access patterns and suspicious activity
+- **Error Logging**: Log errors without exposing sensitive information
+- **Audit Trails**: Maintain audit trails for sensitive operations
+description:
+globs:
+alwaysApply: false
+---

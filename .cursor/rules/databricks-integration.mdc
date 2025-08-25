@@ -54,7 +54,8 @@ models = ml_service.list_models()
 2. Test with local MCP proxy
 3. Deploy to Databricks Apps for production
 4. Use web interface for MCP tool discovery and testing
-description:
-globs:
-alwaysApply: false
----
+
+### SDK Version Management
+- Pin specific versions in [pyproject.toml](mdc:pyproject.toml) for stability
+- Use `uv` for dependency management with [uv.lock](mdc:uv.lock)
+- Test compatibility with new SDK versions before upgrading

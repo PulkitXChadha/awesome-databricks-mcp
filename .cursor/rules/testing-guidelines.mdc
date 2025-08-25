@@ -1,0 +1,189 @@
+# Testing Guidelines
+
+## 🚨 SIMPLIFIED TESTING APPROACH 🚨
+
+**CRITICAL: Follow SIMPLE, MAINTAINABLE testing patterns. NO over-engineering!**
+
+### Testing Philosophy
+- **Basic testing** over complex test frameworks
+- **Simple mocks** over sophisticated mocking systems
+- **Functionality focus** over coverage metrics
+- **Essential tests only** over comprehensive test suites
+
+## Python Testing
+
+### Test Framework
+- **Framework**: pytest for simple, fast testing
+- **Configuration**: See [pytest.ini](mcp:pytest.ini) for basic settings
+- **Coverage**: Basic coverage reporting, no strict requirements
+- **Mocking**: Simple unittest.mock, no complex mocking frameworks
+
+### Test Structure
+```python
+# Good: Simple, focused test
+def test_your_feature(mcp_server, mock_env_vars):
+    """Test your feature."""
+    # Load tools
+    load_tools(mcp_server)
+
+    # Mock Databricks SDK calls
+    with patch('server.tools.module.get_workspace_client') as mock_client:
+        mock_client.return_value.some_api.method.return_value = expected_data
+
+        # Test the tool
+        tool = mcp_server._tools['tool_name']
+        result = tool.func()
+
+        # Basic assertions
+        assert result['status'] == 'success'
+
+# Bad: Over-engineered test with complex setup
+class TestFeatureWithComplexSetup:
+    @pytest.fixture(autouse=True)
+    def setup_complex_mocks(self):
+        # Complex mocking setup
+        pass
+    
+    @pytest.mark.parametrize("input,expected", [
+        # Complex test cases
+    ])
+    def test_feature_with_parameters(self, input, expected):
+        # Complex test logic
+        pass
+```
+
+### Test Organization
+- **Unit Tests**: Basic component testing with simple mocks
+- **Tool Tests**: Individual MCP tool functionality
+- **API Tests**: Basic FastAPI endpoint testing
+- **Integration Tests**: Simple end-to-end workflows
+
+### Running Tests
+```bash
+# Run all tests (simple and fast)
+uv run pytest tests/ -v
+
+# Run specific test file
+uv run pytest tests/test_core.py -v
+
+# Run single test
+uv run pytest tests/test_core.py::test_specific_function -v
+
+# Run tests by marker
+uv run pytest -m unit        # Unit tests only
+uv run pytest -m integration # Integration tests
+uv run pytest -m "not slow"  # Skip slow tests
+```
+
+### Test Markers
+- **@pytest.mark.unit**: Basic unit tests
+- **@pytest.mark.tools**: MCP tool tests
+- **@pytest.mark.integration**: Integration tests
+- **@pytest.mark.slow**: Tests that take longer to run
+
+### Mocking Guidelines
+- **Simple mocks**: Use unittest.mock.patch for basic mocking
+- **Databricks SDK**: Mock external API calls
+- **Environment variables**: Mock environment variables for testing
+- **NO complex mocking frameworks** or sophisticated mock objects
+
+## Frontend Testing
+
+### Test Framework
+- **Linting**: ESLint for code quality
+- **Formatting**: Prettier for code formatting
+- **Testing**: Basic component testing (if needed)
+- **NO complex test frameworks** or testing utilities
+
+### Running Frontend Tests
+```bash
+cd client
+bun run lint    # Lint TypeScript code
+bun run format  # Format with prettier
+```
+
+## Comprehensive Testing Suite
+
+### Testing Tools
+The `claude_scripts/` directory contains testing tools:
+- **curl tests**: Direct HTTP testing with session handling
+- **proxy tests**: End-to-end MCP proxy testing  
+- **MCP Inspector**: Web-based interactive testing UI
+- **Tool-specific tests**: Individual tool validation scripts
+
+### API Testing
+- FastAPI docs interface: http://localhost:8000/docs
+- Manual curl testing for endpoints
+- Network tab in browser dev tools for frontend API calls
+
+## Testing Principles
+
+### Keep Tests Simple
+- **Focus on functionality**: Test what the code does, not how it works
+- **Basic assertions**: Use simple assert statements
+- **Minimal setup**: Keep test setup simple and clear
+- **No complex fixtures**: Use basic pytest fixtures only
+
+### Test Coverage
+- **Essential functionality**: Test core features and critical paths
+- **Error cases**: Test basic error handling
+- **NO coverage requirements**: Focus on functionality, not metrics
+- **NO complex test scenarios**: Keep test cases simple
+
+### Writing Tests
+
+Follow the **simple pattern**:
+```python
+def test_your_feature(mcp_server, mock_env_vars):
+    """Test your feature."""
+    # Load tools
+    load_tools(mcp_server)
+
+    # Mock external dependencies
+    with patch('external.dependency') as mock_dep:
+        mock_dep.return_value = expected_data
+
+        # Test the functionality
+        result = your_function()
+
+        # Basic assertions
+        assert result['status'] == 'success'
+        assert 'expected_key' in result
+```
+
+**Testing principles:**
+- Keep tests simple and focused
+- Mock external dependencies (Databricks SDK)
+- Test success and error cases only
+- No complex test infrastructure or frameworks
+
+## Forbidden Testing Patterns
+❌ **Complex test frameworks** or testing utilities
+❌ **Sophisticated mocking systems** or mock objects
+❌ **Complex test scenarios** or parameterized tests
+❌ **Coverage requirements** or metrics-driven testing
+❌ **Performance testing** or load testing
+❌ **Complex test data** or test factories
+
+## Required Testing Patterns
+✅ **Simple pytest tests** with basic assertions
+✅ **Basic mocking** with unittest.mock
+✅ **Functionality focus** over coverage metrics
+✅ **Essential tests only** for core functionality
+✅ **Simple test setup** and teardown
+✅ **Clear test names** and descriptions
+
+## Summary: What Makes Testing "Senior Developer Approved"
+
+✅ **Readable**: Any developer can understand the tests immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each test has a single, clear purpose
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Tests the specific functionality without over-engineering
+
+When in doubt, choose the **simpler** testing approach. Your future self (and your teammates) will thank you.
+
+description: Testing guidelines emphasizing simple, maintainable patterns over complex test frameworks
+globs:
+alwaysApply: false
+---

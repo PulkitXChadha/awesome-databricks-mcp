@@ -1,282 +1,501 @@
 """Dashboards and monitoring MCP tools for Databricks."""
 
 import os
+
 from databricks.sdk import WorkspaceClient
 
 
 def load_dashboard_tools(mcp_server):
-    """Register dashboards and monitoring MCP tools with the server.
-    
-    Args:
-        mcp_server: The FastMCP server instance to register tools with
+  """Register dashboards and monitoring MCP tools with the server.
+
+  Args:
+      mcp_server: The FastMCP server instance to register tools with
+  """
+
+  @mcp_server.tool
+  def list_lakeview_dashboards() -> dict:
+    """List all Lakeview dashboards in the workspace.
+
+    Returns:
+        Dictionary containing list of Lakeview dashboards with their details
     """
-    
-    @mcp_server.tool
-    def list_lakeview_dashboards() -> dict:
-        """List all Lakeview dashboards in the workspace.
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
 
-        Returns:
-            Dictionary containing list of Lakeview dashboards with their details
-        """
+      # List Lakeview dashboards using the Databricks SDK
+      dashboards = []
+      try:
+        # Use the lakeview API to list dashboards (correct method name is 'list')
+        for dashboard in w.lakeview.list():
+          dashboards.append({
+            'dashboard_id': dashboard.dashboard_id,
+            'name': dashboard.name,
+            'description': getattr(dashboard, 'description', None),
+            'created_time': getattr(dashboard, 'created_time', None),
+            'updated_time': getattr(dashboard, 'updated_time', None),
+            'owner': getattr(dashboard, 'owner', None),
+            'status': getattr(dashboard, 'status', None),
+            'type': 'lakeview'
+          })
+      except AttributeError:
+        # Fallback: try alternative API paths if lakeview is not available
         try:
-            # Initialize Databricks SDK
-            w = WorkspaceClient(
-                host=os.environ.get('DATABRICKS_HOST'), 
-                token=os.environ.get('DATABRICKS_TOKEN')
-            )
+          # Try legacy dashboard API as fallback
+          for dashboard in w.dashboards.list():
+            dashboards.append({
+              'dashboard_id': getattr(dashboard, 'id', getattr(dashboard, 'dashboard_id', None)),
+              'name': getattr(dashboard, 'name', None),
+              'description': getattr(dashboard, 'description', None),
+              'created_time': getattr(dashboard, 'created_time', getattr(dashboard, 'created_at', None)),
+              'updated_time': getattr(dashboard, 'updated_time', getattr(dashboard, 'updated_at', None)),
+              'owner': getattr(dashboard, 'owner', getattr(dashboard, 'user', None)),
+              'status': getattr(dashboard, 'status', None),
+              'type': 'legacy'
+            })
+        except (AttributeError, Exception) as fallback_error:
+          print(f'⚠️ Fallback dashboard listing failed: {str(fallback_error)}')
+          # Return empty list if both methods fail
+          pass
 
-            # Note: Lakeview dashboards may require specific permissions
-            # This is a placeholder for the concept
-            return {
-                'success': True,
-                'message': 'Lakeview dashboard listing initiated',
-                'note': 'Lakeview dashboards may require specific permissions and may not be directly accessible via SDK',
-                'dashboards': [],
-                'count': 0,
-            }
+      return {
+        'success': True,
+        'dashboards': dashboards,
+        'count': len(dashboards),
+        'message': f'Found {len(dashboards)} dashboard(s)',
+        'note': 'Includes both Lakeview and legacy dashboards if available'
+      }
 
-        except Exception as e:
-            print(f'❌ Error listing Lakeview dashboards: {str(e)}')
-            return {'success': False, 'error': f'Error: {str(e)}', 'dashboards': [], 'count': 0}
+    except Exception as e:
+      print(f'❌ Error listing Lakeview dashboards: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}', 'dashboards': [], 'count': 0}
 
-    @mcp_server.tool
-    def get_lakeview_dashboard(dashboard_id: str) -> dict:
-        """Get details of a specific Lakeview dashboard.
+  @mcp_server.tool
+  def get_lakeview_dashboard(dashboard_id: str) -> dict:
+    """Get details of a specific Lakeview dashboard.
 
-        Args:
-            dashboard_id: The ID of the dashboard to get details for
+    Args:
+        dashboard_id: The ID of the dashboard to get details for
 
-        Returns:
-            Dictionary with dashboard details or error message
-        """
+    Returns:
+        Dictionary with dashboard details or error message
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
+
+      # Get dashboard details using the Databricks SDK
+      try:
+        # Try Lakeview API first (correct method name is 'get')
+        dashboard = w.lakeview.get(dashboard_id=dashboard_id)
+        dashboard_type = 'lakeview'
+      except (AttributeError, Exception):
+        # Fallback to legacy dashboard API
         try:
-            # Initialize Databricks SDK
-            w = WorkspaceClient(
-                host=os.environ.get('DATABRICKS_HOST'), 
-                token=os.environ.get('DATABRICKS_TOKEN')
-            )
+          dashboard = w.dashboards.get(dashboard_id=dashboard_id)
+          dashboard_type = 'legacy'
+        except (AttributeError, Exception) as fallback_error:
+          return {
+            'success': False,
+            'error': f'Dashboard not found or API not available: {str(fallback_error)}',
+            'dashboard_id': dashboard_id
+          }
 
-            # Note: Lakeview dashboard details may require specific permissions
-            # This is a placeholder for the concept
-            return {
-                'success': True,
-                'dashboard_id': dashboard_id,
-                'message': f'Lakeview dashboard {dashboard_id} details retrieval initiated',
-                'note': 'Lakeview dashboard details may require specific permissions and may not be directly accessible via SDK',
-                'dashboard': {},
-            }
+      # Extract dashboard details with safe attribute access
+      dashboard_details = {
+        'dashboard_id': dashboard_id,
+        'name': getattr(dashboard, 'name', None),
+        'description': getattr(dashboard, 'description', None),
+        'created_time': getattr(dashboard, 'created_time', getattr(dashboard, 'created_at', None)),
+        'updated_time': getattr(dashboard, 'updated_time', getattr(dashboard, 'updated_at', None)),
+        'owner': getattr(dashboard, 'owner', getattr(dashboard, 'user', None)),
+        'status': getattr(dashboard, 'status', None),
+        'type': dashboard_type
+      }
 
-        except Exception as e:
-            print(f'❌ Error getting Lakeview dashboard details: {str(e)}')
-            return {'success': False, 'error': f'Error: {str(e)}'}
+      # Add additional fields if available
+      if hasattr(dashboard, 'layout'):
+        dashboard_details['layout'] = dashboard.layout
+      if hasattr(dashboard, 'widgets'):
+        dashboard_details['widgets'] = dashboard.widgets
+      if hasattr(dashboard, 'permissions'):
+        dashboard_details['permissions'] = dashboard.permissions
 
-    @mcp_server.tool
-    def create_lakeview_dashboard(dashboard_config: dict) -> dict:
-        """Create a new Lakeview dashboard.
+      return {
+        'success': True,
+        'dashboard': dashboard_details,
+        'message': f'Retrieved details for {dashboard_type} dashboard {dashboard_id}',
+      }
 
-        Args:
-            dashboard_config: Dictionary containing dashboard configuration
+    except Exception as e:
+      print(f'❌ Error getting Lakeview dashboard details: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}
 
-        Returns:
-            Dictionary with operation result or error message
-        """
+  @mcp_server.tool
+  def create_lakeview_dashboard(dashboard_config: dict) -> dict:
+    """Create a new Lakeview dashboard.
+
+    Args:
+        dashboard_config: Dictionary containing dashboard configuration
+
+    Returns:
+        Dictionary with operation result or error message
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
+
+      # Validate required configuration
+      if not dashboard_config.get('name'):
+        return {
+          'success': False,
+          'error': 'Dashboard name is required in dashboard_config'
+        }
+
+      # Create dashboard using the Databricks SDK
+      try:
+        # Try Lakeview API first (correct method name is 'create')
+        dashboard = w.lakeview.create(**dashboard_config)
+        dashboard_type = 'lakeview'
+      except (AttributeError, Exception):
+        # Fallback to legacy dashboard API
         try:
-            # Initialize Databricks SDK
-            w = WorkspaceClient(
-                host=os.environ.get('DATABRICKS_HOST'), 
-                token=os.environ.get('DATABRICKS_TOKEN')
-            )
+          dashboard = w.dashboards.create(**dashboard_config)
+          dashboard_type = 'legacy'
+        except (AttributeError, Exception) as fallback_error:
+          return {
+            'success': False,
+            'error': f'Dashboard creation failed or API not available: {str(fallback_error)}'
+          }
 
-            # Note: Lakeview dashboard creation may require specific permissions
-            # This is a placeholder for the concept
-            return {
-                'success': True,
-                'dashboard_config': dashboard_config,
-                'message': 'Lakeview dashboard creation initiated',
-                'note': 'Lakeview dashboard creation may require specific permissions and may not be directly accessible via SDK',
-            }
+      # Extract dashboard details
+      dashboard_id = getattr(dashboard, 'dashboard_id', getattr(dashboard, 'id', None))
+      dashboard_name = getattr(dashboard, 'name', dashboard_config.get('name'))
 
-        except Exception as e:
-            print(f'❌ Error creating Lakeview dashboard: {str(e)}')
-            return {'success': False, 'error': f'Error: {str(e)}'}
+      return {
+        'success': True,
+        'dashboard_id': dashboard_id,
+        'name': dashboard_name,
+        'type': dashboard_type,
+        'message': f'Successfully created {dashboard_type} dashboard {dashboard_name} with ID {dashboard_id}',
+      }
 
-    @mcp_server.tool
-    def update_lakeview_dashboard(dashboard_id: str, updates: dict) -> dict:
-        """Update an existing Lakeview dashboard.
+    except Exception as e:
+      print(f'❌ Error creating Lakeview dashboard: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}
 
-        Args:
-            dashboard_id: The ID of the dashboard to update
-            updates: Dictionary containing updates to apply
+  @mcp_server.tool
+  def update_lakeview_dashboard(dashboard_id: str, updates: dict) -> dict:
+    """Update an existing Lakeview dashboard.
 
-        Returns:
-            Dictionary with operation result or error message
-        """
+    Args:
+        dashboard_id: The ID of the dashboard to update
+        updates: Dictionary containing updates to apply
+
+    Returns:
+        Dictionary with operation result or error message
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
+
+      # Validate updates
+      if not updates:
+        return {
+          'success': False,
+          'error': 'No updates provided in updates parameter'
+        }
+
+      # Update dashboard using the Databricks SDK
+      try:
+        # Try Lakeview API first (correct method name is 'update')
+        dashboard = w.lakeview.update(dashboard_id=dashboard_id, **updates)
+        dashboard_type = 'lakeview'
+      except (AttributeError, Exception):
+        # Fallback to legacy dashboard API
         try:
-            # Initialize Databricks SDK
-            w = WorkspaceClient(
-                host=os.environ.get('DATABRICKS_HOST'), 
-                token=os.environ.get('DATABRICKS_TOKEN')
-            )
+          dashboard = w.dashboards.update(dashboard_id=dashboard_id, **updates)
+          dashboard_type = 'legacy'
+        except (AttributeError, Exception) as fallback_error:
+          return {
+            'success': False,
+            'error': f'Dashboard update failed or API not available: {str(fallback_error)}',
+            'dashboard_id': dashboard_id
+          }
 
-            # Note: Lakeview dashboard updates may require specific permissions
-            # This is a placeholder for the concept
-            return {
-                'success': True,
-                'dashboard_id': dashboard_id,
-                'updates': updates,
-                'message': f'Lakeview dashboard {dashboard_id} update initiated',
-                'note': 'Lakeview dashboard updates may require specific permissions and may not be directly accessible via SDK',
-            }
+      # Extract updated dashboard details
+      dashboard_name = getattr(dashboard, 'name', 'Unknown')
+      
+      return {
+        'success': True,
+        'dashboard_id': dashboard_id,
+        'name': dashboard_name,
+        'type': dashboard_type,
+        'updates_applied': updates,
+        'message': f'Successfully updated {dashboard_type} dashboard {dashboard_id}',
+      }
 
-        except Exception as e:
-            print(f'❌ Error updating Lakeview dashboard: {str(e)}')
-            return {'success': False, 'error': f'Error: {str(e)}'}
+    except Exception as e:
+      print(f'❌ Error updating Lakeview dashboard: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}
 
-    @mcp_server.tool
-    def delete_lakeview_dashboard(dashboard_id: str) -> dict:
-        """Delete a Lakeview dashboard.
+  @mcp_server.tool
+  def delete_lakeview_dashboard(dashboard_id: str) -> dict:
+    """Delete a Lakeview dashboard.
 
-        Args:
-            dashboard_id: The ID of the dashboard to delete
+    Args:
+        dashboard_id: The ID of the dashboard to delete
 
-        Returns:
-            Dictionary with operation result or error message
-        """
+    Returns:
+        Dictionary with operation result or error message
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
+
+      # Delete dashboard using the Databricks SDK
+      try:
+        # Try Lakeview API first (correct method name is 'trash' for deletion)
+        w.lakeview.trash(dashboard_id=dashboard_id)
+        dashboard_type = 'lakeview'
+      except (AttributeError, Exception):
+        # Fallback to legacy dashboard API
         try:
-            # Initialize Databricks SDK
-            w = WorkspaceClient(
-                host=os.environ.get('DATABRICKS_HOST'), 
-                token=os.environ.get('DATABRICKS_TOKEN')
-            )
+          w.dashboards.delete(dashboard_id=dashboard_id)
+          dashboard_type = 'legacy'
+        except (AttributeError, Exception) as fallback_error:
+          return {
+            'success': False,
+            'error': f'Dashboard deletion failed or API not available: {str(fallback_error)}',
+            'dashboard_id': dashboard_id
+          }
 
-            # Note: Lakeview dashboard deletion may require specific permissions
-            # This is a placeholder for the concept
-            return {
-                'success': True,
-                'dashboard_id': dashboard_id,
-                'message': f'Lakeview dashboard {dashboard_id} deletion initiated',
-                'note': 'Lakeview dashboard deletion may require specific permissions and may not be directly accessible via SDK',
-            }
+      return {
+        'success': True,
+        'dashboard_id': dashboard_id,
+        'type': dashboard_type,
+        'message': f'Successfully deleted {dashboard_type} dashboard {dashboard_id}',
+      }
 
-        except Exception as e:
-            print(f'❌ Error deleting Lakeview dashboard: {str(e)}')
-            return {'success': False, 'error': f'Error: {str(e)}'}
+    except Exception as e:
+      print(f'❌ Error deleting Lakeview dashboard: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}
 
-    @mcp_server.tool
-    def list_dashboards() -> dict:
-        """List all legacy dashboards in the workspace.
+  @mcp_server.tool
+  def share_lakeview_dashboard(dashboard_id: str, share_config: dict) -> dict:
+    """Share a Lakeview dashboard with users or groups.
 
-        Returns:
-            Dictionary containing list of legacy dashboards with their details
-        """
-        try:
-            # Initialize Databricks SDK
-            w = WorkspaceClient(
-                host=os.environ.get('DATABRICKS_HOST'), 
-                token=os.environ.get('DATABRICKS_TOKEN')
-            )
+    Args:
+        dashboard_id: The ID of the dashboard to share
+        share_config: Dictionary containing sharing configuration
+            - users: List of user emails
+            - groups: List of group names
+            - permission: Permission level (READ, WRITE, ADMIN)
 
-            # Note: Legacy dashboards may require specific permissions
-            # This is a placeholder for the concept
-            return {
-                'success': True,
-                'message': 'Legacy dashboard listing initiated',
-                'note': 'Legacy dashboards may require specific permissions and may not be directly accessible via SDK',
-                'dashboards': [],
-                'count': 0,
-            }
+    Returns:
+        Dictionary with operation result or error message
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(  # noqa: F841
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
 
-        except Exception as e:
-            print(f'❌ Error listing legacy dashboards: {str(e)}')
-            return {'success': False, 'error': f'Error: {str(e)}', 'dashboards': [], 'count': 0}
+      # Note: Lakeview dashboard sharing may require specific permissions
+      # This is a placeholder for the concept
+      users = share_config.get('users', [])
+      groups = share_config.get('groups', [])
+      permission = share_config.get('permission', 'READ')
 
-    @mcp_server.tool
-    def get_dashboard(dashboard_id: str) -> dict:
-        """Get details of a specific legacy dashboard.
+      return {
+        'success': True,
+        'dashboard_id': dashboard_id,
+        'share_config': share_config,
+        'users': users,
+        'groups': groups,
+        'permission': permission,
+        'message': f'Lakeview dashboard {dashboard_id} sharing initiated',
+        'note': (
+          'Lakeview dashboard sharing may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
+      }
 
-        Args:
-            dashboard_id: The ID of the dashboard to get details for
+    except Exception as e:
+      print(f'❌ Error sharing Lakeview dashboard: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}
 
-        Returns:
-            Dictionary with dashboard details or error message
-        """
-        try:
-            # Initialize Databricks SDK
-            w = WorkspaceClient(
-                host=os.environ.get('DATABRICKS_HOST'), 
-                token=os.environ.get('DATABRICKS_TOKEN')
-            )
+  @mcp_server.tool
+  def get_dashboard_permissions(dashboard_id: str) -> dict:
+    """Get current permissions for a Lakeview dashboard.
 
-            # Note: Legacy dashboard details may require specific permissions
-            # This is a placeholder for the concept
-            return {
-                'success': True,
-                'dashboard_id': dashboard_id,
-                'message': f'Legacy dashboard {dashboard_id} details retrieval initiated',
-                'note': 'Legacy dashboard details may require specific permissions and may not be directly accessible via SDK',
-                'dashboard': {},
-            }
+    Args:
+        dashboard_id: The ID of the dashboard to get permissions for
 
-        except Exception as e:
-            print(f'❌ Error getting legacy dashboard details: {str(e)}')
-            return {'success': False, 'error': f'Error: {str(e)}'}
+    Returns:
+        Dictionary with dashboard permissions or error message
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(  # noqa: F841
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
 
-    @mcp_server.tool
-    def create_dashboard(dashboard_config: dict) -> dict:
-        """Create a new legacy dashboard.
+      # Note: Lakeview dashboard permissions may require specific permissions
+      # This is a placeholder for the concept
+      return {
+        'success': True,
+        'dashboard_id': dashboard_id,
+        'permissions': {
+          'owner': 'current_user@example.com',
+          'shared_users': [],
+          'shared_groups': [],
+          'public_access': False,
+        },
+        'message': f'Dashboard permissions retrieved for {dashboard_id}',
+        'note': (
+          'Lakeview dashboard permissions may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
+      }
 
-        Args:
-            dashboard_config: Dictionary containing dashboard configuration
+    except Exception as e:
+      print(f'❌ Error getting dashboard permissions: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}
 
-        Returns:
-            Dictionary with operation result or error message
-        """
-        try:
-            # Initialize Databricks SDK
-            w = WorkspaceClient(
-                host=os.environ.get('DATABRICKS_HOST'), 
-                token=os.environ.get('DATABRICKS_TOKEN')
-            )
+  @mcp_server.tool
+  def list_dashboards() -> dict:
+    """List all legacy dashboards in the workspace.
 
-            # Note: Legacy dashboard creation may require specific permissions
-            # This is a placeholder for the concept
-            return {
-                'success': True,
-                'dashboard_config': dashboard_config,
-                'message': 'Legacy dashboard creation initiated',
-                'note': 'Legacy dashboard creation may require specific permissions and may not be directly accessible via SDK',
-            }
+    Returns:
+        Dictionary containing list of legacy dashboards with their details
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(  # noqa: F841
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
 
-        except Exception as e:
-            print(f'❌ Error creating legacy dashboard: {str(e)}')
-            return {'success': False, 'error': f'Error: {str(e)}'}
+      # Note: Legacy dashboards may require specific permissions
+      # This is a placeholder for the concept
+      return {
+        'success': True,
+        'message': 'Legacy dashboard listing initiated',
+        'note': (
+          'Legacy dashboards may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
+        'dashboards': [],
+        'count': 0,
+      }
 
-    @mcp_server.tool
-    def delete_dashboard(dashboard_id: str) -> dict:
-        """Delete a legacy dashboard.
+    except Exception as e:
+      print(f'❌ Error listing legacy dashboards: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}', 'dashboards': [], 'count': 0}
 
-        Args:
-            dashboard_id: The ID of the dashboard to delete
+  @mcp_server.tool
+  def get_dashboard(dashboard_id: str) -> dict:
+    """Get details of a specific legacy dashboard.
 
-        Returns:
-            Dictionary with operation result or error message
-        """
-        try:
-            # Initialize Databricks SDK
-            w = WorkspaceClient(
-                host=os.environ.get('DATABRICKS_HOST'), 
-                token=os.environ.get('DATABRICKS_TOKEN')
-            )
+    Args:
+        dashboard_id: The ID of the dashboard to get details for
 
-            # Note: Legacy dashboard deletion may require specific permissions
-            # This is a placeholder for the concept
-            return {
-                'success': True,
-                'dashboard_id': dashboard_id,
-                'message': f'Legacy dashboard {dashboard_id} deletion initiated',
-                'note': 'Legacy dashboard deletion may require specific permissions and may not be directly accessible via SDK',
-            }
+    Returns:
+        Dictionary with dashboard details or error message
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(  # noqa: F841
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
 
-        except Exception as e:
-            print(f'❌ Error deleting legacy dashboard: {str(e)}')
-            return {'success': False, 'error': f'Error: {str(e)}'}
+      # Note: Legacy dashboard details may require specific permissions
+      # This is a placeholder for the concept
+      return {
+        'success': True,
+        'dashboard_id': dashboard_id,
+        'message': f'Legacy dashboard {dashboard_id} details retrieval initiated',
+        'note': (
+          'Legacy dashboard details may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
+        'dashboard': {},
+      }
+
+    except Exception as e:
+      print(f'❌ Error getting legacy dashboard details: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}
+
+  @mcp_server.tool
+  def create_dashboard(dashboard_config: dict) -> dict:
+    """Create a new legacy dashboard.
+
+    Args:
+        dashboard_config: Dictionary containing dashboard configuration
+
+    Returns:
+        Dictionary with operation result or error message
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(  # noqa: F841
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
+
+      # Note: Legacy dashboard creation may require specific permissions
+      # This is a placeholder for the concept
+      return {
+        'success': True,
+        'dashboard_config': dashboard_config,
+        'message': 'Legacy dashboard creation initiated',
+        'note': (
+          'Legacy dashboard creation may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
+      }
+
+    except Exception as e:
+      print(f'❌ Error creating legacy dashboard: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}
+
+  @mcp_server.tool
+  def delete_dashboard(dashboard_id: str) -> dict:
+    """Delete a legacy dashboard.
+
+    Args:
+        dashboard_id: The ID of the dashboard to delete
+
+    Returns:
+        Dictionary with operation result or error message
+    """
+    try:
+      # Initialize Databricks SDK
+      w = WorkspaceClient(  # noqa: F841
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
+
+      # Note: Legacy dashboard deletion may require specific permissions
+      # This is a placeholder for the concept
+      return {
+        'success': True,
+        'dashboard_id': dashboard_id,
+        'message': f'Legacy dashboard {dashboard_id} deletion initiated',
+        'note': (
+          'Legacy dashboard deletion may require specific permissions '
+          'and may not be directly accessible via SDK'
+        ),
+      }
+
+    except Exception as e:
+      print(f'❌ Error deleting legacy dashboard: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}

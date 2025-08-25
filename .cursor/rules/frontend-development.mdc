@@ -1,5 +1,15 @@
 # Frontend Development Guidelines
 
+## 🚨 SIMPLIFIED DEVELOPMENT APPROACH 🚨
+
+**CRITICAL: Follow SIMPLE, MAINTAINABLE patterns. NO over-engineering!**
+
+### Development Philosophy
+- **Direct implementations** over abstractions
+- **Simple components** over complex component hierarchies
+- **Tailwind utilities** over custom CSS or complex styling systems
+- **Standard React patterns** over custom frameworks or utilities
+
 ## React TypeScript Architecture
 
 ### Tech Stack
@@ -19,7 +29,7 @@
 
 ### Component Patterns
 ```tsx
-// Use functional components with TypeScript interfaces
+// Good: Simple, focused component
 interface ComponentProps {
   title: string
   onAction: () => void
@@ -33,6 +43,17 @@ export function MyComponent({ title, onAction }: ComponentProps) {
     </div>
   )
 }
+
+// Bad: Over-engineered with unnecessary abstractions
+interface AbstractComponentProps<T extends string> {
+  title: T
+  onAction: () => void
+}
+
+class ComponentManager<T extends string> {
+  private props: AbstractComponentProps<T>
+  // Complex implementation
+}
 ```
 
 ### Styling Guidelines
@@ -40,19 +61,63 @@ export function MyComponent({ title, onAction }: ComponentProps) {
 - Leverage Shadcn UI components for consistency
 - Use `class:` for conditional styling instead of ternary operators
 - Follow mobile-first responsive design principles
+- **NO custom CSS or complex styling systems**
+- **NO CSS-in-JS or styled-components**
 
 ### API Integration
 - Use auto-generated FastAPI client from `fastapi_client/`
 - Implement React Query for caching and state management
 - Handle loading states and error boundaries properly
 - Use proper TypeScript interfaces for API responses
+- **NO custom API abstraction layers or wrappers**
 
 ### Code Quality
 - Use ESLint and Prettier for code formatting
 - Follow React best practices and hooks guidelines
 - Implement proper accessibility features (ARIA labels, keyboard navigation)
 - Use descriptive variable names with camelCase convention
-description:
+
+### TypeScript Best Practices
+- Enable strict mode in [tsconfig.json](mdc:client/tsconfig.json)
+- Use proper type definitions for all props and state
+- Leverage utility types (Partial, Pick, Omit) sparingly
+- Implement proper error handling with type guards
+- **NO complex generic types or type hierarchies**
+
+### Forbidden Patterns
+❌ **Complex component hierarchies** or excessive abstraction
+❌ **Custom styling systems** or CSS-in-JS
+❌ **Custom state management** beyond React Query
+❌ **Custom routing solutions** or complex navigation patterns
+❌ **Performance optimization** patterns (premature optimization)
+❌ **Enterprise patterns** like singleton, observer, strategy, etc.
+
+### Required Patterns
+✅ **Simple functional components** with clear responsibilities
+✅ **TailwindCSS utilities** for all styling needs
+✅ **React Query** for server state management
+✅ **Standard React hooks** (useState, useEffect, useContext)
+✅ **Basic error boundaries** and loading states
+✅ **Accessibility features** (ARIA labels, keyboard navigation)
+✅ **TypeScript interfaces** for props and state
+
+### Implementation Rules
+1. **One concept per component**: Each component should have a single, clear purpose
+2. **Functions over classes**: Use functional components exclusively
+3. **Direct API calls**: Use React Query directly, no wrapper layers
+4. **Simple state management**: Use useState and useContext, avoid complex state patterns
+5. **Basic testing**: Simple unit tests with basic mocking, no complex test frameworks
+6. **Minimal dependencies**: Only add new dependencies if critically needed
+
+### Code Review Questions
+Before adding any code, ask yourself:
+- "Is this the simplest way to solve this problem?"
+- "Would a new developer understand this immediately?"
+- "Am I adding abstraction for a real need or hypothetical flexibility?"
+- "Can I solve this with standard React patterns or existing dependencies?"
+- "Does this follow the existing patterns in the codebase?"
+
+description: Frontend development guidelines emphasizing simple, maintainable patterns over complex abstractions
 globs:
 alwaysApply: false
 ---

@@ -1,78 +1,156 @@
-# Development Workflow and Deployment
+# Development Workflow
 
-## Local Development
+## 🚨 SIMPLIFIED DEVELOPMENT APPROACH 🚨
 
-### Setup and Dependencies
-- **Python Environment**: Use `uv` for dependency management (see [uv.lock](mdc:uv.lock))
-- **Node.js Environment**: Use `bun` for frontend dependencies (see [client/bun.lock](mdc:client/bun.lock))
-- **Initial Setup**: Run `./setup.sh` for first-time configuration
+**CRITICAL: Follow SIMPLE, MAINTAINABLE development patterns. NO over-engineering!**
 
-### Development Commands
+### Development Philosophy
+- **Direct development** over complex workflows
+- **Simple commands** over sophisticated tooling
+- **Immediate feedback** over complex debugging systems
+- **Standard tools** over custom development utilities
+
+## Essential Commands
+
+### Core Development Commands
+- `./setup.sh` - Interactive setup for environment, authentication, and dependencies
+- `./watch.sh` - Start development servers (backend + frontend + file watching)
+- `./fix.sh` - Format code (ruff for Python, prettier for TypeScript)
+- `./deploy.sh` - Deploy to Databricks Apps
+- `./app_status.sh` - Check deployment status and get app URLs
+
+## Python Execution Rules
+
+**CRITICAL: Always use `uv run` instead of direct `python`:**
 ```bash
-# Start local development server
-./run_app_local.sh
+# ✅ CORRECT
+uv run python script.py
+uv run uvicorn server.app:app
 
-# Watch for changes and auto-reload
-./watch.sh
-
-# Run MCP proxy for local testing
-./run-mcp-proxy.sh
-
-# Check application status
-./app_status.sh
+# ❌ WRONG  
+python script.py
+uvicorn server.app:app
 ```
 
-### Local Development URLs
-- **Backend API**: http://localhost:8000/api
-- **MCP Endpoint**: http://localhost:8000/mcp
-- **Frontend**: http://localhost:5173 (Vite dev server)
+## Databricks CLI Rules
 
-## Testing and Validation
-
-### MCP Testing
-- **Web Interface**: Test MCP tools through React frontend
-- **Local Proxy**: Use `dba_mcp_proxy/` for CLI testing
-- **Validation Scripts**: Use `claude_scripts/` for automated testing
-
-### Code Quality
-- **Python**: ruff for linting and formatting
-- **TypeScript**: ESLint + Prettier for frontend code
-- **Formatting**: Run `./fix.sh` to auto-format code
-
-## Deployment
-
-### Databricks Apps Deployment
+**CRITICAL: Always source environment before Databricks CLI:**
 ```bash
-# Deploy to Databricks Apps
-./deploy.sh
+# ✅ CORRECT - Load environment first
+source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databricks current-user me
 
-# Check deployment status
-./app_status.sh
+# ❌ WRONG - Direct CLI usage
+databricks current-user me
 ```
 
-### Configuration Files
-- [app.yaml](mdc:app.yaml) - Databricks App configuration
-- [config.yaml](mdc:config.yaml) - Server configuration
-- [requirements.txt](mdc:requirements.txt) - Python dependencies
+## Development Workflow
 
-### Environment Variables
-- **Local**: `.env.local` for development settings
-- **Production**: Set through Databricks Apps environment variables
-- **Required**: Databricks host, authentication tokens
+### Starting Development
+1. Run `./setup.sh` for first-time setup or configuration changes
+2. Run `./watch.sh` to start development servers:
+   - Backend: http://localhost:8000 (FastAPI + MCP server)
+   - Frontend: http://localhost:5173 (React dev server)
+   - MCP endpoint: http://localhost:8000/mcp/
+   - API docs: http://localhost:8000/docs
+
+### Making Changes
+- **Tools**: Edit functions in `server/tools/*.py` modules
+- **Prompts**: Add/edit markdown files in `prompts/` directory
+- **Frontend**: Modify React components in `client/src/`
+- **Backend**: Update FastAPI routes in `server/routers/`
+
+All changes auto-reload via file watchers in `./watch.sh`.
+
+### Package Management
+- **Python**: Use `uv add/remove` for dependencies, never edit pyproject.toml manually
+- **Frontend**: Use `bun add/remove` for dependencies, never edit package.json manually
+- Always check if dependencies already exist before adding new ones
+- **Principle**: Only add dependencies if absolutely critical
+
+## Development Principles
+
+### Keep It Simple
+- **Direct file editing**: Edit files directly, no complex workflows
+- **Immediate testing**: Test changes immediately with auto-reload
+- **Simple debugging**: Use print statements and basic logging
+- **NO complex debugging tools** or sophisticated development environments
+
+### File Organization
+- **One concept per file**: Each file should have a single, clear purpose
+- **Direct imports**: Import exactly what you need, no complex import systems
+- **Simple structure**: Keep file organization flat and obvious
+- **NO complex file hierarchies** or sophisticated organization patterns
+
+### Code Changes
+- **Incremental changes**: Make small, focused changes
+- **Immediate testing**: Test each change before moving on
+- **Simple commits**: Commit changes with clear, simple messages
+- **NO complex branching strategies** or sophisticated version control workflows
+
+## Development Tools
+
+### Essential Tools Only
+- **Editor**: Use any editor that supports the project languages
+- **Terminal**: Basic terminal for running commands
+- **Browser**: For testing frontend and API endpoints
+- **NO complex IDEs** or sophisticated development environments
+
+### Testing Changes
+- **Backend**: Check terminal output and API docs
+- **Frontend**: Check browser console and network tab
+- **MCP**: Use testing scripts in `claude_scripts/`
+- **NO complex testing workflows** or sophisticated debugging tools
 
 ## Troubleshooting
 
 ### Common Issues
-- **Port Conflicts**: Check if ports 8000/5173 are available
-- **Authentication**: Verify `.env.local` configuration
-- **Dependencies**: Run `./fix.sh` to resolve dependency issues
-- **Build Issues**: Check `client/build/` directory exists for production
+- **Authentication failures**: Run `databricks auth login` or check `.env.local` configuration
+- **MCP connection issues**: Verify app deployment with `./app_status.sh`
+- **TypeScript client not found**: Auto-generated by `./watch.sh`, check logs
+- **Port conflicts**: Default ports 8000 (backend) and 5173 (frontend)
 
-### Debug Mode
-- Enable debug logging in FastAPI
-- Use `debugpy` for Python debugging
-- Check browser console for frontend issues
-description:
+### Debug Commands
+```bash
+# Check development server logs
+tail -f /tmp/databricks-app-watch.log
+
+# Test Databricks connection
+source .env.local && databricks current-user me
+
+# Verify MCP endpoint
+curl http://localhost:8000/mcp/
+
+# Check Claude MCP integration
+echo "What MCP prompts are available from databricks-mcp?" | claude
+```
+
+## Forbidden Development Patterns
+❌ **Complex development workflows** or sophisticated tooling
+❌ **Advanced debugging systems** or complex debugging tools
+❌ **Sophisticated version control strategies** or complex branching
+❌ **Custom development utilities** or complex development environments
+❌ **Performance profiling** or sophisticated optimization tools
+❌ **Enterprise development patterns** or complex development methodologies
+
+## Required Development Patterns
+✅ **Simple file editing** with immediate testing
+✅ **Basic terminal commands** for development tasks
+✅ **Auto-reload development** with file watchers
+✅ **Simple debugging** with print statements and basic logging
+✅ **Direct package management** with uv and bun
+✅ **Immediate feedback** through auto-reload and simple testing
+
+## Summary: What Makes Development "Senior Developer Approved"
+
+✅ **Readable**: Any developer can understand the workflow immediately
+✅ **Maintainable**: Simple patterns that are easy to follow
+✅ **Focused**: Each step has a single, clear purpose
+✅ **Direct**: No unnecessary complexity or indirection
+✅ **Practical**: Gets the job done without over-engineering
+
+When in doubt, choose the **simpler** development approach. Your future self (and your teammates) will thank you.
+
+description: Development workflow emphasizing simple, maintainable patterns over complex development systems
 globs:
 alwaysApply: false
 ---
