@@ -556,9 +556,10 @@ class TestStressTest:
 
       def mock_update(*args, **kwargs):
         with lock:
-          # Simulate occasional conflicts (reduce frequency)
-          if len(dashboard_widgets) > 0 and threading.current_thread().ident % 5 == 0:
-            conflicts.append(f'Conflict on thread {threading.current_thread().ident}')
+          # Simulate occasional conflicts (balanced frequency)
+          thread_id = threading.current_thread().ident
+          if thread_id % 7 == 0:  # Every 7th thread causes conflict
+            conflicts.append(f'Conflict on thread {thread_id}')
             raise Exception('Concurrent modification conflict')
 
           # Update widget list
