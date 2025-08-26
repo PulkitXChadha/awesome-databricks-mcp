@@ -107,5 +107,6 @@ class TestGovernanceTools:
   # Note: Data quality tools are implemented in Unity Catalog module, not governance
   # These tests will be added to test_unity_catalog.py when appropriate
 
-  # Note: Access control tools (list_access_controls, grant_access, revoke_access) are not implemented yet
+  # Note: Access control tools (list_access_controls, grant_access, revoke_access)
+  # are not implemented yet
   # These tests will be added when those tools are implemented

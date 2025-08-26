@@ -317,7 +317,8 @@ class TestPerformanceRegression:
 
     if variance_limit and min_time > 0:
       assert max_time < min_time * variance_limit, (
-        f'Performance variance too high: min={min_time:.6f}s, max={max_time:.6f}s (limit: {variance_limit}x)'
+        f'Performance variance too high: min={min_time:.6f}s, max={max_time:.6f}s '
+        f'(limit: {variance_limit}x)'
       )
 
     # Check average is within threshold
