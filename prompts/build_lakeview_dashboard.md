@@ -36,11 +36,9 @@ To build your production-ready Lakeview Dashboard, provide the following informa
 The tool will execute a comprehensive deployment pipeline:
 
 ### Phase 1: Data Discovery & Validation
-1. **Explore Unity Catalog** structure and permissions
-2. **Analyze table schemas** and data characteristics
-3. **Test SQL queries** with sample data
-4. **Validate performance** metrics and optimization needs
-5. **Check data freshness** and update patterns
+1. **Analyze input table schemas** and data characteristics, including joins and relationships between the tables.
+2. **Write Dataset SQL queries** to support the widgets needed.
+2. **Test SQL queries** for performance and validate the result data.
 
 ### Phase 2: Dashboard Creation & Configuration
 1. **Create base dashboard** with proper metadata
@@ -218,7 +216,7 @@ SELECT * FROM daily_summary
 ## Implementation Workflow
 
 ### Phase 1: Data Discovery & Validation
-1. **Explore Unity Catalog**: Use `list_uc_catalogs`, `describe_uc_schema`, `describe_uc_table`
+1. **Explore Unity Catalog**: Use `describe_uc_schema`, `describe_uc_table`
 2. **Analyze Data Structure**: Review column types, constraints, and relationships
 3. **Test SQL Queries**: Execute with `execute_dbsql` to validate syntax and results
 4. **Assess Data Quality**: Check completeness, consistency, and update frequency
@@ -406,7 +404,6 @@ FROM source_table;
 ## Available Tools
 
 ### Unity Catalog Exploration
-- `list_uc_catalogs` - Discover available data catalogs
 - `describe_uc_schema` - Explore schema structure and tables
 - `describe_uc_table` - Analyze table columns and data types
 
