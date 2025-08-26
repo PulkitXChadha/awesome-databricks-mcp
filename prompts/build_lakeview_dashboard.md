@@ -4,10 +4,9 @@ I can help you build a Lakeview Dashboard, transforming your data into actionabl
 
 ## Core Capabilities
 
-- **Data Discovery & Validation**: Automated exploration of Unity Catalog with SQL query testing
+- **Data Discovery & Validation**: Automated exploration of data characteristics, including joins and relationships between Unity Catalog tables and schemas with SQL query testing
 - **Smart Widget Selection**: 20+ widget types optimized for your data characteristics  
-- **Performance-First Design**: Built-in validation and optimization recommendations
-- **Production Deployment**: Complete setup including permissions, scheduling, and monitoring
+- **Production Deployment**: Complete setup including permissions, scheduling
 - **Continuous Monitoring**: Iterative error resolution until successful deployment
 - **Error Prevention**: Proactive validation at every step to prevent runtime failures
 
@@ -28,8 +27,6 @@ To build your production-ready Lakeview Dashboard, provide the following informa
 - **filters_required**: Interactive filters needed ["date_range", "region", "product_category"]
 - **drill_down_paths**: Navigation requirements between dashboards
 - **alert_thresholds**: Values that trigger notifications
-- **mobile_optimized**: Whether to optimize for mobile viewing (default: true)
-- **embedding_allowed**: Whether dashboard can be embedded (default: false)
 
 ## Automated Deployment Workflow
 
