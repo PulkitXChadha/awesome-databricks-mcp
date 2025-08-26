@@ -379,7 +379,7 @@ export DATABRICKS_HOST="https://your-workspace.cloud.databricks.com"
 
 # Add MCP server to Claude
 claude mcp add databricks-mcp -- \
-  uvx --from git+ssh://git@github.com/YOUR-USERNAME/YOUR-REPO.git dba-mcp-proxy \
+  uvx --from git+https://git@github.com/YOUR-USERNAME/YOUR-REPO.git dba-mcp-proxy \
   --databricks-host $DATABRICKS_HOST \
   --databricks-app-url $DATABRICKS_APP_URL
 ```

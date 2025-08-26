@@ -310,7 +310,7 @@ export SERVER_NAME="your-server-name"  # This comes from config.yaml (set during
 
 # Add your MCP server to Claude (user-scoped)
 claude mcp add $SERVER_NAME --scope user -- \
-  uvx --from git+ssh://git@github.com/YOUR-USERNAME/your-repo.git dba-mcp-proxy \
+  uvx --from git+https://git@github.com/YOUR-USERNAME/your-repo.git dba-mcp-proxy \
   --databricks-host $DATABRICKS_HOST \
   --databricks-app-url $DATABRICKS_APP_URL
 ```
@@ -332,7 +332,7 @@ export DATABRICKS_APP_URL="http://localhost:8000"  # Local dev server
 
 # Add to Claude for local testing
 claude mcp add databricks-mcp-local --scope local -- \
-  uvx --from git+ssh://git@github.com/YOUR-ORG/YOUR-REPO.git dba-mcp-proxy \
+  uvx --from git+https://git@github.com/YOUR-ORG/YOUR-REPO.git dba-mcp-proxy \
   --databricks-host $DATABRICKS_HOST \
   --databricks-app-url $DATABRICKS_APP_URL
 ```
@@ -396,7 +396,7 @@ export DATABRICKS_APP_URL="http://localhost:8000"
 
 # Add the local MCP server to Claude
 claude mcp add databricks-mcp-local --scope local -- \
-  uvx --from git+ssh://git@github.com/PulkitXChadha/awesome-databricks-mcp.git dba-mcp-proxy \
+  uvx --from git+https://git@github.com/PulkitXChadha/awesome-databricks-mcp.git dba-mcp-proxy \
   --databricks-host $DATABRICKS_HOST \
   --databricks-app-url $DATABRICKS_APP_URL
 
