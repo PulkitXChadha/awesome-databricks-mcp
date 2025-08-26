@@ -12,15 +12,17 @@ Transform your data into actionable insights with production-ready Databricks La
 
 ## Quick Start
 
-### 1. Provide Dashboard Requirements
-```yaml
-purpose: "executive reporting | operational monitoring | analytics exploration"
-data_sources: ["catalog.schema.table", "catalog.schema.view"]
-key_metrics: ["revenue", "orders", "customer_satisfaction"]
-audience: "executives | analysts | operations_teams"
-dashboard_name: "Sales Performance Dashboard"
-sql_warehouse_id: "your_warehouse_id"
-```
+## How to Use
+
+To build your Lakeflow Declarative Pipeline, I'll need information about your source tables and configuration preferences:
+
+### 1. Required Information
+- **purpose**: "executive reporting | operational monitoring | analytics exploration"
+- **data_sources**: ["catalog.schema.table", "catalog.schema.view"]
+- **key_metrics**: ["revenue", "orders", "customer_satisfaction"]
+- **audience**: "executives | analysts | operations_teams"
+- **dashboard_name**: "Sales Performance Dashboard"
+- **sql_warehouse_id**: "your_warehouse_id"
 
 ### 2. Automated Workflow
 The tool will:
