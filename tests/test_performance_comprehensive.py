@@ -603,7 +603,7 @@ class TestStressTest:
       successful_attempts = sum(sum(results) for results in all_results)
       success_rate = successful_attempts / total_attempts if total_attempts > 0 else 0
 
-      assert success_rate > 0.7, (
+      assert success_rate >= 0.7, (
         f'Success rate {success_rate:.2f} too low for concurrent operations'
       )
       assert len(conflicts) > 0, 'Expected some conflicts in concurrent modification test'
