@@ -27,13 +27,11 @@ jobs:
             echo "DATABRICKS_HOST=${{ secrets.PROD_DATABRICKS_HOST }}" >> $GITHUB_ENV
             echo "DATABRICKS_TOKEN=${{ secrets.PROD_DATABRICKS_TOKEN }}" >> $GITHUB_ENV
             echo "DATABRICKS_APP_NAME=${{ secrets.PROD_DATABRICKS_APP_NAME }}" >> $GITHUB_ENV
-            echo "DBA_SOURCE_CODE_PATH=${{ secrets.PROD_DBA_SOURCE_CODE_PATH }}" >> $GITHUB_ENV
             echo "ENV_NAME=Production" >> $GITHUB_ENV
           else
             echo "DATABRICKS_HOST=${{ secrets.DEV_DATABRICKS_HOST }}" >> $GITHUB_ENV
             echo "DATABRICKS_TOKEN=${{ secrets.DEV_DATABRICKS_TOKEN }}" >> $GITHUB_ENV
             echo "DATABRICKS_APP_NAME=${{ secrets.DEV_DATABRICKS_APP_NAME }}" >> $GITHUB_ENV
-            echo "DBA_SOURCE_CODE_PATH=${{ secrets.DEV_DBA_SOURCE_CODE_PATH }}" >> $GITHUB_ENV
             echo "ENV_NAME=Development" >> $GITHUB_ENV
           fi
           echo "DATABRICKS_AUTH_TYPE=pat" >> $GITHUB_ENV
@@ -59,8 +57,35 @@ jobs:
       - name: Deploy to Databricks
         run: |
           echo "Deploying $DATABRICKS_APP_NAME to $ENV_NAME..."
-          databricks workspace mkdirs "$DBA_SOURCE_CODE_PATH"
-          databricks sync . "$DBA_SOURCE_CODE_PATH"
+          
+          # Create or update the repo in Databricks workspace using the current user
+          CURRENT_USER=$(databricks current-user me --output json | python3 -c "import sys, json; print(json.load(sys.stdin)['userName'])")
+          REPO_PATH="//Workspace/Users/${CURRENT_USER}/$(echo ${{ github.repository }} | cut -d'/' -f2)"
+          
+          # Check if repo already exists
+          if databricks repos list --path-prefix "$REPO_PATH" --output json | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          repos = data.get('repos', [])
+          for repo in repos:
+              if repo.get('path') == '$REPO_PATH':
+                  print(repo.get('id'))
+                  break
+          " > /tmp/repo_id; then
+            REPO_ID=$(cat /tmp/repo_id)
+            if [ ! -z "$REPO_ID" ]; then
+              echo "Updating existing repo $REPO_ID to latest commit..."
+              databricks repos update "$REPO_ID" --branch ${{ github.ref_name }}
+            else
+              echo "Creating new repo..."
+              databricks repos create https://github.com/${{ github.repository }}.git gitHub --path "$REPO_PATH" --branch ${{ github.ref_name }}
+              sleep 10
+            fi
+          else
+            echo "Creating new repo..."
+            databricks repos create https://github.com/${{ github.repository }}.git gitHub --path "$REPO_PATH" --branch ${{ github.ref_name }}
+            sleep 10
+          fi
           
           # Create app if it doesn't exist
           if ! databricks apps list | grep -q "^$DATABRICKS_APP_NAME "; then
@@ -69,8 +94,8 @@ jobs:
             sleep 30
           fi
           
-          # Deploy the app
-          databricks apps deploy "$DATABRICKS_APP_NAME" --source-code-path "$DBA_SOURCE_CODE_PATH"
+          # Deploy the app using the repo path
+          databricks apps deploy "$DATABRICKS_APP_NAME" --source-code-path "$REPO_PATH"
       
       - name: Get app URL
         run: |
