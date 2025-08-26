@@ -53,8 +53,8 @@ jobs:
           uv run python scripts/generate_semver_requirements.py
           cd client && bun install --frozen-lockfile && bun run build
       
-      - name: Test connection
-        run: databricks current-user me
+      # - name: Test connection
+      #   run: databricks current-user me
       
       - name: Deploy to Databricks
         run: |
