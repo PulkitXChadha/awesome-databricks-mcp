@@ -513,7 +513,8 @@ class TestMCPToolRegistration:
   def test_load_widget_tools(self):
     """Test loading widget tools into MCP server."""
     mock_server = Mock()
-    mock_server.tool = Mock(side_effect=lambda func: func)
+    # Mock tool() to return a decorator that returns the function unchanged
+    mock_server.tool = Mock(return_value=lambda func: func)
 
     # Load widget tools
     load_widget_tools(mock_server)
@@ -524,7 +525,8 @@ class TestMCPToolRegistration:
   def test_mcp_tool_functions_exist(self):
     """Test that MCP tool wrapper functions are created."""
     mock_server = Mock()
-    mock_server.tool = Mock(side_effect=lambda func: func)
+    # Mock tool() to return a decorator that returns the function unchanged
+    mock_server.tool = Mock(return_value=lambda func: func)
 
     # This should not raise any errors
     load_widget_tools(mock_server)

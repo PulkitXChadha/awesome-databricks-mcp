@@ -577,7 +577,7 @@ requires-dist = [
     { name = "debugpy", specifier = ">=1.8.15" },
     { name = "fastapi", specifier = ">=0.104.1" },
     { name = "fastapi-mcp", specifier = ">=0.3.7" },
-    { name = "fastmcp" },
+    { name = "fastmcp", specifier = ">=2.10.6" },
     { name = "httpx", specifier = ">=0.25.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.25.0" },
     { name = "mcp", specifier = ">=1.12.0" },
