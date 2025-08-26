@@ -310,7 +310,7 @@ def load_dashboard_tools(mcp_server):
       try:
         # Try Lakeview API first (correct method name is 'create')
         dashboard = w.lakeview.create(**dashboard_config)
-        
+
         dashboard_type = 'lakeview'
       except (AttributeError, Exception):
         # Fallback to legacy dashboard API

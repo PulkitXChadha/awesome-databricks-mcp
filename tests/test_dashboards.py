@@ -112,7 +112,6 @@ class TestDashboardTools:
         == 'Successfully created lakeview dashboard New Test Dashboard with ID lakeview-789'
       )
 
-
   @pytest.mark.unit
   def test_update_lakeview_dashboard(self, mcp_server, mock_env_vars):
     """Test updating Lakeview dashboard."""
@@ -268,7 +267,6 @@ class TestDashboardTools:
 
       assert_success_response(share_result)
 
-
   @pytest.mark.unit
   def test_dashboard_export_import(self, mcp_server, mock_env_vars):
     """Test export/import functionality."""
@@ -322,9 +320,7 @@ class TestDashboardTools:
       mock_workspace = Mock()
 
       # Mock that Lakeview API throws an error
-      mock_workspace.lakeview.list.side_effect = Exception(
-        "Failed to list dashboards"
-      )
+      mock_workspace.lakeview.list.side_effect = Exception('Failed to list dashboards')
 
       mock_client.return_value = mock_workspace
 
@@ -498,7 +494,6 @@ class TestDashboardErrorScenarios:
 
         assert_error_response(result)
         assert 'not found' in result['error'].lower() or 'resource' in result['error'].lower()
-
 
 
 class TestWidgetManagementTools:
@@ -759,7 +754,6 @@ class TestWidgetManagementTools:
 
       assert_error_response(result)
       assert 'Widget nonexistent_widget not found in dashboard dashboard-123' in result['error']
-
 
 
 class TestDatasetManagementTools:
@@ -1688,7 +1682,6 @@ class TestLayoutAndPositioningTools:
     )
     assert_error_response(result)
     assert 'Widget extends beyond 12-column grid' in result['error']
-
 
 
 class TestWidgetCreationErrors:

@@ -145,9 +145,7 @@ def test_dashboard_tools():
     mock_workspace = Mock()
 
     # Mock that Lakeview API throws an error
-    mock_workspace.lakeview.list.side_effect = Exception(
-      "Failed to list dashboards"
-    )
+    mock_workspace.lakeview.list.side_effect = Exception('Failed to list dashboards')
 
     mock_client.return_value = mock_workspace
 
