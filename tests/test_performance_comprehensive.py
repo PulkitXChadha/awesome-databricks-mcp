@@ -547,6 +547,7 @@ class TestStressTest:
       dashboard_widgets = []
       lock = threading.Lock()
       conflicts = []
+      operation_count = 0
 
       def mock_get(*args, **kwargs):
         with lock:
@@ -555,11 +556,13 @@ class TestStressTest:
           return mock_dashboard
 
       def mock_update(*args, **kwargs):
+        nonlocal operation_count
         with lock:
-          # Simulate occasional conflicts (balanced frequency)
-          thread_id = threading.current_thread().ident
-          if thread_id % 7 == 0:  # Every 7th thread causes conflict
-            conflicts.append(f'Conflict on thread {thread_id}')
+          operation_count += 1
+          # Simulate realistic conflicts: about 15% failure rate
+          # This creates some conflicts but maintains good success rate
+          if operation_count % 7 == 0:
+            conflicts.append(f'Conflict at operation {operation_count}')
             raise Exception('Concurrent modification conflict')
 
           # Update widget list
@@ -604,7 +607,7 @@ class TestStressTest:
       successful_attempts = sum(sum(results) for results in all_results)
       success_rate = successful_attempts / total_attempts if total_attempts > 0 else 0
 
-      assert success_rate >= 0.7, (
+      assert success_rate >= 0.75, (
         f'Success rate {success_rate:.2f} too low for concurrent operations'
       )
       assert len(conflicts) > 0, 'Expected some conflicts in concurrent modification test'
