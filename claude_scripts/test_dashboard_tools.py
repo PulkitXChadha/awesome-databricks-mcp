@@ -138,50 +138,32 @@ def test_dashboard_tools():
     print(f'🏷️ Type: {result["type"]}')
     print(f'💬 Message: {result["message"]}')
 
-  # Test fallback behavior (when Lakeview API is not available)
-  print('\n🔄 Testing fallback behavior...')
+  # Test error handling
+  print('\n🔄 Testing error handling...')
 
   with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
     mock_workspace = Mock()
 
-    # Mock that Lakeview API is not available (AttributeError)
-    mock_workspace.lakeview.list.side_effect = AttributeError(
-      "'WorkspaceClient' object has no attribute 'lakeview'"
+    # Mock that Lakeview API throws an error
+    mock_workspace.lakeview.list.side_effect = Exception(
+      "Failed to list dashboards"
     )
 
-    # Mock legacy dashboard
-    mock_legacy_dashboard = Mock()
-    mock_legacy_dashboard.id = 'legacy-001'
-    mock_legacy_dashboard.name = 'Legacy Report'
-    mock_legacy_dashboard.description = 'Legacy dashboard'
-    mock_legacy_dashboard.created_at = '2023-01-01T00:00:00Z'
-    mock_legacy_dashboard.updated_at = '2023-06-01T00:00:00Z'
-    mock_legacy_dashboard.user = 'legacy@company.com'
-    mock_legacy_dashboard.status = 'active'
-
-    mock_workspace.dashboards.list.return_value = [mock_legacy_dashboard]
     mock_client.return_value = mock_workspace
 
     tool = mcp_server._tool_manager._tools['list_lakeview_dashboards']
     result = tool.fn()
 
-    print(f'✅ Result: {result["success"]}')
-    print(f'📈 Found {result["count"]} dashboards (fallback)')
-    print(f'💬 Message: {result["message"]}')
-
-    for dashboard in result['dashboards']:
-      print(f'  - {dashboard["name"]} (ID: {dashboard["dashboard_id"]})')
-      print(f'    Owner: {dashboard["owner"]}')
-      print(f'    Type: {dashboard["type"]}')
+    print(f'✅ Error handling works: {not result["success"]}')
+    print(f'💬 Error message: {result["error"]}')
 
   print('\n🎉 Dashboard tools testing completed successfully!')
   print('\n📋 Summary of implemented features:')
-  print('  ✅ list_lakeview_dashboards - Lists all dashboards with fallback support')
+  print('  ✅ list_lakeview_dashboards - Lists all Lakeview dashboards')
   print('  ✅ get_lakeview_dashboard - Retrieves specific dashboard details')
   print('  ✅ create_lakeview_dashboard - Creates new dashboards')
   print('  ✅ update_lakeview_dashboard - Updates existing dashboards')
   print('  ✅ delete_lakeview_dashboard - Deletes dashboards')
-  print('  ✅ Fallback support for legacy dashboard APIs')
   print('  ✅ Comprehensive error handling and validation')
   print('  ✅ Full test coverage with unit and integration tests')
 

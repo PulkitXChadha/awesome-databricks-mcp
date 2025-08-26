@@ -43,7 +43,7 @@ class TestToolIntegration:
     assert 'list_uc_catalogs' in tool_names  # Unity Catalog tools
     assert 'list_warehouses' in tool_names  # SQL tools
     assert 'list_jobs' in tool_names  # Jobs tools
-    assert 'list_dashboards' in tool_names  # Dashboard tools
+    assert 'list_lakeview_dashboards' in tool_names  # Dashboard tools
 
   @pytest.mark.integration
   def test_tool_error_handling(self, mcp_server, mock_workspace_client):
@@ -116,7 +116,7 @@ class TestToolIntegration:
     load_dashboard_tools(mcp_server)
 
     tools = mcp_server._tool_manager._tools
-    dashboard_tool_names = ['list_dashboards', 'list_lakeview_dashboards']
+    dashboard_tool_names = ['list_lakeview_dashboards']
 
     for tool_name in dashboard_tool_names:
       assert tool_name in tools, f'Dashboard tool {tool_name} not loaded'

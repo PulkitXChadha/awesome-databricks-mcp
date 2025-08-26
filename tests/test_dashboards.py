@@ -28,19 +28,8 @@ class TestDashboardTools:
       mock_lakeview_dashboard.owner = 'sales@example.com'
       mock_lakeview_dashboard.status = 'active'
 
-      # Mock legacy dashboard
-      mock_legacy_dashboard = Mock()
-      mock_legacy_dashboard.id = 'legacy-456'
-      mock_legacy_dashboard.name = 'Legacy Report'
-      mock_legacy_dashboard.description = 'Legacy dashboard'
-      mock_legacy_dashboard.created_at = '2023-01-01T00:00:00Z'
-      mock_legacy_dashboard.updated_at = '2023-06-01T00:00:00Z'
-      mock_legacy_dashboard.user = 'legacy@example.com'
-      mock_legacy_dashboard.status = 'active'
-
       # Setup mock responses
       mock_workspace.lakeview.list.return_value = [mock_lakeview_dashboard]
-      mock_workspace.dashboards.list.return_value = [mock_legacy_dashboard]
 
       mock_client.return_value = mock_workspace
 
@@ -123,19 +112,6 @@ class TestDashboardTools:
         == 'Successfully created lakeview dashboard New Test Dashboard with ID lakeview-789'
       )
 
-  @pytest.mark.unit
-  def test_list_legacy_dashboards(self, mcp_server, mock_env_vars):
-    """Test listing legacy dashboards."""
-    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      mock_client.return_value = Mock()
-
-      load_dashboard_tools(mcp_server)
-      tool = mcp_server._tool_manager._tools['list_dashboards']
-      result = tool.fn()
-
-      assert_success_response(result)
-      assert result['message'] == 'Legacy dashboard listing initiated'
-      assert result['count'] == 0
 
   @pytest.mark.unit
   def test_update_lakeview_dashboard(self, mcp_server, mock_env_vars):
@@ -292,57 +268,6 @@ class TestDashboardTools:
 
       assert_success_response(share_result)
 
-  @pytest.mark.unit
-  def test_legacy_dashboards(self, mcp_server, mock_env_vars):
-    """Test legacy dashboard compatibility."""
-    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      from tests.mock_factory import mock_workspace_client
-
-      client = mock_workspace_client()
-
-      # Setup legacy dashboard data
-      mock_dashboard = Mock()
-      mock_dashboard.id = 'legacy-456'
-      mock_dashboard.name = 'Legacy Sales Report'
-      mock_dashboard.slug = 'legacy-sales-report'
-      mock_dashboard.created_at = '2023-01-01T00:00:00Z'
-      mock_dashboard.updated_at = '2023-06-01T00:00:00Z'
-      mock_dashboard.user = Mock()
-      mock_dashboard.user.name = 'legacy@example.com'
-      mock_dashboard.widgets = [
-        {'id': 1, 'visualization': {'type': 'chart'}},
-        {'id': 2, 'visualization': {'type': 'table'}},
-      ]
-
-      # Mock the legacy API responses (using simplified structure)
-      client.legacy_dashboards = Mock()
-      client.legacy_dashboards.list.return_value = [mock_dashboard]
-      client.legacy_dashboards.get.return_value = mock_dashboard
-      client.legacy_dashboards.create.return_value = mock_dashboard
-      client.legacy_dashboards.delete.return_value = {'success': True}
-
-      mock_client.return_value = client
-
-      load_dashboard_tools(mcp_server)
-
-      # Test legacy dashboard listing
-      list_tool = mcp_server._tool_manager._tools['list_dashboards']
-      list_result = list_tool.fn()
-
-      assert_success_response(list_result)
-
-      # Test legacy dashboard creation
-      create_tool = mcp_server._tool_manager._tools['create_dashboard']
-      dashboard_config = {'name': 'New Legacy Dashboard', 'widgets': []}
-      create_result = create_tool.fn(dashboard_config=dashboard_config)
-
-      assert_success_response(create_result)
-
-      # Test legacy dashboard deletion
-      delete_tool = mcp_server._tool_manager._tools['delete_dashboard']
-      delete_result = delete_tool.fn(dashboard_id='legacy-456')
-
-      assert_success_response(delete_result)
 
   @pytest.mark.unit
   def test_dashboard_export_import(self, mcp_server, mock_env_vars):
@@ -390,29 +315,16 @@ class TestDashboardTools:
       assert_success_response(result)
 
   @pytest.mark.unit
-  def test_list_lakeview_dashboards_fallback(self, mcp_server, mock_env_vars):
-    """Test listing Lakeview dashboards with fallback to legacy API."""
+  def test_list_lakeview_dashboards_error_handling(self, mcp_server, mock_env_vars):
+    """Test listing Lakeview dashboards with error handling."""
     with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      # Mock dashboard listing with fallback behavior
+      # Mock dashboard listing with error
       mock_workspace = Mock()
 
-      # Mock that Lakeview API is not available (AttributeError)
-      mock_workspace.lakeview.list.side_effect = AttributeError(
-        "'WorkspaceClient' object has no attribute 'lakeview'"
+      # Mock that Lakeview API throws an error
+      mock_workspace.lakeview.list.side_effect = Exception(
+        "Failed to list dashboards"
       )
-
-      # Mock legacy dashboard
-      mock_legacy_dashboard = Mock()
-      mock_legacy_dashboard.id = 'legacy-456'
-      mock_legacy_dashboard.name = 'Legacy Report'
-      mock_legacy_dashboard.description = 'Legacy dashboard'
-      mock_legacy_dashboard.created_at = '2023-01-01T00:00:00Z'
-      mock_legacy_dashboard.updated_at = '2023-06-01T00:00:00Z'
-      mock_legacy_dashboard.user = 'legacy@example.com'
-      mock_legacy_dashboard.status = 'active'
-
-      # Setup mock response for legacy API
-      mock_workspace.dashboards.list.return_value = [mock_legacy_dashboard]
 
       mock_client.return_value = mock_workspace
 
@@ -420,14 +332,8 @@ class TestDashboardTools:
       tool = mcp_server._tool_manager._tools['list_lakeview_dashboards']
       result = tool.fn()
 
-      assert_success_response(result)
-      assert result['message'] == 'Found 1 dashboard(s)'
-      assert result['count'] == 1
-      assert len(result['dashboards']) == 1
-      assert result['dashboards'][0]['dashboard_id'] == 'legacy-456'
-      assert result['dashboards'][0]['name'] == 'Legacy Report'
-      assert result['dashboards'][0]['type'] == 'legacy'
-      assert 'note' in result
+      assert_error_response(result)
+      assert 'Failed to list dashboards' in result['error']
 
   @pytest.mark.unit
   def test_create_lakeview_dashboard_validation(self, mcp_server, mock_env_vars):
@@ -593,34 +499,6 @@ class TestDashboardErrorScenarios:
         assert_error_response(result)
         assert 'not found' in result['error'].lower() or 'resource' in result['error'].lower()
 
-  @pytest.mark.unit
-  def test_legacy_dashboard_errors(self, mcp_server, mock_env_vars):
-    """Test legacy dashboard error scenarios."""
-    from tests.utils import ERROR_SCENARIOS, simulate_databricks_error
-
-    load_dashboard_tools(mcp_server)
-
-    # Test legacy dashboard authentication errors
-    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      mock_client.side_effect = simulate_databricks_error(
-        next(err[1] for err in ERROR_SCENARIOS if err[0] == 'Authentication failed'),
-        'Authentication failed',
-      )
-
-      legacy_operations = [
-        ('list_dashboards', {}),
-        ('get_dashboard', {'dashboard_id': 'legacy-123'}),
-        ('delete_dashboard', {'dashboard_id': 'legacy-123'}),
-      ]
-
-      for tool_name, params in legacy_operations:
-        tool = mcp_server._tool_manager._tools[tool_name]
-        result = tool.fn(**params)
-
-        assert_error_response(result)
-        assert (
-          'access denied' in result['error'].lower() or 'authentication' in result['error'].lower()
-        )
 
 
 class TestWidgetManagementTools:
@@ -882,38 +760,6 @@ class TestWidgetManagementTools:
       assert_error_response(result)
       assert 'Widget nonexistent_widget not found in dashboard dashboard-123' in result['error']
 
-  @pytest.mark.unit
-  def test_widget_operations_fallback_to_legacy(self, mcp_server, mock_env_vars):
-    """Test widget operations falling back to legacy API."""
-    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      # Mock workspace client
-      mock_workspace = Mock()
-
-      # Mock Lakeview API failure
-      mock_workspace.lakeview.get.side_effect = AttributeError(
-        "'WorkspaceClient' object has no attribute 'lakeview'"
-      )
-
-      # Mock legacy dashboard API success
-      mock_dashboard = Mock()
-      mock_dashboard.widgets = [
-        {'widget_id': 'legacy_widget_1', 'type': 'chart', 'name': 'Legacy Chart'}
-      ]
-
-      mock_workspace.dashboards.get.return_value = mock_dashboard
-      mock_workspace.dashboards.update.return_value = Mock()
-
-      mock_client.return_value = mock_workspace
-
-      widget_spec = {'type': 'table', 'name': 'Legacy Table Widget'}
-
-      load_dashboard_tools(mcp_server)
-      tool = mcp_server._tool_manager._tools['add_widget_to_dashboard']
-      result = tool.fn(dashboard_id='legacy-dashboard-123', widget_spec=widget_spec)
-
-      assert_success_response(result)
-      assert result['dashboard_type'] == 'legacy'
-      assert result['widget_name'] == 'Legacy Table Widget'
 
 
 class TestDatasetManagementTools:
@@ -1843,35 +1689,6 @@ class TestLayoutAndPositioningTools:
     assert_error_response(result)
     assert 'Widget extends beyond 12-column grid' in result['error']
 
-  @pytest.mark.unit
-  def test_layout_fallback_to_legacy(self, mcp_server, mock_env_vars):
-    """Test layout operations falling back to legacy API."""
-    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
-      # Mock workspace client
-      mock_workspace = Mock()
-
-      # Mock Lakeview API failure
-      mock_workspace.lakeview.get.side_effect = AttributeError(
-        "'WorkspaceClient' object has no attribute 'lakeview'"
-      )
-
-      # Mock legacy dashboard API success
-      mock_dashboard = Mock()
-      mock_dashboard.widgets = [
-        {'widget_id': 'legacy_widget_1', 'position': {'width': 6, 'height': 4}}
-      ]
-
-      mock_workspace.dashboards.get.return_value = mock_dashboard
-      mock_workspace.dashboards.update.return_value = Mock()
-      mock_client.return_value = mock_workspace
-
-      load_dashboard_tools(mcp_server)
-      tool = mcp_server._tool_manager._tools['auto_layout_dashboard']
-      result = tool.fn(dashboard_id='legacy-dashboard-123', layout_type='grid')
-
-      assert_success_response(result)
-      assert result['dashboard_type'] == 'legacy'
-      assert 'Successfully applied grid layout' in result['message']
 
 
 class TestWidgetCreationErrors:

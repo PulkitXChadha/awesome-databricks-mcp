@@ -190,12 +190,6 @@ The `dashboards.py` module provides comprehensive tools for building and managin
 - `share_lakeview_dashboard(dashboard_id, config)` - Configure dashboard permissions
 - `get_dashboard_permissions(dashboard_id)` - View current access settings
 
-**Legacy Dashboard Tools:**
-- `list_dashboards()` - List legacy dashboards  
-- `get_dashboard(dashboard_id)` - Get legacy dashboard details
-- `create_dashboard(config)` - Create legacy dashboards
-- `delete_dashboard(dashboard_id)` - Remove legacy dashboards
-
 #### Dashboard Widget System
 
 The module supports all major widget types for data visualization:

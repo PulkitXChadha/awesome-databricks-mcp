@@ -310,6 +310,7 @@ def load_dashboard_tools(mcp_server):
       try:
         # Try Lakeview API first (correct method name is 'create')
         dashboard = w.lakeview.create(**dashboard_config)
+        
         dashboard_type = 'lakeview'
       except (AttributeError, Exception):
         # Fallback to legacy dashboard API
@@ -518,133 +519,6 @@ def load_dashboard_tools(mcp_server):
 
     except Exception as e:
       print(f'❌ Error getting dashboard permissions: {str(e)}')
-      return {'success': False, 'error': f'Error: {str(e)}'}
-
-  @mcp_server.tool()
-  def list_dashboards() -> dict:
-    """List all legacy dashboards in the workspace.
-
-    Returns:
-        Dictionary containing list of legacy dashboards with their details
-    """
-    try:
-      # Initialize Databricks SDK
-      w = WorkspaceClient(  # noqa: F841
-        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
-      )
-
-      # Note: Legacy dashboards may require specific permissions
-      # This is a placeholder for the concept
-      return {
-        'success': True,
-        'message': 'Legacy dashboard listing initiated',
-        'note': (
-          'Legacy dashboards may require specific permissions '
-          'and may not be directly accessible via SDK'
-        ),
-        'dashboards': [],
-        'count': 0,
-      }
-
-    except Exception as e:
-      print(f'❌ Error listing legacy dashboards: {str(e)}')
-      return {'success': False, 'error': f'Error: {str(e)}', 'dashboards': [], 'count': 0}
-
-  @mcp_server.tool()
-  def get_dashboard(dashboard_id: str) -> dict:
-    """Get details of a specific legacy dashboard.
-
-    Args:
-        dashboard_id: The ID of the dashboard to get details for
-
-    Returns:
-        Dictionary with dashboard details or error message
-    """
-    try:
-      # Initialize Databricks SDK
-      w = WorkspaceClient(  # noqa: F841
-        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
-      )
-
-      # Note: Legacy dashboard details may require specific permissions
-      # This is a placeholder for the concept
-      return {
-        'success': True,
-        'dashboard_id': dashboard_id,
-        'message': f'Legacy dashboard {dashboard_id} details retrieval initiated',
-        'note': (
-          'Legacy dashboard details may require specific permissions '
-          'and may not be directly accessible via SDK'
-        ),
-        'dashboard': {},
-      }
-
-    except Exception as e:
-      print(f'❌ Error getting legacy dashboard details: {str(e)}')
-      return {'success': False, 'error': f'Error: {str(e)}'}
-
-  @mcp_server.tool()
-  def create_dashboard(dashboard_config: dict) -> dict:
-    """Create a new legacy dashboard.
-
-    Args:
-        dashboard_config: Dictionary containing dashboard configuration
-
-    Returns:
-        Dictionary with operation result or error message
-    """
-    try:
-      # Initialize Databricks SDK
-      w = WorkspaceClient(  # noqa: F841
-        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
-      )
-
-      # Note: Legacy dashboard creation may require specific permissions
-      # This is a placeholder for the concept
-      return {
-        'success': True,
-        'dashboard_config': dashboard_config,
-        'message': 'Legacy dashboard creation initiated',
-        'note': (
-          'Legacy dashboard creation may require specific permissions '
-          'and may not be directly accessible via SDK'
-        ),
-      }
-
-    except Exception as e:
-      print(f'❌ Error creating legacy dashboard: {str(e)}')
-      return {'success': False, 'error': f'Error: {str(e)}'}
-
-  @mcp_server.tool()
-  def delete_dashboard(dashboard_id: str) -> dict:
-    """Delete a legacy dashboard.
-
-    Args:
-        dashboard_id: The ID of the dashboard to delete
-
-    Returns:
-        Dictionary with operation result or error message
-    """
-    try:
-      # Initialize Databricks SDK
-      w = WorkspaceClient(  # noqa: F841
-        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
-      )
-
-      # Note: Legacy dashboard deletion may require specific permissions
-      # This is a placeholder for the concept
-      return {
-        'success': True,
-        'dashboard_id': dashboard_id,
-        'message': f'Legacy dashboard {dashboard_id} deletion initiated',
-        'note': (
-          'Legacy dashboard deletion may require specific permissions '
-          'and may not be directly accessible via SDK'
-        ),
-      }
-
-    except Exception as e:
-      print(f'❌ Error deleting legacy dashboard: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
   # Week 1: Core Chart Widgets

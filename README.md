@@ -12,7 +12,7 @@ This template lets you create an MCP server that runs on Databricks Apps. You ca
 - 🖥️ **Web Interface** with a modern React TypeScript frontend for MCP discovery
 - 🧪 **Comprehensive Testing** with automated MCP validation tools
 - 🔄 **CI/CD Pipeline** with automated testing, security scanning, and deployment
-- 📊 **Advanced Dashboard Tools** for building comprehensive Lakeview and legacy dashboards
+- 📊 **Advanced Dashboard Tools** for building comprehensive Lakeview dashboards
 
 Think of it as a bridge between Claude and your Databricks workspace - you define what Claude can see and do, and this server handles the rest.
 
@@ -606,7 +606,7 @@ pie title MCP Tools by Module
     "Unity Catalog" : 20
     "Data Management" : 10
     "Jobs & Pipelines" : 20
-    "Dashboards" : 8
+    "Dashboards" : 4
     "Widgets" : 15
     "Governance" : 15
 ```

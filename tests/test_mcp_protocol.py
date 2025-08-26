@@ -23,8 +23,8 @@ class TestMCPProtocolCompliance:
     # Verify tool registration
     tools = mcp_server._tool_manager._tools
 
-    # Should have all expected tools loaded
-    expected_tool_count = 98  # Based on actual tool count
+    # Should have all expected tools loaded (reduced by 4 after removing legacy dashboard tools)
+    expected_tool_count = 94  # Based on actual tool count after legacy removal
     assert len(tools) == expected_tool_count
 
     # Verify core tools are registered
@@ -104,9 +104,6 @@ class TestMCPProtocolCompliance:
       'get_lakeview_dashboard',
       'create_lakeview_dashboard',
       'update_lakeview_dashboard',
-      'list_dashboards',
-      'get_dashboard',
-      'create_dashboard',
     ]
     for tool_name in dashboard_tools:
       assert tool_name in tools
