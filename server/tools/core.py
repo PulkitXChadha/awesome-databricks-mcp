@@ -10,7 +10,7 @@ def load_core_tools(mcp_server):
       mcp_server: The FastMCP server instance to register tools with
   """
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def health() -> dict:
     """Check the health of the MCP server and Databricks connection."""
     return {

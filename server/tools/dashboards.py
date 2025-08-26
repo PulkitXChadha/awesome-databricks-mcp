@@ -155,7 +155,7 @@ def load_dashboard_tools(mcp_server):
         'dashboard_id': dashboard_id,
       }
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_lakeview_dashboards() -> dict:
     """List all Lakeview dashboards in the workspace.
 
@@ -223,7 +223,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error listing Lakeview dashboards: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'dashboards': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_lakeview_dashboard(dashboard_id: str) -> dict:
     """Get details of a specific Lakeview dashboard.
 
@@ -286,7 +286,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error getting Lakeview dashboard details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_lakeview_dashboard(dashboard_config: dict) -> dict:
     """Create a new Lakeview dashboard.
 
@@ -340,7 +340,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error creating Lakeview dashboard: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def update_lakeview_dashboard(dashboard_id: str, updates: dict) -> dict:
     """Update an existing Lakeview dashboard.
 
@@ -394,7 +394,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error updating Lakeview dashboard: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def delete_lakeview_dashboard(dashboard_id: str) -> dict:
     """Delete a Lakeview dashboard.
 
@@ -438,7 +438,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error deleting Lakeview dashboard: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def share_lakeview_dashboard(dashboard_id: str, share_config: dict) -> dict:
     """Share a Lakeview dashboard with users or groups.
 
@@ -482,7 +482,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error sharing Lakeview dashboard: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_dashboard_permissions(dashboard_id: str) -> dict:
     """Get current permissions for a Lakeview dashboard.
 
@@ -520,7 +520,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error getting dashboard permissions: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_dashboards() -> dict:
     """List all legacy dashboards in the workspace.
 
@@ -550,7 +550,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error listing legacy dashboards: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'dashboards': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_dashboard(dashboard_id: str) -> dict:
     """Get details of a specific legacy dashboard.
 
@@ -583,7 +583,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error getting legacy dashboard details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_dashboard(dashboard_config: dict) -> dict:
     """Create a new legacy dashboard.
 
@@ -615,7 +615,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error creating legacy dashboard: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def delete_dashboard(dashboard_id: str) -> dict:
     """Delete a legacy dashboard.
 
@@ -649,7 +649,7 @@ def load_dashboard_tools(mcp_server):
 
   # Week 1: Core Chart Widgets
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_bar_chart(
     dataset_name: str,
     x_field: str,
@@ -708,7 +708,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating bar chart: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_line_chart(
     dataset_name: str,
     x_field: str,
@@ -777,7 +777,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating line chart: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_area_chart(
     dataset_name: str,
     x_field: str,
@@ -839,7 +839,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating area chart: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_pie_chart(
     dataset_name: str,
     category_field: str,
@@ -902,7 +902,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating pie chart: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_counter_widget(
     dataset_name: str,
     value_field: str,
@@ -954,7 +954,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating counter widget: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_data_table(
     dataset_name: str,
     columns: list,
@@ -1008,7 +1008,7 @@ def load_dashboard_tools(mcp_server):
 
   # Week 2: Advanced Visualizations
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_scatter_plot(
     dataset_name: str,
     x_field: str,
@@ -1082,7 +1082,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating scatter plot: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_histogram(
     dataset_name: str,
     value_field: str,
@@ -1133,7 +1133,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating histogram: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_combo_chart(
     dataset_name: str,
     x_field: str,
@@ -1186,7 +1186,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating combo chart: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_pivot_table(
     dataset_name: str,
     row_fields: list,
@@ -1242,7 +1242,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating pivot table: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_delta_counter(
     dataset_name: str,
     value_field: str,
@@ -1299,7 +1299,7 @@ def load_dashboard_tools(mcp_server):
 
   # Week 3: Interactive & Specialty Widgets
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_dropdown_filter(
     dataset_name: str,
     filter_field: str,
@@ -1352,7 +1352,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating dropdown filter: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_date_range_filter(
     dataset_name: str,
     date_field: str,
@@ -1398,7 +1398,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating date range filter: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_slider_filter(
     dataset_name: str,
     numeric_field: str,
@@ -1457,7 +1457,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating slider filter: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_text_filter(
     dataset_name: str,
     text_field: str,
@@ -1506,7 +1506,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating text filter: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_map_widget(
     dataset_name: str,
     latitude_field: str,
@@ -1568,7 +1568,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating map widget: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_text_widget(
     content: str,
     dashboard_id: str = None,
@@ -1622,7 +1622,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating text widget: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_image_widget(
     image_url: str,
     dashboard_id: str = None,
@@ -1669,7 +1669,7 @@ def load_dashboard_tools(mcp_server):
     except Exception as e:
       return {'success': False, 'error': f'Error creating image widget: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_iframe_widget(
     iframe_url: str,
     dashboard_id: str = None,
@@ -1715,7 +1715,7 @@ def load_dashboard_tools(mcp_server):
 
   # Layout and Positioning Tools
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def auto_layout_dashboard(dashboard_id: str, layout_type: str = 'grid') -> dict:
     """Automatically arrange widgets in dashboard using layout algorithm.
 
@@ -1893,7 +1893,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error auto-laying out dashboard: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def reposition_widget(dashboard_id: str, widget_id: str, position: dict) -> dict:
     """Change widget position in dashboard.
 
@@ -2023,7 +2023,7 @@ def load_dashboard_tools(mcp_server):
 
   # Widget Management Tools
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def add_widget_to_dashboard(
     dashboard_id: str, widget_spec: dict, dataset_name: str = None, dataset_query: str = None
   ) -> dict:
@@ -2136,7 +2136,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error adding widget to dashboard: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def update_dashboard_widget(dashboard_id: str, widget_id: str, updates: dict) -> dict:
     """Update a widget in a dashboard.
 
@@ -2247,7 +2247,7 @@ def load_dashboard_tools(mcp_server):
       print(f'❌ Error updating dashboard widget: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def remove_dashboard_widget(dashboard_id: str, widget_id: str) -> dict:
     """Remove a widget from a dashboard.
 
@@ -2353,7 +2353,7 @@ def load_dashboard_tools(mcp_server):
 
   # Dataset Management Tools
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_dashboard_dataset(
     dashboard_id: str, name: str, query: str, warehouse_id: str = None
   ) -> dict:
@@ -2469,7 +2469,7 @@ def load_dashboard_tools(mcp_server):
 
   # Batch Operations
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_multiple_widgets(dashboard_id: str, widget_specs: list) -> dict:
     """Create multiple widgets in a single operation for efficient dashboard building.
 
@@ -2796,7 +2796,7 @@ def load_dashboard_tools(mcp_server):
         'dashboard_id': dashboard_id,
       }
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def test_dataset_query(query: str, warehouse_id: str = None, limit: int = 10) -> dict:
     """Test a SQL query before creating dataset.
 

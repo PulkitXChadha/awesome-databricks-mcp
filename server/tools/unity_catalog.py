@@ -14,7 +14,7 @@ def load_uc_tools(mcp_server):
       mcp_server: The FastMCP server instance to register tools with
   """
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_catalogs() -> dict:
     """List all available Unity Catalogs.
 
@@ -59,7 +59,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing catalogs: {sanitized_error}')
       return {'success': False, 'error': f'Error: {sanitized_error}', 'catalogs': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_catalog(catalog_name: str) -> dict:
     """Provide detailed information about a specific catalog.
 
@@ -119,7 +119,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing catalog: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_schemas(catalog_name: str) -> dict:
     """List all schemas within a specific catalog.
 
@@ -163,7 +163,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing schemas: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'schemas': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_schema(
     catalog_name: str, schema_name: str, include_columns: bool = False
   ) -> dict:
@@ -244,7 +244,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing schema: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_tables(catalog_name: str, schema_name: str) -> dict:
     """List all tables within a specific schema.
 
@@ -291,7 +291,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing tables: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'tables': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_table(table_name: str, include_lineage: bool = False) -> dict:
     """Provide detailed table structure and metadata.
 
@@ -382,7 +382,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing table: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_volumes(catalog_name: str, schema_name: str) -> dict:
     """List all volumes in a Unity Catalog schema.
 
@@ -430,7 +430,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing volumes: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'volumes': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_volume(volume_name: str) -> dict:
     """Get detailed volume information including storage location and permissions.
 
@@ -478,7 +478,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing volume: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_functions(catalog_name: str, schema_name: str) -> dict:
     """List all functions in a Unity Catalog schema.
 
@@ -526,7 +526,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing functions: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'functions': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_function(function_name: str) -> dict:
     """Get detailed function information including parameters and return type.
 
@@ -576,7 +576,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing function: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_models(catalog_name: str, schema_name: str) -> dict:
     """List all models in a Unity Catalog schema.
 
@@ -622,7 +622,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing models: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'models': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_model(model_name: str) -> dict:
     """Get detailed model information including version history and lineage.
 
@@ -667,7 +667,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing model: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_tags(catalog_name: str = None) -> dict:
     """List available tags in Unity Catalog.
 
@@ -702,7 +702,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing tags: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'tags': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def apply_uc_tags(object_name: str, tags: dict) -> dict:
     """Apply tags to Unity Catalog objects.
 
@@ -735,7 +735,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error applying tags: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def search_uc_objects(query: str, object_types: list = None) -> dict:
     """Search for Unity Catalog objects by name, description, or tags.
 
@@ -771,7 +771,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error searching Unity Catalog objects: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_table_statistics(table_name: str) -> dict:
     """Get table statistics including row count, size, and column statistics.
 
@@ -810,7 +810,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error getting table statistics: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_metastores() -> dict:
     """List all metastores in the workspace.
 
@@ -851,7 +851,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing metastores: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'metastores': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_metastore(metastore_name: str) -> dict:
     """Get detailed metastore information.
 
@@ -894,7 +894,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing metastore: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_data_quality_monitors(catalog_name: str = None) -> dict:
     """List data quality monitors configured in Unity Catalog.
 
@@ -930,7 +930,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing data quality monitors: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'monitors': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_data_quality_results(monitor_name: str, date_range: str = '7d') -> dict:
     """Get data quality monitoring results.
 
@@ -965,7 +965,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error getting data quality results: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_data_quality_monitor(table_name: str, rules: list) -> dict:
     """Create a new data quality monitor for a table.
 

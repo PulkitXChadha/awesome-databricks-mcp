@@ -12,7 +12,7 @@ def load_governance_tools(mcp_server):
       mcp_server: The FastMCP server instance to register tools with
   """
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_audit_logs(start_time: str = None, end_time: str = None, user_id: str = None) -> dict:
     """List audit logs for the workspace.
 
@@ -49,7 +49,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error listing audit logs: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'logs': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_audit_log(event_id: str) -> dict:
     """Get details of a specific audit log event.
 
@@ -82,7 +82,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error getting audit log details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def export_audit_logs(start_time: str, end_time: str, format: str = 'json') -> dict:
     """Export audit logs for a specific time range.
 
@@ -118,7 +118,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error exporting audit logs: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_governance_rules() -> dict:
     """List governance rules configured in the workspace.
 
@@ -147,7 +147,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error listing governance rules: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'rules': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_governance_rule(rule_id: str) -> dict:
     """Get details of a specific governance rule.
 
@@ -180,7 +180,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error getting governance rule details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_governance_rule(rule_config: dict) -> dict:
     """Create a new governance rule.
 
@@ -212,7 +212,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error creating governance rule: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def update_governance_rule(rule_id: str, updates: dict) -> dict:
     """Update an existing governance rule.
 
@@ -246,7 +246,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error updating governance rule: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def delete_governance_rule(rule_id: str) -> dict:
     """Delete a governance rule.
 
@@ -278,7 +278,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error deleting governance rule: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_table_lineage(table_name: str, depth: int = 1) -> dict:
     """Get data lineage information for a table.
 
@@ -312,7 +312,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error getting table lineage: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_column_lineage(table_name: str, column_name: str) -> dict:
     """Get column-level lineage information.
 
@@ -346,7 +346,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error getting column lineage: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def search_lineage(query: str, object_type: str = None) -> dict:
     """Search for lineage information.
 
@@ -381,7 +381,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error searching lineage: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def search_catalog(query: str, object_type: str = None) -> dict:
     """Search for catalog objects.
 
@@ -417,7 +417,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error searching catalog: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_object_usage_stats(object_name: str, time_range: str = '30d') -> dict:
     """Get usage statistics.
 

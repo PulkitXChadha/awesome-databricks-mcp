@@ -958,7 +958,7 @@ def load_widget_tools(mcp_server):
   """
 
   # Data widgets (unique to widgets module)
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_counter(
     title: str,
     value_field: str,
@@ -970,7 +970,7 @@ def load_widget_tools(mcp_server):
     return create_counter_widget(title, value_field, dataset_query, aggregation, None, position)
 
   # Filter widgets (unique to widgets module)
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_date_filter(
     title: str, field_name: str, dataset_query: str, position: Optional[dict] = None
   ) -> dict:
@@ -978,12 +978,12 @@ def load_widget_tools(mcp_server):
     return create_date_range_filter_widget(title, field_name, dataset_query, None, None, position)
 
   # Widget management tools (unique to widgets module)
-  @mcp_server.tool
+  @mcp_server.tool()
   def add_widget_to_lakeview_dashboard(dashboard_id: str, widget_spec: dict) -> dict:
     """Add a widget to an existing Lakeview dashboard."""
     return add_widget_to_dashboard(dashboard_id, widget_spec)
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_lakeview_dashboard_with_widgets(
     name: str, description: str, widgets: List[dict]
   ) -> dict:
