@@ -135,7 +135,11 @@ class TestMCPProtocolCompliance:
       prompts = mcp_server._prompt_manager._prompts
 
       # Should have expected prompts loaded
-      expected_prompts = ['build_ldp_pipeline', 'performance_optimization', 'build_lakeview_dashboard']
+      expected_prompts = [
+        'build_ldp_pipeline',
+        'performance_optimization',
+        'build_lakeview_dashboard',
+      ]
       assert len(prompts) >= 3
 
       for prompt_name in expected_prompts:
@@ -350,7 +354,11 @@ class TestMCPProtocolCompliance:
       # Verify prompt registration structure
       assert len(prompts) >= 3
 
-      expected_prompts = ['build_ldp_pipeline', 'performance_optimization', 'build_lakeview_dashboard']
+      expected_prompts = [
+        'build_ldp_pipeline',
+        'performance_optimization',
+        'build_lakeview_dashboard',
+      ]
       for prompt_name in expected_prompts:
         assert prompt_name in prompts
         prompt = prompts[prompt_name]
@@ -404,13 +412,17 @@ class TestMCPProtocolCompliance:
     ]
 
     for section in required_sections:
-      assert section in content, f'Build lakeview dashboard prompt missing required section: {section}'
+      assert section in content, (
+        f'Build lakeview dashboard prompt missing required section: {section}'
+      )
 
     # Verify widget types are documented
     widget_types = ['Bar Charts', 'Line Charts', 'Counters', 'Data Tables', 'Filter Widgets']
 
     for widget_type in widget_types:
-      assert widget_type in content, f'Build lakeview dashboard prompt missing widget type: {widget_type}'
+      assert widget_type in content, (
+        f'Build lakeview dashboard prompt missing widget type: {widget_type}'
+      )
 
     # Verify prompt references actual MCP tools
     mcp_tools = [

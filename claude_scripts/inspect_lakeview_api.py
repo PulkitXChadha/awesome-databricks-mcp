@@ -10,7 +10,8 @@ def inspect_lakeview_api():
   print('=' * 50)
 
   try:
-    # Initialize client (this will fail without proper credentials, but we can inspect the structure)
+    # Initialize client (this will fail without proper credentials,
+    # but we can inspect the structure)
     w = WorkspaceClient()
 
     print('✅ WorkspaceClient initialized successfully')

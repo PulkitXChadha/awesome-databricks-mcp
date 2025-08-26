@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Test script for Unity Catalog tools in the Databricks MCP server.
+
 Tests all UC tools including volumes, functions, models, external locations, etc.
 """
 

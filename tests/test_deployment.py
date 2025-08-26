@@ -63,7 +63,7 @@ async def test_health_endpoint(deployment_url, http_session):
       data = await response.json()
       assert 'userName' in data, "Health response missing 'userName' field"
       assert 'active' in data, "Health response missing 'active' field"
-      assert data['active'] == True, f'User not active: {data.get("active")}'
+      assert data['active'], f'User not active: {data.get("active")}'
 
   except asyncio.TimeoutError:
     pytest.fail(f'Health endpoint timeout at {health_url}')
@@ -180,39 +180,39 @@ def test_oauth_flow_documentation():
   """Document OAuth flow verification steps (manual test)."""
   verification_steps = """
     OAuth Flow Manual Verification Steps:
-    
+
     1. Initial Authentication:
        - Navigate to {deployment_url}/auth
        - Verify redirect to Databricks OAuth consent page
        - Check OAuth scopes requested
-    
+
     2. Consent and Authorization:
        - Approve OAuth consent
        - Verify redirect back to application
        - Check for authorization code in URL parameters
-    
+
     3. Token Exchange:
        - Verify application exchanges auth code for tokens
        - Check for secure token storage (cookies/session)
        - Verify no tokens exposed in URLs or client-side code
-    
+
     4. API Access:
        - Make authenticated API request
        - Verify request includes proper authorization headers
        - Check for successful response with user context
-    
+
     5. Token Refresh:
        - Wait for token expiry (or force expiry)
        - Make another API request
        - Verify automatic token refresh occurs
        - Check new tokens are properly stored
-    
+
     6. Logout Flow:
        - Navigate to logout endpoint
        - Verify session/tokens are cleared
        - Check redirect to login page
        - Verify subsequent API requests fail with 401
-    
+
     7. Error Handling:
        - Test with invalid tokens
        - Test with expired tokens

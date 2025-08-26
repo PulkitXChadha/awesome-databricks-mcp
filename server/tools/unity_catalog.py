@@ -110,7 +110,9 @@ def load_uc_tools(mcp_server):
         },
         'schemas': schema_list,
         'schema_count': len(schema_list),
-        'message': f'Catalog {catalog_name} details retrieved successfully with {len(schema_list)} schema(s)',
+        'message': (
+          f'Catalog {catalog_name} details retrieved successfully with {len(schema_list)} schema(s)'
+        ),
       }
 
     except Exception as e:
@@ -174,7 +176,8 @@ def load_uc_tools(mcp_server):
     Args:
         catalog_name: Name of the catalog
         schema_name: Name of the schema
-        include_columns: Whether to include detailed column information for each table (default: False)
+        include_columns: Whether to include detailed column information for each table
+            (default: False)
 
     Returns:
         Dictionary with schema details and its tables
@@ -231,7 +234,10 @@ def load_uc_tools(mcp_server):
         'tables': table_list,
         'table_count': len(table_list),
         'include_columns': include_columns,
-        'message': f'Schema {catalog_name}.{schema_name} details retrieved successfully with {len(table_list)} table(s)',
+        'message': (
+          f'Schema {catalog_name}.{schema_name} details retrieved successfully with '
+          f'{len(table_list)} table(s)'
+        ),
       }
 
     except Exception as e:
@@ -359,14 +365,17 @@ def load_uc_tools(mcp_server):
       if include_lineage:
         # Note: Lineage information may require additional permissions
         table_info['lineage_note'] = (
-          'Lineage information requires specific permissions and may not be directly accessible via SDK'
+          'Lineage information requires specific permissions and may not be '
+          'directly accessible via SDK'
         )
 
       return {
         'success': True,
         'table': table_info,
         'include_lineage': include_lineage,
-        'message': f'Table {table_name} details retrieved successfully with {len(columns)} column(s)',
+        'message': (
+          f'Table {table_name} details retrieved successfully with {len(columns)} column(s)'
+        ),
       }
 
     except Exception as e:
@@ -670,7 +679,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -682,7 +691,9 @@ def load_uc_tools(mcp_server):
         'message': f'Tag listing initiated for catalog {catalog_name}'
         if catalog_name
         else 'Tag listing initiated for all catalogs',
-        'note': 'Tag listing requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Tag listing requires specific permissions and may not be directly accessible via SDK'
+        ),
         'tags': [],
         'count': 0,
       }
@@ -704,7 +715,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -715,7 +726,9 @@ def load_uc_tools(mcp_server):
         'object_name': object_name,
         'tags': tags,
         'message': f'Tag application initiated for {object_name}',
-        'note': 'Tag application requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Tag application requires specific permissions and may not be directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
@@ -735,7 +748,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -746,7 +759,10 @@ def load_uc_tools(mcp_server):
         'query': query,
         'object_types': object_types,
         'message': 'Unity Catalog object search initiated',
-        'note': 'Object search requires Unity Catalog and specific permissions, may not be directly accessible via SDK',
+        'note': (
+          'Object search requires Unity Catalog and specific permissions, '
+          'may not be directly accessible via SDK'
+        ),
         'results': [],
         'count': 0,
       }
@@ -774,7 +790,7 @@ def load_uc_tools(mcp_server):
       catalog_name, schema_name, table_name_only = parts
 
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -784,7 +800,9 @@ def load_uc_tools(mcp_server):
         'success': True,
         'table_name': table_name,
         'message': f'Table statistics retrieval initiated for {table_name}',
-        'note': 'Table statistics require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Table statistics require specific permissions and may not be directly accessible via SDK'
+        ),
         'statistics': {},
       }
 
@@ -864,7 +882,9 @@ def load_uc_tools(mcp_server):
           'global_metastore_id': metastore.global_metastore_id,
           'storage_root': metastore.storage_root,
           'delta_sharing_scope': metastore.delta_sharing_scope,
-          'delta_sharing_recipient_token_lifetime_in_seconds': metastore.delta_sharing_recipient_token_lifetime_in_seconds,
+          'delta_sharing_recipient_token_lifetime_in_seconds': (
+            metastore.delta_sharing_recipient_token_lifetime_in_seconds
+          ),
           'delta_sharing_organization_name': metastore.delta_sharing_organization_name,
         },
         'message': f'Metastore {metastore_name} details retrieved successfully',
@@ -886,7 +906,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -898,7 +918,10 @@ def load_uc_tools(mcp_server):
         'message': f'Data quality monitor listing initiated for catalog {catalog_name}'
         if catalog_name
         else 'Data quality monitor listing initiated for all catalogs',
-        'note': 'Data quality monitors require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Data quality monitors require specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
         'monitors': [],
         'count': 0,
       }
@@ -920,7 +943,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -931,7 +954,10 @@ def load_uc_tools(mcp_server):
         'monitor_name': monitor_name,
         'date_range': date_range,
         'message': f'Data quality results retrieval initiated for {monitor_name}',
-        'note': 'Data quality results require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Data quality results require specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
         'results': {},
       }
 
@@ -952,7 +978,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -963,7 +989,10 @@ def load_uc_tools(mcp_server):
         'table_name': table_name,
         'rules': rules,
         'message': f'Data quality monitor creation initiated for {table_name}',
-        'note': 'Data quality monitor creation requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Data quality monitor creation requires specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
       }
 
     except Exception as e:

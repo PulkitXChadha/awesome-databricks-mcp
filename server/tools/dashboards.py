@@ -1,62 +1,72 @@
 """Dashboards and monitoring MCP tools for Databricks."""
 
+import html
 import os
 import re
-import html
 
 from databricks.sdk import WorkspaceClient
 
 
 def sanitize_field_name(field_name: str) -> str:
-    """Sanitize field names to prevent SQL injection."""
-    if not field_name or not isinstance(field_name, str):
-        return ''
-    
-    # Remove SQL keywords and dangerous patterns
-    dangerous_patterns = [
-        'DROP', 'DELETE', 'INSERT', 'UPDATE', 'UNION', 'SELECT', 
-        '--', '/*', '*/', ';', 'EXEC', 'xp_cmdshell'
-    ]
-    
-    sanitized = field_name
-    for pattern in dangerous_patterns:
-        sanitized = re.sub(re.escape(pattern), '', sanitized, flags=re.IGNORECASE)
-    
-    # Keep only alphanumeric, underscore, and dot for field names
-    sanitized = re.sub(r'[^a-zA-Z0-9_.]', '', sanitized)
-    
-    return sanitized
+  """Sanitize field names to prevent SQL injection."""
+  if not field_name or not isinstance(field_name, str):
+    return ''
+
+  # Remove SQL keywords and dangerous patterns
+  dangerous_patterns = [
+    'DROP',
+    'DELETE',
+    'INSERT',
+    'UPDATE',
+    'UNION',
+    'SELECT',
+    '--',
+    '/*',
+    '*/',
+    ';',
+    'EXEC',
+    'xp_cmdshell',
+  ]
+
+  sanitized = field_name
+  for pattern in dangerous_patterns:
+    sanitized = re.sub(re.escape(pattern), '', sanitized, flags=re.IGNORECASE)
+
+  # Keep only alphanumeric, underscore, and dot for field names
+  sanitized = re.sub(r'[^a-zA-Z0-9_.]', '', sanitized)
+
+  return sanitized
 
 
 def sanitize_html_content(content: str) -> str:
-    """Sanitize HTML content to prevent XSS."""
-    if not content or not isinstance(content, str):
-        return ''
-    
-    # Remove script tags and event handlers
-    content = re.sub(r'<script[^>]*>.*?</script>', '', content, flags=re.IGNORECASE | re.DOTALL)
-    content = re.sub(r'<script[^>]*/?>', '', content, flags=re.IGNORECASE)
-    content = re.sub(r'on\w+\s*=\s*[\'"][^\'\"]*[\'"]', '', content, flags=re.IGNORECASE)
-    content = re.sub(r'javascript:', '', content, flags=re.IGNORECASE)
-    
-    # Escape remaining HTML
-    content = html.escape(content)
-    
-    return content
+  """Sanitize HTML content to prevent XSS."""
+  if not content or not isinstance(content, str):
+    return ''
+
+  # Remove script tags and event handlers
+  content = re.sub(r'<script[^>]*>.*?</script>', '', content, flags=re.IGNORECASE | re.DOTALL)
+  content = re.sub(r'<script[^>]*/?>', '', content, flags=re.IGNORECASE)
+  content = re.sub(r'on\w+\s*=\s*[\'"][^\'\"]*[\'"]', '', content, flags=re.IGNORECASE)
+  content = re.sub(r'javascript:', '', content, flags=re.IGNORECASE)
+
+  # Escape remaining HTML
+  content = html.escape(content)
+
+  return content
 
 
 def sanitize_widget_name(name: str) -> str:
-    """Sanitize widget names to prevent injection while preserving readability."""
-    if not name or not isinstance(name, str):
-        return 'Unnamed Widget'
-    
-    # Remove dangerous SQL patterns but keep readable text
-    dangerous_patterns = ['DROP TABLE', 'INSERT INTO', 'DELETE FROM']
-    sanitized = name
-    for pattern in dangerous_patterns:
-        sanitized = sanitized.replace(pattern, '')
-    
-    return sanitized.strip() or 'Unnamed Widget'
+  """Sanitize widget names to prevent injection while preserving readability."""
+  if not name or not isinstance(name, str):
+    return 'Unnamed Widget'
+
+  # Remove dangerous SQL patterns but keep readable text
+  dangerous_patterns = ['DROP TABLE', 'INSERT INTO', 'DELETE FROM']
+  sanitized = name
+  for pattern in dangerous_patterns:
+    sanitized = sanitized.replace(pattern, '')
+
+  return sanitized.strip() or 'Unnamed Widget'
 
 
 def load_dashboard_tools(mcp_server):
@@ -132,7 +142,10 @@ def load_dashboard_tools(mcp_server):
         'dashboard_type': dashboard_type,
         'dataset_id': None,
         'dataset_name': dataset_name,
-        'message': f'Successfully added widget {widget_spec.get("name", widget_id)} to {dashboard_type} dashboard {dashboard_id}',
+        'message': (
+          f'Successfully added widget {widget_spec.get("name", widget_id)} to '
+          f'{dashboard_type} dashboard {dashboard_id}'
+        ),
       }
 
     except Exception as e:
@@ -318,7 +331,9 @@ def load_dashboard_tools(mcp_server):
         'dashboard_id': dashboard_id,
         'name': dashboard_name,
         'type': dashboard_type,
-        'message': f'Successfully created {dashboard_type} dashboard {dashboard_name} with ID {dashboard_id}',
+        'message': (
+          f'Successfully created {dashboard_type} dashboard {dashboard_name} with ID {dashboard_id}'
+        ),
       }
 
     except Exception as e:
@@ -666,8 +681,10 @@ def load_dashboard_tools(mcp_server):
       # Sanitize inputs
       x_field_clean = sanitize_field_name(x_field)
       y_field_clean = sanitize_field_name(y_field)
-      title_clean = sanitize_widget_name(title) if title else f'Bar Chart: {y_field_clean} by {x_field_clean}'
-      
+      title_clean = (
+        sanitize_widget_name(title) if title else f'Bar Chart: {y_field_clean} by {x_field_clean}'
+      )
+
       widget_spec = {
         'type': 'bar_chart',
         'name': title_clean,
@@ -726,8 +743,12 @@ def load_dashboard_tools(mcp_server):
       x_field_clean = sanitize_field_name(x_field)
       y_field_clean = sanitize_field_name(y_field)
       color_field_clean = sanitize_field_name(color_field) if color_field else None
-      title_clean = sanitize_widget_name(title) if title else f'Line Chart: {y_field_clean} over {x_field_clean}'
-      
+      title_clean = (
+        sanitize_widget_name(title)
+        if title
+        else f'Line Chart: {y_field_clean} over {x_field_clean}'
+      )
+
       encodings = {
         'x': {'field': x_field_clean, 'type': x_scale_type},
         'y': {'field': y_field_clean, 'type': y_scale_type},
@@ -850,8 +871,12 @@ def load_dashboard_tools(mcp_server):
       # Sanitize inputs
       value_field_clean = sanitize_field_name(value_field)
       category_field_clean = sanitize_field_name(category_field)
-      title_clean = sanitize_widget_name(title) if title else f'Pie Chart: {value_field_clean} by {category_field_clean}'
-      
+      title_clean = (
+        sanitize_widget_name(title)
+        if title
+        else f'Pie Chart: {value_field_clean} by {category_field_clean}'
+      )
+
       widget_spec = {
         'type': 'pie_chart',
         'name': title_clean,
@@ -1021,8 +1046,12 @@ def load_dashboard_tools(mcp_server):
       y_field_clean = sanitize_field_name(y_field)
       color_field_clean = sanitize_field_name(color_field) if color_field else None
       size_field_clean = sanitize_field_name(size_field) if size_field else None
-      title_clean = sanitize_widget_name(title) if title else f'Scatter Plot: {y_field_clean} vs {x_field_clean}'
-      
+      title_clean = (
+        sanitize_widget_name(title)
+        if title
+        else f'Scatter Plot: {y_field_clean} vs {x_field_clean}'
+      )
+
       encodings = {
         'x': {'field': x_field_clean, 'type': x_scale_type},
         'y': {'field': y_field_clean, 'type': y_scale_type},
@@ -1300,7 +1329,7 @@ def load_dashboard_tools(mcp_server):
       # Sanitize inputs
       filter_field_clean = sanitize_field_name(filter_field)
       title_clean = sanitize_widget_name(title) if title else f'Filter by {filter_field_clean}'
-      
+
       widget_spec = {
         'type': 'dropdown_filter',
         'name': title_clean,
@@ -1403,7 +1432,7 @@ def load_dashboard_tools(mcp_server):
       # Sanitize inputs
       numeric_field_clean = sanitize_field_name(numeric_field)
       title_clean = sanitize_widget_name(title) if title else f'Filter by {numeric_field_clean}'
-      
+
       widget_spec = {
         'type': 'slider_filter',
         'name': title_clean,
@@ -1569,7 +1598,7 @@ def load_dashboard_tools(mcp_server):
       # Sanitize inputs
       content_clean = sanitize_html_content(content)
       title_clean = sanitize_widget_name(title) if title else 'Text Widget'
-      
+
       widget_spec = {
         'type': 'text_widget',
         'name': title_clean,
@@ -1833,7 +1862,9 @@ def load_dashboard_tools(mcp_server):
       else:
         return {
           'success': False,
-          'error': f'Unknown layout type: {layout_type}. Use grid, vertical, horizontal, or masonry',
+          'error': (
+            f'Unknown layout type: {layout_type}. Use grid, vertical, horizontal, or masonry'
+          ),
         }
 
       # Update dashboard with new layout
@@ -1968,7 +1999,10 @@ def load_dashboard_tools(mcp_server):
         except (AttributeError, Exception) as legacy_error:
           return {
             'success': False,
-            'error': f'Failed to update widget via both APIs. Lakeview: {str(lakeview_error)}, Legacy: {str(legacy_error)}',
+            'error': (
+              f'Failed to update widget via both APIs. Lakeview: {str(lakeview_error)}, '
+              f'Legacy: {str(legacy_error)}'
+            ),
             'dashboard_id': dashboard_id,
             'widget_id': widget_id,
           }
@@ -2077,7 +2111,10 @@ def load_dashboard_tools(mcp_server):
         except (AttributeError, Exception) as legacy_error:
           return {
             'success': False,
-            'error': f'Failed to add widget via both APIs. Lakeview: {str(lakeview_error)}, Legacy: {str(legacy_error)}',
+            'error': (
+              f'Failed to add widget via both APIs. Lakeview: {str(lakeview_error)}, '
+              f'Legacy: {str(legacy_error)}'
+            ),
             'dashboard_id': dashboard_id,
           }
 
@@ -2090,7 +2127,9 @@ def load_dashboard_tools(mcp_server):
         'dataset_id': dataset_id,
         'dataset_name': dataset_name,
         'dashboard_type': dashboard_type,
-        'message': f'Successfully added widget {widget_name} to {dashboard_type} dashboard {dashboard_id}',
+        'message': (
+          f'Successfully added widget {widget_name} to {dashboard_type} dashboard {dashboard_id}'
+        ),
       }
 
     except Exception as e:
@@ -2185,7 +2224,10 @@ def load_dashboard_tools(mcp_server):
         except (AttributeError, Exception) as legacy_error:
           return {
             'success': False,
-            'error': f'Failed to update widget via both APIs. Lakeview: {str(lakeview_error)}, Legacy: {str(legacy_error)}',
+            'error': (
+              f'Failed to update widget via both APIs. Lakeview: {str(lakeview_error)}, '
+              f'Legacy: {str(legacy_error)}'
+            ),
             'dashboard_id': dashboard_id,
             'widget_id': widget_id,
           }
@@ -2196,7 +2238,9 @@ def load_dashboard_tools(mcp_server):
         'widget_id': widget_id,
         'updates_applied': updates,
         'dashboard_type': dashboard_type,
-        'message': f'Successfully updated widget {widget_id} in {dashboard_type} dashboard {dashboard_id}',
+        'message': (
+          f'Successfully updated widget {widget_id} in {dashboard_type} dashboard {dashboard_id}'
+        ),
       }
 
     except Exception as e:
@@ -2283,7 +2327,10 @@ def load_dashboard_tools(mcp_server):
         except (AttributeError, Exception) as legacy_error:
           return {
             'success': False,
-            'error': f'Failed to remove widget via both APIs. Lakeview: {str(lakeview_error)}, Legacy: {str(legacy_error)}',
+            'error': (
+              f'Failed to remove widget via both APIs. Lakeview: {str(lakeview_error)}, '
+              f'Legacy: {str(legacy_error)}'
+            ),
             'dashboard_id': dashboard_id,
             'widget_id': widget_id,
           }
@@ -2295,7 +2342,9 @@ def load_dashboard_tools(mcp_server):
         'removed_widget': removed_widget,
         'remaining_widgets': len(updated_widgets),
         'dashboard_type': dashboard_type,
-        'message': f'Successfully removed widget {widget_id} from {dashboard_type} dashboard {dashboard_id}',
+        'message': (
+          f'Successfully removed widget {widget_id} from {dashboard_type} dashboard {dashboard_id}'
+        ),
       }
 
     except Exception as e:
@@ -2332,7 +2381,9 @@ def load_dashboard_tools(mcp_server):
       if not warehouse_id:
         return {
           'success': False,
-          'error': 'SQL warehouse ID is required (provide warehouse_id or set DATABRICKS_SQL_WAREHOUSE_ID)',
+          'error': (
+            'SQL warehouse ID is required (provide warehouse_id or set DATABRICKS_SQL_WAREHOUSE_ID)'
+          ),
         }
 
       # Validate query before creating dataset by testing it directly
@@ -2399,7 +2450,10 @@ def load_dashboard_tools(mcp_server):
           'query_validation': 'Query validated successfully',
           'dataset_details': dataset_result,
           'message': f'Successfully created dataset {name} for dashboard {dashboard_id}',
-          'note': 'Dataset created conceptually - actual implementation may vary by Databricks API version',
+          'note': (
+            'Dataset created conceptually - actual implementation may vary '
+            'by Databricks API version'
+          ),
         }
 
       except Exception as api_error:
@@ -2664,7 +2718,10 @@ def load_dashboard_tools(mcp_server):
                 'widget_index': i,
                 'widget_type': widget_type,
                 'success': False,
-                'error': f'Unsupported widget type: {widget_type}. Supported types: {list(widget_creators.keys())}',
+                'error': (
+                  f'Unsupported widget type: {widget_type}. Supported types: '
+                  f'{list(widget_creators.keys())}'
+                ),
               }
             )
             failed_widgets.append(f'{widget_type} (index {i})')
@@ -2723,7 +2780,10 @@ def load_dashboard_tools(mcp_server):
         'successful_widget_list': successful_widgets,
         'failed_widget_list': failed_widgets,
         'detailed_results': results,
-        'message': f'Batch widget creation completed: {successful_count}/{total_widgets} widgets created successfully ({success_rate:.1f}% success rate)',
+        'message': (
+          f'Batch widget creation completed: {successful_count}/{total_widgets} '
+          f'widgets created successfully ({success_rate:.1f}% success rate)'
+        ),
         'recommendation': 'Check detailed_results for specific widget creation errors'
         if failed_count > 0
         else 'All widgets created successfully',
@@ -2761,7 +2821,9 @@ def load_dashboard_tools(mcp_server):
       if not warehouse_id:
         return {
           'success': False,
-          'error': 'SQL warehouse ID is required (provide warehouse_id or set DATABRICKS_SQL_WAREHOUSE_ID)',
+          'error': (
+            'SQL warehouse ID is required (provide warehouse_id or set DATABRICKS_SQL_WAREHOUSE_ID)'
+          ),
         }
 
       # Add LIMIT clause to query for testing if not present

@@ -1899,7 +1899,7 @@ class TestWidgetCreationErrors:
     for tool_name, incomplete_params in widget_tests:
       try:
         tool = mcp_server._tool_manager._tools[tool_name]
-        result = tool.fn(**incomplete_params)
+        tool.fn(**incomplete_params)
         # Some tools may handle missing parameters gracefully,
         # others may raise TypeError due to missing required args
         # Either response is acceptable as long as it's handled

@@ -427,7 +427,7 @@ def load_data_tools(mcp_server):
         volume_config['storage_location'] = storage_location
 
       # Create the volume
-      volume = w.volumes.create(catalog_name=catalog_name, schema_name=schema_name, **volume_config)
+      w.volumes.create(catalog_name=catalog_name, schema_name=schema_name, **volume_config)
 
       return {
         'success': True,
@@ -573,7 +573,7 @@ def load_data_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -585,7 +585,10 @@ def load_data_tools(mcp_server):
         'schema': schema_name,
         'table': table_name,
         'message': 'Permission listing initiated',
-        'note': 'Permission listing requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Permission listing requires specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
         'permissions': [],
         'count': 0,
       }
