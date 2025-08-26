@@ -1,8 +1,62 @@
 """Dashboards and monitoring MCP tools for Databricks."""
 
 import os
+import re
+import html
 
 from databricks.sdk import WorkspaceClient
+
+
+def sanitize_field_name(field_name: str) -> str:
+    """Sanitize field names to prevent SQL injection."""
+    if not field_name or not isinstance(field_name, str):
+        return ''
+    
+    # Remove SQL keywords and dangerous patterns
+    dangerous_patterns = [
+        'DROP', 'DELETE', 'INSERT', 'UPDATE', 'UNION', 'SELECT', 
+        '--', '/*', '*/', ';', 'EXEC', 'xp_cmdshell'
+    ]
+    
+    sanitized = field_name
+    for pattern in dangerous_patterns:
+        sanitized = re.sub(re.escape(pattern), '', sanitized, flags=re.IGNORECASE)
+    
+    # Keep only alphanumeric, underscore, and dot for field names
+    sanitized = re.sub(r'[^a-zA-Z0-9_.]', '', sanitized)
+    
+    return sanitized
+
+
+def sanitize_html_content(content: str) -> str:
+    """Sanitize HTML content to prevent XSS."""
+    if not content or not isinstance(content, str):
+        return ''
+    
+    # Remove script tags and event handlers
+    content = re.sub(r'<script[^>]*>.*?</script>', '', content, flags=re.IGNORECASE | re.DOTALL)
+    content = re.sub(r'<script[^>]*/?>', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'on\w+\s*=\s*[\'"][^\'\"]*[\'"]', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'javascript:', '', content, flags=re.IGNORECASE)
+    
+    # Escape remaining HTML
+    content = html.escape(content)
+    
+    return content
+
+
+def sanitize_widget_name(name: str) -> str:
+    """Sanitize widget names to prevent injection while preserving readability."""
+    if not name or not isinstance(name, str):
+        return 'Unnamed Widget'
+    
+    # Remove dangerous SQL patterns but keep readable text
+    dangerous_patterns = ['DROP TABLE', 'INSERT INTO', 'DELETE FROM']
+    sanitized = name
+    for pattern in dangerous_patterns:
+        sanitized = sanitized.replace(pattern, '')
+    
+    return sanitized.strip() or 'Unnamed Widget'
 
 
 def load_dashboard_tools(mcp_server):
@@ -177,12 +231,12 @@ def load_dashboard_tools(mcp_server):
         # Try Lakeview API first (correct method name is 'get')
         dashboard = w.lakeview.get(dashboard_id=dashboard_id)
         dashboard_type = 'lakeview'
-      except (AttributeError, Exception):
-        # Fallback to legacy dashboard API
+      except (AttributeError, KeyError, ValueError):
+        # Fallback to legacy dashboard API for API compatibility issues
         try:
           dashboard = w.dashboards.get(dashboard_id=dashboard_id)
           dashboard_type = 'legacy'
-        except (AttributeError, Exception) as fallback_error:
+        except (AttributeError, KeyError, ValueError) as fallback_error:
           return {
             'success': False,
             'error': f'Dashboard not found or API not available: {str(fallback_error)}',
@@ -609,13 +663,18 @@ def load_dashboard_tools(mcp_server):
         Dictionary with widget creation result
     """
     try:
+      # Sanitize inputs
+      x_field_clean = sanitize_field_name(x_field)
+      y_field_clean = sanitize_field_name(y_field)
+      title_clean = sanitize_widget_name(title) if title else f'Bar Chart: {y_field_clean} by {x_field_clean}'
+      
       widget_spec = {
         'type': 'bar_chart',
-        'name': title or f'Bar Chart: {y_field} by {x_field}',
+        'name': title_clean,
         'dataset_name': dataset_name,
         'encodings': {
-          'x': {'field': x_field, 'type': x_scale_type},
-          'y': {'field': y_field, 'type': y_scale_type},
+          'x': {'field': x_field_clean, 'type': x_scale_type},
+          'y': {'field': y_field_clean, 'type': y_scale_type},
         },
         'position': position or {'x': 0, 'y': 0, 'width': 6, 'height': 4},
       }
@@ -663,17 +722,23 @@ def load_dashboard_tools(mcp_server):
         Dictionary with widget creation result
     """
     try:
+      # Sanitize inputs
+      x_field_clean = sanitize_field_name(x_field)
+      y_field_clean = sanitize_field_name(y_field)
+      color_field_clean = sanitize_field_name(color_field) if color_field else None
+      title_clean = sanitize_widget_name(title) if title else f'Line Chart: {y_field_clean} over {x_field_clean}'
+      
       encodings = {
-        'x': {'field': x_field, 'type': x_scale_type},
-        'y': {'field': y_field, 'type': y_scale_type},
+        'x': {'field': x_field_clean, 'type': x_scale_type},
+        'y': {'field': y_field_clean, 'type': y_scale_type},
       }
 
-      if color_field:
-        encodings['color'] = {'field': color_field, 'type': 'nominal'}
+      if color_field_clean:
+        encodings['color'] = {'field': color_field_clean, 'type': 'nominal'}
 
       widget_spec = {
         'type': 'line_chart',
-        'name': title or f'Line Chart: {y_field} over {x_field}',
+        'name': title_clean,
         'dataset_name': dataset_name,
         'encodings': encodings,
         'position': position or {'x': 6, 'y': 0, 'width': 6, 'height': 4},
@@ -782,13 +847,18 @@ def load_dashboard_tools(mcp_server):
         Dictionary with widget creation result
     """
     try:
+      # Sanitize inputs
+      value_field_clean = sanitize_field_name(value_field)
+      category_field_clean = sanitize_field_name(category_field)
+      title_clean = sanitize_widget_name(title) if title else f'Pie Chart: {value_field_clean} by {category_field_clean}'
+      
       widget_spec = {
         'type': 'pie_chart',
-        'name': title or f'Pie Chart: {value_field} by {category_field}',
+        'name': title_clean,
         'dataset_name': dataset_name,
         'encodings': {
-          'theta': {'field': value_field, 'type': 'quantitative'},
-          'color': {'field': category_field, 'type': 'nominal'},
+          'theta': {'field': value_field_clean, 'type': 'quantitative'},
+          'color': {'field': category_field_clean, 'type': 'nominal'},
         },
         'show_labels': show_labels,
         'show_percentages': show_percentages,
@@ -946,19 +1016,26 @@ def load_dashboard_tools(mcp_server):
         Dictionary with widget creation result
     """
     try:
+      # Sanitize inputs
+      x_field_clean = sanitize_field_name(x_field)
+      y_field_clean = sanitize_field_name(y_field)
+      color_field_clean = sanitize_field_name(color_field) if color_field else None
+      size_field_clean = sanitize_field_name(size_field) if size_field else None
+      title_clean = sanitize_widget_name(title) if title else f'Scatter Plot: {y_field_clean} vs {x_field_clean}'
+      
       encodings = {
-        'x': {'field': x_field, 'type': x_scale_type},
-        'y': {'field': y_field, 'type': y_scale_type},
+        'x': {'field': x_field_clean, 'type': x_scale_type},
+        'y': {'field': y_field_clean, 'type': y_scale_type},
       }
 
-      if color_field:
-        encodings['color'] = {'field': color_field, 'type': 'nominal'}
-      if size_field:
-        encodings['size'] = {'field': size_field, 'type': 'quantitative'}
+      if color_field_clean:
+        encodings['color'] = {'field': color_field_clean, 'type': 'nominal'}
+      if size_field_clean:
+        encodings['size'] = {'field': size_field_clean, 'type': 'quantitative'}
 
       widget_spec = {
         'type': 'scatter_plot',
-        'name': title or f'Scatter Plot: {y_field} vs {x_field}',
+        'name': title_clean,
         'dataset_name': dataset_name,
         'encodings': encodings,
         'position': position or {'x': 0, 'y': 14, 'width': 6, 'height': 4},
@@ -1220,11 +1297,15 @@ def load_dashboard_tools(mcp_server):
         Dictionary with widget creation result
     """
     try:
+      # Sanitize inputs
+      filter_field_clean = sanitize_field_name(filter_field)
+      title_clean = sanitize_widget_name(title) if title else f'Filter by {filter_field_clean}'
+      
       widget_spec = {
         'type': 'dropdown_filter',
-        'name': title or f'Filter by {filter_field}',
+        'name': title_clean,
         'dataset_name': dataset_name,
-        'filter_field': filter_field,
+        'filter_field': filter_field_clean,
         'multi_select': multi_select,
         'default_values': default_values or [],
         'position': position or {'x': 4, 'y': 22, 'width': 4, 'height': 1},
@@ -1319,11 +1400,15 @@ def load_dashboard_tools(mcp_server):
         Dictionary with widget creation result
     """
     try:
+      # Sanitize inputs
+      numeric_field_clean = sanitize_field_name(numeric_field)
+      title_clean = sanitize_widget_name(title) if title else f'Filter by {numeric_field_clean}'
+      
       widget_spec = {
         'type': 'slider_filter',
-        'name': title or f'Filter by {numeric_field}',
+        'name': title_clean,
         'dataset_name': dataset_name,
-        'numeric_field': numeric_field,
+        'numeric_field': numeric_field_clean,
         'min_value': min_value,
         'max_value': max_value,
         'step': step,
@@ -1481,10 +1566,14 @@ def load_dashboard_tools(mcp_server):
         Dictionary with widget creation result
     """
     try:
+      # Sanitize inputs
+      content_clean = sanitize_html_content(content)
+      title_clean = sanitize_widget_name(title) if title else 'Text Widget'
+      
       widget_spec = {
         'type': 'text_widget',
-        'name': title or 'Text Widget',
-        'content': content,
+        'name': title_clean,
+        'content': content_clean,
         'content_type': content_type,
         'text_size': text_size,
         'text_color': text_color,
