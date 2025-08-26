@@ -170,10 +170,160 @@ The modular tools system (`server/tools/`) is organized into specialized modules
 - `unity_catalog.py` - Unity Catalog operations (catalogs, schemas, tables)
 - `jobs_pipelines.py` - Job and DLT pipeline management
 - `workspace_files.py` - Workspace file operations
-- `dashboards.py` - Dashboard management tools
+- `dashboards.py` - **Comprehensive dashboard management tools** (both Lakeview and legacy)
 - `repositories.py` - Git repository integration
 - `data_management.py` - DBFS and data operations (commented out)
 - `governance.py` - Governance tools (commented out)
+
+### Dashboard Tools Module (`dashboards.py`)
+
+The `dashboards.py` module provides comprehensive tools for building and managing Databricks dashboards programmatically. It supports both modern Lakeview dashboards and legacy dashboard formats with powerful widget creation and management capabilities.
+
+#### Core Dashboard Tools
+
+**Lakeview Dashboard Tools:**
+- `list_lakeview_dashboards()` - Enumerate all available Lakeview dashboards
+- `get_lakeview_dashboard(dashboard_id)` - Retrieve detailed dashboard configuration  
+- `create_lakeview_dashboard(config)` - Build new dashboards with widgets and layouts
+- `update_lakeview_dashboard(dashboard_id, updates)` - Modify existing dashboards
+- `delete_lakeview_dashboard(dashboard_id)` - Remove dashboards
+- `share_lakeview_dashboard(dashboard_id, config)` - Configure dashboard permissions
+- `get_dashboard_permissions(dashboard_id)` - View current access settings
+
+**Legacy Dashboard Tools:**
+- `list_dashboards()` - List legacy dashboards  
+- `get_dashboard(dashboard_id)` - Get legacy dashboard details
+- `create_dashboard(config)` - Create legacy dashboards
+- `delete_dashboard(dashboard_id)` - Remove legacy dashboards
+
+#### Dashboard Widget System
+
+The module supports all major widget types for data visualization:
+
+**Chart Widgets:** `counter`, `table`, `bar`, `line`, `pie`, `area`, `scatter`, `pivot`, `funnel`, `box`, `heatmap`
+**Text Widgets:** `markdown` for documentation and explanations
+
+#### Widget Creation Patterns
+
+```python
+# Example widget configuration following the simple pattern
+def create_sales_dashboard():
+    """Create a sales dashboard with multiple widget types."""
+    
+    # KPI counter widget
+    revenue_widget = {
+        "name": "Total Revenue",
+        "type": "counter", 
+        "query": "SELECT sum(revenue) as value FROM sales",
+        "position": {"x": 0, "y": 0, "width": 3, "height": 2}
+    }
+    
+    # Trend line chart
+    trend_widget = {
+        "name": "Monthly Revenue Trend",
+        "type": "line",
+        "query": """
+            SELECT 
+                date_trunc('month', date) as month,
+                sum(revenue) as revenue
+            FROM sales 
+            GROUP BY 1 ORDER BY 1
+        """,
+        "position": {"x": 3, "y": 0, "width": 9, "height": 4}
+    }
+    
+    # Simple dashboard structure
+    dashboard_config = {
+        "name": "Sales Dashboard",
+        "widgets": [revenue_widget, trend_widget]
+    }
+    
+    return dashboard_config
+```
+
+#### Dashboard Layout System
+
+Dashboards use a **12-column responsive grid** for positioning:
+- **X-axis**: 0-11 (left to right)
+- **Y-axis**: 0+ (top to bottom) 
+- **Width**: 1-12 columns
+- **Height**: 2-8 rows (typical)
+
+**Common Layout Patterns:**
+```python
+# Full width widget
+{"x": 0, "y": 0, "width": 12, "height": 4}
+
+# Half width widgets (side by side)  
+{"x": 0, "y": 0, "width": 6, "height": 4}
+{"x": 6, "y": 0, "width": 6, "height": 4}
+
+# Quarter width widgets (KPI row)
+{"x": 0, "y": 0, "width": 3, "height": 2}
+{"x": 3, "y": 0, "width": 3, "height": 2}
+{"x": 6, "y": 0, "width": 3, "height": 2}
+{"x": 9, "y": 0, "width": 3, "height": 2}
+```
+
+#### SQL Query Guidelines for Dashboards
+
+**Essential Patterns:**
+```sql
+-- Use proper aliasing for display
+SELECT 
+    product_name as "Product",
+    sum(quantity) as "Units Sold", 
+    sum(revenue) as "Revenue"
+FROM sales_detail
+GROUP BY 1;
+
+-- Parameterized queries for flexibility
+SELECT 
+    date_trunc('month', order_date) as month,
+    sum(revenue) as total_revenue
+FROM sales
+WHERE order_date >= :start_date 
+  AND order_date <= :end_date
+GROUP BY 1 ORDER BY 1;
+
+-- Counter widgets need single numeric value
+SELECT count(*) as value FROM customers;
+SELECT sum(revenue) as value FROM sales;
+```
+
+#### Dashboard Management Best Practices
+
+1. **Start Simple**: Begin with core KPIs, expand iteratively
+2. **Consistent Naming**: Use clear, descriptive widget names
+3. **Query Optimization**: Use appropriate aggregations and filters
+4. **Layout Planning**: Design mobile-responsive layouts
+5. **Permission Management**: Set appropriate access controls
+6. **Documentation**: Include markdown widgets for context
+
+#### Real-World Dashboard Examples
+
+**Executive Dashboard Pattern:**
+```python
+# KPIs across the top (4 counters)
+# Revenue trend in the middle (full width line chart)
+# Department breakdown at bottom (bar chart + table)
+```
+
+**Analytics Dashboard Pattern:**
+```python
+# Customer segmentation (pie chart)
+# Cohort analysis (heatmap)  
+# Behavior funnel (funnel chart)
+# Detailed customer table (filterable)
+```
+
+**Operational Dashboard Pattern:**
+```python
+# System status counters
+# Performance trends (multiple line charts)
+# Alert summary table
+# Resource utilization gauges
+```
 
 ### Adding New Tools
 Tools are automatically registered when added to modules. Follow existing patterns:

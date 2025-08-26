@@ -503,6 +503,191 @@ Claude: I'll execute that SQL query for you using the execute_dbsql tool.
 └── pyproject.toml          # Python package configuration
 ```
 
+## Building Dashboards with MCP
+
+### Dashboard Building Quickstart
+
+The MCP server provides comprehensive tools for building Lakeview and legacy dashboards programmatically. You can create, manage, and share dashboards using simple commands in Claude.
+
+#### Basic Dashboard Creation
+
+```
+Human: Create a sales dashboard with revenue metrics and customer analysis
+
+Claude: I'll create a Lakeview dashboard with revenue and customer metrics using the create_lakeview_dashboard tool.
+
+[Creates dashboard with multiple visualizations, layouts, and data connections]
+```
+
+#### Widget Types Available
+
+The MCP server supports all major widget types for dashboard creation:
+
+| Widget Type | Description | Use Case |
+|-------------|-------------|----------|
+| **counter** | Single metric display | KPIs, totals, counts |
+| **table** | Tabular data display | Detailed records, lists |
+| **bar** | Bar charts | Comparisons, categories |
+| **line** | Line charts | Trends over time |
+| **pie** | Pie charts | Proportions, distributions |
+| **area** | Area charts | Cumulative trends |
+| **scatter** | Scatter plots | Correlations, clusters |
+| **pivot** | Pivot tables | Multi-dimensional analysis |
+| **funnel** | Funnel charts | Conversion analysis |
+| **box** | Box plots | Statistical distributions |
+| **heatmap** | Heat maps | Density visualization |
+| **markdown** | Text/documentation | Explanations, headers |
+
+### SQL Query Guidelines
+
+When building dashboards, follow these SQL best practices:
+
+```sql
+-- Use parameterized queries for flexibility
+SELECT 
+    date_trunc('month', order_date) as month,
+    sum(revenue) as total_revenue,
+    count(distinct customer_id) as unique_customers
+FROM sales
+WHERE order_date >= :start_date 
+  AND order_date <= :end_date
+GROUP BY 1
+ORDER BY 1;
+
+-- Include proper aliasing for widget display
+SELECT 
+    product_name as "Product",
+    sum(quantity) as "Units Sold",
+    sum(revenue) as "Revenue"
+FROM sales_detail
+GROUP BY 1;
+```
+
+### Layout and Positioning
+
+Dashboards use a 12-column grid system for responsive layouts:
+
+```python
+# Widget positioning examples
+{
+    "x": 0,      # Start at left edge (0-11)
+    "y": 0,      # Start at top
+    "width": 6,  # Half width (1-12)
+    "height": 4  # Standard height (typically 2-8)
+}
+
+# Common layout patterns:
+# Full width: width=12
+# Half width: width=6  
+# Third width: width=4
+# Quarter width: width=3
+```
+
+### Common Dashboard Patterns
+
+#### Executive Dashboard
+```
+Human: Create an executive dashboard with KPIs, trends, and department breakdowns
+
+Claude: I'll create a comprehensive executive dashboard with:
+- Top KPI counters (revenue, growth, customers)
+- Revenue trend line chart
+- Department performance bar chart
+- Regional heat map
+- Key metrics table
+```
+
+#### Analytics Dashboard
+```
+Human: Build a customer analytics dashboard with segmentation and behavior analysis
+
+Claude: I'll create a customer analytics dashboard featuring:
+- Customer segmentation pie chart
+- Cohort retention heatmap
+- Purchase behavior funnel
+- Customer lifetime value distribution
+- Product affinity analysis
+```
+
+#### Operational Dashboard
+```
+Human: Create an operations dashboard for monitoring system performance
+
+Claude: I'll build an operational dashboard with:
+- Real-time metrics counters
+- Performance trend lines
+- Alert status table
+- Resource utilization gauges
+- Error log analysis
+```
+
+### Dashboard Management
+
+#### Listing and Discovery
+```bash
+# Find existing dashboards
+echo "List all Lakeview dashboards" | claude
+
+# Get dashboard details
+echo "Show me the configuration of dashboard-id-123" | claude
+```
+
+#### Updating Dashboards
+```bash
+# Add new widgets
+echo "Add a revenue forecast widget to dashboard-id-123" | claude
+
+# Modify existing widgets
+echo "Update the sales chart to show quarterly data in dashboard-id-123" | claude
+```
+
+#### Sharing and Permissions
+```bash
+# Share with users
+echo "Share dashboard-id-123 with user@company.com with READ access" | claude
+
+# Share with groups
+echo "Grant WRITE access to dashboard-id-123 for the analytics team" | claude
+```
+
+### Best Practices
+
+1. **Start Simple**: Begin with core metrics and expand iteratively
+2. **Use Consistent Styling**: Maintain uniform colors and formatting
+3. **Optimize Queries**: Use aggregations and filters to improve performance
+4. **Add Context**: Include markdown widgets for explanations
+5. **Test Interactivity**: Verify filters and parameters work correctly
+6. **Document Data Sources**: Note which tables and schemas are used
+
+### Example: Complete Sales Dashboard
+
+```
+Human: Create a comprehensive sales dashboard with revenue trends, product performance, and regional analysis
+
+Claude: I'll create a complete sales dashboard with multiple sections:
+
+1. **KPI Section** (top row):
+   - Total Revenue counter
+   - Growth Rate counter  
+   - Active Customers counter
+   - Average Order Value counter
+
+2. **Trends Section** (second row):
+   - Monthly Revenue line chart
+   - Product Category performance bar chart
+
+3. **Analysis Section** (third row):
+   - Regional sales heatmap
+   - Top Products table
+   - Customer Segment pie chart
+
+4. **Details Section** (bottom):
+   - Detailed transactions table with filters
+   - Markdown widget with data definitions
+```
+
+The dashboard will be interactive with date range filters and drill-down capabilities.
+
 ## Advanced Usage
 
 ### Environment Variables
