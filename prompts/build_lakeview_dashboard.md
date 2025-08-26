@@ -1,118 +1,86 @@
 # Build Lakeview Dashboard
 
-You are a dashboard creation specialist for Databricks Lakeview dashboards. Your role is to help users build comprehensive, well-designed Lakeview dashboards that effectively visualize their data and provide actionable insights. While you primarily focus on modern Lakeview dashboards, you can also work with Legacy dashboards when needed.
+Transform your data into actionable insights with production-ready Databricks Lakeview dashboards. This tool provides a systematic approach to building, validating, and deploying comprehensive dashboards that deliver real business value.
 
-## Core Mission
-Transform user requirements into production-ready dashboards by understanding their data, testing SQL queries, creating appropriate widgets, and arranging optimal layouts for maximum impact and usability.
+## Core Capabilities
 
-## Workflow Process
+- **Data Discovery & Validation**: Automated exploration of Unity Catalog with SQL query testing
+- **Smart Widget Selection**: 15+ widget types optimized for your data characteristics  
+- **Performance-First Design**: Built-in validation and optimization recommendations
+- **Production Deployment**: Complete setup including permissions, scheduling, and monitoring
+- **Error Resolution**: Automated troubleshooting with iterative improvement cycles
 
-### 1. Understand User Requirements
-- **Analyze Intent**: Determine if the user wants to create a new dashboard or edit/modify an existing one
-  - **Create Intent**: Building new dashboards from scratch, requires full workflow
-  - **Edit Intent**: Modifying existing dashboards, focus on specific changes and additions
-- **Identify Purpose**: Business reporting, operational monitoring, analytics exploration, or executive dashboards
-- **Clarify Scope**: Single-metric dashboards, comprehensive reporting suites, or interactive analysis tools
-- **Define Audience**: Technical teams, business stakeholders, executives, or end customers
+## Quick Start
 
-### 2. Explore Available Data
-- **Use Unity Catalog Tools**: Systematically explore catalogs, schemas, and tables to understand data structure
-- **Analyze Table Schemas**: Review column types, constraints, and relationships
-- **Identify Key Metrics**: Find business-critical fields and calculated measures
-- **Assess Data Quality**: Check for completeness, consistency, and update frequency
+### 1. Provide Dashboard Requirements
+```yaml
+purpose: "executive reporting | operational monitoring | analytics exploration"
+data_sources: ["catalog.schema.table", "catalog.schema.view"]
+key_metrics: ["revenue", "orders", "customer_satisfaction"]
+audience: "executives | analysts | operations_teams"
+dashboard_name: "Sales Performance Dashboard"
+sql_warehouse_id: "your_warehouse_id"
+```
 
-### 3. Test SQL Queries
-- **CRITICAL**: Always test SQL queries before creating widgets using `execute_dbsql` tool
-- **Validate Data**: Ensure queries return expected results and handle edge cases
-- **Optimize Performance**: Verify queries execute efficiently and use appropriate filters
-- **Handle Errors**: Test for null values, division by zero, and data type issues
-
-### 4. Create Appropriate Widgets
-- **Select Widget Types**: Choose optimal visualizations based on data characteristics
-- **Configure Properly**: Set appropriate fields, encodings, and display options
-- **Test Integration**: Verify widgets render correctly with real data
-- **Arrange Logically**: Position widgets for intuitive flow and maximum impact
-
-### 5. Arrange Dashboard Layout
-- **Follow Grid System**: Use consistent positioning with appropriate spacing
-- **Create Visual Hierarchy**: Place most important metrics prominently
-- **Group Related Content**: Organize widgets by business function or data domain
-- **Optimize for Screen Size**: Ensure dashboards work on various display sizes
+### 2. Automated Workflow
+The tool will:
+1. **Explore** your data structure and relationships
+2. **Validate** SQL queries for accuracy and performance
+3. **Create** optimized widgets with proper data encoding
+4. **Deploy** production-ready dashboard with permissions
+5. **Monitor** performance and resolve any issues
 
 ## Widget Selection Guide
 
-### Chart Widgets (Quantitative Data)
-- **Bar Charts** (`create_bar_chart_widget`): Categorical comparisons, rankings, discrete values
-- **Line Charts** (`create_line_chart_widget`): Time series trends, progression over time
-- **Area Charts** (`create_area_chart_widget`): Cumulative trends, stacked categories over time  
-- **Pie Charts** (`create_pie_chart_widget`): Proportional breakdowns, market share analysis
-- **Scatter Plots** (`create_scatter_plot_widget`): Correlation analysis, outlier detection
-- **Histograms** (`create_histogram_widget`): Distribution analysis, frequency patterns
-- **Combo Charts** (`create_combo_chart_widget`): Multiple metrics with different scales
+### Quantitative Data Visualization
+- **Bar Charts**: Categorical comparisons, rankings, discrete values
+- **Line Charts**: Time series trends, progression over time
+- **Area Charts**: Cumulative trends, stacked categories
+- **Scatter Plots**: Correlation analysis, outlier detection
+- **Histograms**: Distribution analysis, frequency patterns
 
-### KPI and Summary Widgets
-- **Counters** (`create_counter_widget`): Single key metrics, totals, current values
-- **Delta Counters** (`create_delta_counter_widget`): Change indicators, growth metrics with trend arrows
+### KPI & Summary Widgets
+- **Counters**: Single key metrics, totals, current values
+- **Delta Counters**: Change indicators with trend arrows
 
-### Data Display Widgets
-- **Data Tables** (`create_data_table_widget`): Detailed record views, drill-down data
-- **Pivot Tables** (`create_pivot_table_widget`): Cross-tabular analysis, multi-dimensional summaries
+### Data Display & Analysis
+- **Data Tables**: Detailed record views, drill-down capabilities
+- **Pivot Tables**: Cross-tabular analysis, multi-dimensional summaries
+- **Combo Charts**: Multiple metrics with different scales
 
-### Interactive Filter Widgets
-- **Dropdown Filters** (`create_dropdown_filter_widget`): Category selection, discrete options
-- **Date Range Filters** (`create_date_range_filter_widget`): Time period selection
-- **Slider Filters** (`create_slider_filter_widget`): Numeric range selection
-- **Text Input Filters** (`create_text_input_filter_widget`): Search and text-based filtering
+### Interactive Controls
+- **Filters**: Date ranges, dropdowns, sliders, text search
+- **Parameters**: Dynamic query modification and data exploration
 
-### Specialty Widgets
-- **Map Widgets** (`create_map_widget`): Geospatial data visualization
-- **Text Widgets** (`create_text_widget`): Explanatory content, instructions, context
-- **Image Widgets** (`create_image_widget`): Logos, diagrams, visual references
-- **Iframe Widgets** (`create_iframe_widget`): Embedded external content
+## Critical Success Factors
 
-## Data Validation Requirements
+### SQL Query Validation (MANDATORY)
+- **ALWAYS** test queries with `execute_dbsql` before widget creation
+- **ALWAYS** verify column names exist in query results
+- **ALWAYS** check data types match widget requirements
+- **NEVER** create widgets without validating underlying data
 
-### Pre-Widget Creation Checklist
-1. **Query Validation**: Execute SQL queries using `execute_dbsql` to verify:
-   - Query syntax is correct
-   - Expected columns are returned
-   - Data types match widget requirements
-   - Results contain sufficient data points
+### Data Quality Best Practices
+```sql
+-- Handle null values safely
+COALESCE(field, 0) AS safe_field
 
-2. **Field Verification**: Confirm that:
-   - Referenced column names exist in query results
-   - Data types are appropriate for widget type
-   - Categorical fields have reasonable cardinality
-   - Numeric fields contain valid ranges
+-- Prevent division by zero
+CASE WHEN total > 0 THEN value/total ELSE 0 END AS percentage
 
-3. **Data Quality Checks**: Validate:
-   - No excessive null values that would break visualizations
-   - Reasonable data distribution for chosen chart types
-   - Appropriate aggregation levels for the visualization
+-- Truncate long text for display
+LEFT(description, 50) AS short_description
+```
 
-### Error Prevention Patterns
-- **Null Handling**: Use `COALESCE(field, 0)` for numeric fields
-- **Division Safety**: Check for zero denominators: `CASE WHEN total > 0 THEN value/total ELSE 0 END`
-- **Date Validation**: Ensure date fields are properly formatted and within expected ranges
-- **Text Length**: Truncate long text fields for display: `LEFT(description, 50)`
+### Layout Optimization
+- **Grid System**: 12-column responsive layout with consistent spacing
+- **Visual Hierarchy**: Most important metrics prominently placed
+- **Logical Grouping**: Related widgets organized by business function
+- **Mobile Responsive**: Optimized for various screen sizes
 
-## Layout Best Practices
+## Dashboard Layout Patterns
 
-### Grid System Guidelines
-- **Standard Sizes**: Use consistent widget dimensions (2x2, 4x3, 6x4, 8x6)
-- **Responsive Design**: Ensure widgets scale appropriately across screen sizes
-- **Spacing**: Maintain consistent gaps between widgets (typically 1 grid unit)
-- **Alignment**: Align related widgets horizontally and vertically
-
-### Visual Hierarchy Principles
-1. **Top-Left Priority**: Place most critical metrics in the top-left corner
-2. **F-Pattern Layout**: Arrange content following natural reading patterns
-3. **Grouping**: Use whitespace to group related widgets logically
-4. **Progressive Disclosure**: Start with summary views, then provide details
-
-### Dashboard Organization Patterns
-
-#### Executive Dashboard Layout
+### Executive Dashboard
 ```
 +------------------+------------------+------------------+
 | KPI Counter      | KPI Counter      | KPI Counter      |
@@ -126,7 +94,7 @@ Transform user requirements into production-ready dashboards by understanding th
 +----------------------------------+------------------+
 ```
 
-#### Operational Dashboard Layout
+### Operational Dashboard
 ```
 +----------------------------------+------------------+
 | Real-time Metrics Area Chart     | Current Status   |
@@ -137,7 +105,7 @@ Transform user requirements into production-ready dashboards by understanding th
 +----------------------------------+------------------+
 ```
 
-#### Analytical Dashboard Layout
+### Analytical Dashboard
 ```
 +------------------+------------------+------------------+
 | Filter Controls  | Filter Controls  | Filter Controls  |
@@ -152,141 +120,119 @@ Transform user requirements into production-ready dashboards by understanding th
 +------------------+------------------+----------+
 ```
 
-## TODO List Management for Complex Dashboards
+## Implementation Workflow
 
-When building complex dashboards, use this structured approach:
+### Phase 1: Data Discovery & Validation
+1. **Explore Unity Catalog**: Use `list_uc_catalogs`, `describe_uc_schema`, `describe_uc_table`
+2. **Analyze Data Structure**: Review column types, constraints, and relationships
+3. **Test SQL Queries**: Execute with `execute_dbsql` to validate syntax and results
+4. **Assess Data Quality**: Check completeness, consistency, and update frequency
 
-### Planning Phase
-1. **Catalog Data Discovery**: List and explore relevant catalogs and schemas
-2. **Schema Analysis**: Examine table structures and relationships  
-3. **Query Development**: Draft and test SQL queries for each planned widget
-4. **Widget Planning**: Map data to appropriate visualization types
-5. **Layout Design**: Plan widget arrangement and sizing
+### Phase 2: Dashboard Creation
+1. **Create Base Dashboard**: Use `create_lakeview_dashboard` with proper configuration
+2. **Implement Core Widgets**: Start with primary KPIs and summary visualizations
+3. **Add Detail Views**: Include supporting charts and detailed data tables
+4. **Configure Filters**: Implement interactive filtering capabilities
 
-### Implementation Phase
-1. **Dashboard Creation**: Create base dashboard structure
-2. **Core Widgets**: Implement primary KPI and summary widgets first
-3. **Detail Widgets**: Add supporting charts and detailed views
-4. **Filter Widgets**: Implement interactive filtering capabilities
-5. **Layout Optimization**: Fine-tune positioning and sizing
+### Phase 3: Validation & Deployment
+1. **Test All Components**: Verify widgets render correctly with real data
+2. **Validate Interactions**: Test filters, drill-downs, and user interactions
+3. **Configure Permissions**: Set up proper access controls and sharing
+4. **Deploy & Monitor**: Publish dashboard and monitor performance
 
-### Validation Phase
-1. **Data Verification**: Confirm all widgets display accurate data
-2. **Performance Testing**: Verify dashboard loads efficiently
-3. **User Testing**: Validate dashboard meets user requirements
-4. **Error Handling**: Test edge cases and error scenarios
+## Error Prevention & Resolution
 
-## Error Handling Instructions
+### Common Issues & Solutions
+- **Query Performance**: Optimize with proper aggregations and filters
+- **Permission Errors**: Verify Unity Catalog and dashboard access
+- **Data Freshness**: Set up appropriate refresh schedules
+- **Widget Failures**: Validate data types and field mappings
 
-### Common Dashboard Issues and Solutions
-
-#### SQL Query Errors
-- **Syntax Errors**: Validate SQL using `execute_dbsql` before widget creation
-- **Permission Issues**: Verify user has access to referenced tables and schemas
-- **Performance Problems**: Optimize queries with appropriate filters and aggregations
-- **Data Type Mismatches**: Ensure field types match widget encoding requirements
-
-#### Widget Creation Failures
-- **Invalid Parameters**: Validate all required fields are provided and properly formatted
-- **Dashboard Not Found**: Verify dashboard exists and user has access
-- **Widget Conflicts**: Check for duplicate widget IDs or overlapping positions
-- **API Limitations**: Handle rate limits and service unavailability gracefully
-
-#### Layout and Display Issues
-- **Overlapping Widgets**: Ensure widget positions don't conflict
-- **Size Constraints**: Verify widget dimensions fit within dashboard boundaries
-- **Data Rendering**: Check for null values or empty datasets that break visualizations
-- **Performance Degradation**: Monitor dashboard load times and optimize as needed
-
-### Error Recovery Strategies
+### Error Recovery Strategy
 1. **Graceful Degradation**: Provide fallback options when preferred widgets fail
 2. **Incremental Building**: Create dashboards progressively, validating each step
 3. **User Feedback**: Clearly communicate issues and provide actionable solutions
-4. **Rollback Capability**: Maintain previous working versions when possible
-
-## Advanced Features
-
-### Dashboard Types and Use Cases
-
-#### Lakeview Dashboards (Preferred)
-- **Modern Interface**: Enhanced visualization capabilities and user experience
-- **Better Performance**: Optimized rendering and data handling
-- **Advanced Widgets**: Support for complex chart types and interactions
-- **Responsive Design**: Automatic adaptation to different screen sizes
-
-#### Legacy Dashboards (Fallback)
-- **Compatibility**: Support for older Databricks environments
-- **Basic Functionality**: Core visualization and filtering capabilities
-- **Migration Path**: Can be upgraded to Lakeview when environment supports it
-
-### Widget Configuration Best Practices
-
-#### Data Encoding Guidelines
-- **Categorical Fields**: Use for grouping, filtering, and discrete values
-- **Quantitative Fields**: Use for measurements, calculations, and continuous values
-- **Temporal Fields**: Use for time-based analysis and trend visualization
-- **Geographic Fields**: Use for spatial analysis and location-based insights
-
-#### Color and Styling
-- **Consistent Palette**: Use organization brand colors and maintain consistency
-- **Accessibility**: Ensure color choices work for colorblind users
-- **Semantic Colors**: Use red for alerts, green for success, blue for information
-- **Contrast**: Maintain sufficient contrast for readability
+4. **Continuous Monitoring**: Track performance and resolve issues proactively
 
 ## Success Metrics
 
 ### Dashboard Quality Indicators
-1. **Data Accuracy**: All widgets display correct and up-to-date information
-2. **Performance**: Dashboard loads in under 5 seconds with typical data volumes
-3. **Usability**: Users can find insights quickly and interact intuitively
-4. **Maintainability**: Dashboard structure supports ongoing updates and modifications
-5. **Scalability**: Design accommodates growing data volumes and user base
+- ✅ **Data Accuracy**: All widgets display correct, up-to-date information
+- ✅ **Performance**: Dashboard loads in under 5 seconds
+- ✅ **Usability**: Users find insights quickly and interact intuitively
+- ✅ **Maintainability**: Structure supports ongoing updates and modifications
 
-### User Satisfaction Criteria
-- **Clear Insights**: Key business questions are answered immediately upon viewing
+### User Experience Criteria
+- **Immediate Insights**: Key business questions answered at first glance
 - **Actionable Information**: Dashboard prompts specific actions or decisions
-- **Visual Appeal**: Professional appearance that builds confidence in the data
-- **Interactive Experience**: Filters and drill-downs provide deeper exploration capabilities
+- **Professional Appearance**: Builds confidence in data quality and reliability
+- **Interactive Exploration**: Filters and drill-downs provide deeper analysis
 
-## Integration with Databricks Tools
+## Available Tools
 
-### Available MCP Tools for Dashboard Building
-- **Unity Catalog**: `list_uc_catalogs`, `describe_uc_schema`, `describe_uc_table`
-- **SQL Execution**: `execute_dbsql` for query testing and data validation
-- **Dashboard Management**: `list_lakeview_dashboards`, `create_lakeview_dashboard`, `get_lakeview_dashboard`
-- **Widget Creation**: All widget creation functions from the widgets module
-- **Data Quality**: `get_table_statistics` for understanding data characteristics
+### Unity Catalog Exploration
+- `list_uc_catalogs` - Discover available data catalogs
+- `describe_uc_schema` - Explore schema structure and tables
+- `describe_uc_table` - Analyze table columns and data types
 
-### Recommended Tool Usage Sequence
-1. **Discovery**: Use Unity Catalog tools to understand available data
-2. **Query Development**: Use `execute_dbsql` to test and refine SQL queries
-3. **Dashboard Setup**: Use dashboard management tools to create base structure
-4. **Widget Implementation**: Use appropriate widget creation functions
-5. **Validation**: Use data quality tools to verify widget accuracy
+### SQL Execution & Validation
+- `execute_dbsql` - Test and validate SQL queries
+- `get_table_statistics` - Understand data characteristics
 
-## Example Implementation Workflow
+### Dashboard Management
+- `list_lakeview_dashboards` - View existing dashboards
+- `create_lakeview_dashboard` - Build new dashboard
+- `get_lakeview_dashboard` - Retrieve dashboard details
 
-### Scenario: Sales Performance Dashboard
+### Widget Creation
+- All widget creation functions for charts, KPIs, tables, and filters
+- Automatic positioning and sizing optimization
+- Data encoding validation and error prevention
+
+## Example Implementation
+
+### Sales Performance Dashboard
 ```markdown
-1. **Data Discovery**
-   - Explore sales catalog and schema
-   - Identify key tables: orders, products, customers, regions
+1. Data Discovery
+   - Explore sales catalog: orders, products, customers, regions
    
-2. **Query Development**
-   - Test total revenue query: `SELECT SUM(revenue) FROM sales.orders WHERE date >= '2024-01-01'`
-   - Test trend query: `SELECT date, SUM(revenue) FROM sales.orders GROUP BY date ORDER BY date`
+2. Query Validation
+   - Test: SELECT SUM(revenue) FROM sales.orders WHERE date >= '2024-01-01'
+   - Test: SELECT date, SUM(revenue) FROM sales.orders GROUP BY date ORDER BY date
    
-3. **Widget Creation**
-   - Revenue counter widget with current month total
-   - Revenue trend line chart showing 12-month progression
-   - Top products bar chart with sales ranking
+3. Widget Creation
+   - Revenue counter (current month total)
+   - Revenue trend line chart (12-month progression)
+   - Top products bar chart (sales ranking)
    - Regional breakdown pie chart
    
-4. **Layout Implementation**
-   - KPI counters at top (revenue, orders, customers)
+4. Layout Implementation
+   - KPI counters at top
    - Trend chart prominently in center
    - Breakdown charts below for detailed analysis
    - Filter widgets for date range and region selection
 ```
 
-Remember: Always test your SQL queries first, choose widgets that match your data characteristics, and arrange layouts that tell a clear story with your data.
+## Final Validation Checklist
+
+Before considering a dashboard complete:
+
+- [ ] All SQL queries validated with `execute_dbsql`
+- [ ] All widgets render properly with real data
+- [ ] Filters and interactions work correctly
+- [ ] Performance meets requirements (<5 second load time)
+- [ ] Permissions configured properly
+- [ ] Refresh schedules operating
+- [ ] Mobile layout responsive
+- [ ] User acceptance validated
+
+## Documentation & Resources
+
+- **[Lakeview Dashboards](https://docs.databricks.com/en/dashboards/lakeview.html)**: Complete guide to modern dashboard capabilities
+- **[Unity Catalog](https://docs.databricks.com/en/data-governance/unity-catalog/index.html)**: Data governance and catalog management
+- **[Dashboard Creation](https://docs.databricks.com/en/dashboards/lakeview/create-lakeview-dashboard.html)**: Step-by-step dashboard building
+- **[Widget Configuration](https://docs.databricks.com/en/dashboards/lakeview/add-visualizations.html)**: Visualization types and configuration
+
+---
+
+**Remember**: Always test your SQL queries first, choose widgets that match your data characteristics, and arrange layouts that tell a clear story with your data. The goal is a production-ready dashboard that delivers immediate value to your users.
