@@ -2,6 +2,7 @@
 # Add your FastAPI routes here
 
 import os
+
 from fastapi import APIRouter
 
 from .mcp_info import router as mcp_info_router
@@ -13,12 +14,12 @@ router = APIRouter()
 
 @router.get('/health')
 def health():
-    """Health check endpoint."""
-    return {
-        'status': 'healthy',
-        'service': 'databricks-mcp',
-        'databricks_configured': bool(os.environ.get('DATABRICKS_HOST')),
-    }
+  """Health check endpoint."""
+  return {
+    'status': 'healthy',
+    'service': 'databricks-mcp',
+    'databricks_configured': bool(os.environ.get('DATABRICKS_HOST')),
+  }
 
 
 router.include_router(user_router, prefix='/user', tags=['user'])
