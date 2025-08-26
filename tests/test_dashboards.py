@@ -90,7 +90,7 @@ class TestDashboardTools:
       # Mock created dashboard
       mock_dashboard = Mock()
       mock_dashboard.dashboard_id = 'lakeview-789'
-      mock_dashboard.name = 'New Test Dashboard'
+      mock_dashboard.display_name = 'New Test Dashboard'
 
       # Setup mock response
       mock_workspace.lakeview.create.return_value = mock_dashboard
@@ -105,7 +105,7 @@ class TestDashboardTools:
 
       assert_success_response(result)
       assert result['dashboard_id'] == 'lakeview-789'
-      assert result['name'] == 'New Test Dashboard'
+      assert result['name'] == 'New Test Dashboard'  # Uses display_name from mock dashboard
       assert result['type'] == 'lakeview'
       assert (
         result['message']
@@ -121,7 +121,7 @@ class TestDashboardTools:
 
       # Mock updated dashboard
       mock_dashboard = Mock()
-      mock_dashboard.name = 'Updated Dashboard'
+      mock_dashboard.display_name = 'Updated Dashboard'
 
       # Setup mock response
       mock_workspace.lakeview.update.return_value = mock_dashboard
@@ -1738,3 +1738,280 @@ class TestWidgetCreationErrors:
 
       assert_error_response(result)
       # The error should come from the add_widget_to_dashboard function
+
+  @pytest.mark.unit
+  def test_create_lakeview_dashboard_with_widgets(self, mcp_server, mock_env_vars):
+    """Test creating Lakeview dashboard with initial widgets."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock dashboard creation
+      mock_workspace = Mock()
+      mock_dashboard = Mock()
+      mock_dashboard.dashboard_id = 'lakeview-789'
+      mock_dashboard.display_name = 'Dashboard with Widgets'
+
+      # Mock widget creation
+      mock_widget = Mock()
+      mock_widget.id = 'widget-123'
+
+      # Setup mocks
+      mock_workspace.lakeview.create.return_value = mock_dashboard
+      mock_workspace.dashboard_widgets = Mock()
+      mock_workspace.dashboard_widgets.create.return_value = mock_widget
+      mock_client.return_value = mock_workspace
+
+      # Dashboard config with widgets
+      dashboard_config = {
+        'name': 'Dashboard with Widgets',
+        'description': 'Test dashboard with initial widgets',
+        'widgets': [
+          {
+            'type': 'text',
+            'name': 'Welcome Text',
+            'width': 6,
+            'text': 'Welcome to the dashboard',
+            'position': {'x': 0, 'y': 0},
+          }
+        ],
+      }
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['create_lakeview_dashboard']
+
+      # Mock the hasattr calls to ensure dashboard_widgets is detected
+      with patch('builtins.hasattr') as mock_hasattr:
+
+        def hasattr_side_effect(obj, attr):
+          if attr == 'dashboard_widgets':
+            return True
+          return hasattr(type(obj), attr)
+
+        mock_hasattr.side_effect = hasattr_side_effect
+
+        result = tool.fn(dashboard_config=dashboard_config)
+
+        assert_success_response(result)
+        assert result['dashboard_id'] == 'lakeview-789'
+        assert result['widgets_created'] == 1
+        assert 'widget_details' in result
+        assert len(result['widget_details']) == 1
+
+  @pytest.mark.unit
+  def test_update_lakeview_dashboard_with_widgets(self, mcp_server, mock_env_vars):
+    """Test updating Lakeview dashboard with widget operations."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock dashboard update
+      mock_workspace = Mock()
+      mock_dashboard = Mock()
+      mock_dashboard.display_name = 'Updated Dashboard'
+
+      # Mock widget operations
+      mock_widget = Mock()
+      mock_widget.id = 'widget-new'
+
+      # Setup mocks
+      mock_workspace.lakeview.update.return_value = mock_dashboard
+      mock_workspace.dashboard_widgets = Mock()
+      mock_workspace.dashboard_widgets.create.return_value = mock_widget
+      mock_workspace.dashboard_widgets.update.return_value = mock_widget
+      mock_workspace.dashboard_widgets.delete.return_value = None
+      mock_client.return_value = mock_workspace
+
+      # Updates with widget operations
+      updates = {
+        'name': 'Updated Dashboard',
+        'add_widgets': [{'type': 'chart', 'name': 'New Chart', 'width': 8}],
+        'update_widgets': [{'widget_id': 'widget-123', 'width': 6, 'position': {'x': 0, 'y': 1}}],
+        'remove_widgets': ['widget-old'],
+      }
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['update_lakeview_dashboard']
+
+      # Mock the hasattr calls to ensure dashboard_widgets is detected
+      with patch('builtins.hasattr') as mock_hasattr:
+
+        def hasattr_side_effect(obj, attr):
+          if attr == 'dashboard_widgets':
+            return True
+          return hasattr(type(obj), attr)
+
+        mock_hasattr.side_effect = hasattr_side_effect
+
+        result = tool.fn(dashboard_id='lakeview-123', updates=updates)
+
+        assert_success_response(result)
+        assert result['dashboard_id'] == 'lakeview-123'
+        assert result['name'] == 'Updated Dashboard'
+        assert 'widget_operations' in result
+        assert result['widget_operations']['widgets_added_count'] == 1
+        assert result['widget_operations']['widgets_updated_count'] == 1
+        assert result['widget_operations']['widgets_removed_count'] == 1
+
+  @pytest.mark.unit
+  def test_manage_dashboard_widgets(self, mcp_server, mock_env_vars):
+    """Test comprehensive widget management tool."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+
+      # Mock widget for create/update operations
+      mock_widget = Mock()
+      mock_widget.id = 'widget-123'
+
+      # Mock dashboard layout for list operation
+      mock_dashboard = Mock()
+      mock_dashboard.layout = {
+        'widgets': [
+          {'id': 'widget-1', 'type': 'chart', 'name': 'Chart 1'},
+          {'id': 'widget-2', 'type': 'table', 'name': 'Table 1'},
+        ]
+      }
+
+      # Setup mocks
+      mock_workspace.dashboard_widgets = Mock()
+      mock_workspace.dashboard_widgets.create.return_value = mock_widget
+      mock_workspace.dashboard_widgets.update.return_value = mock_widget
+      mock_workspace.dashboard_widgets.delete.return_value = None
+      mock_workspace.lakeview.get.return_value = mock_dashboard
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['manage_dashboard_widgets']
+
+      # Mock the hasattr calls to ensure dashboard_widgets is detected
+      with patch('builtins.hasattr') as mock_hasattr:
+
+        def hasattr_side_effect(obj, attr):
+          if attr == 'dashboard_widgets':
+            return True
+          return hasattr(type(obj), attr)
+
+        mock_hasattr.side_effect = hasattr_side_effect
+
+        # Test widget creation
+        widget_config = {'type': 'chart', 'name': 'Test Chart', 'width': 6}
+        result = tool.fn(dashboard_id='dash-123', operation='create', widget_config=widget_config)
+        assert_success_response(result)
+
+        # Test widget listing
+        result = tool.fn(dashboard_id='dash-123', operation='list')
+        assert_success_response(result)
+        assert result['widgets_count'] == 2
+
+        # Test widget update
+        update_config = {'widget_id': 'widget-123', 'width': 8, 'position': {'x': 0, 'y': 0}}
+        result = tool.fn(dashboard_id='dash-123', operation='update', widget_config=update_config)
+        assert_success_response(result)
+        assert result['widget_id'] == 'widget-123'
+
+        # Test widget deletion
+        delete_config = {'widget_id': 'widget-123'}
+        result = tool.fn(dashboard_id='dash-123', operation='delete', widget_config=delete_config)
+        assert_success_response(result)
+
+  @pytest.mark.unit
+  def test_publish_lakeview_dashboard(self, mcp_server, mock_env_vars):
+    """Test publishing Lakeview dashboard."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+
+      # Mock published dashboard
+      mock_published = Mock()
+      mock_published.dashboard_id = 'published-123'
+      mock_published.revision_id = 'rev-456'
+      mock_published.embed_url = 'https://example.com/embed/dash-123'
+
+      # Setup mocks
+      mock_workspace.lakeview.publish.return_value = mock_published
+      mock_client.return_value = mock_workspace
+
+      publish_config = {'embed_credentials': True, 'warehouse_id': 'warehouse-123'}
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['publish_lakeview_dashboard']
+      result = tool.fn(dashboard_id='dash-123', publish_config=publish_config)
+
+      assert_success_response(result)
+      assert result['dashboard_id'] == 'dash-123'
+      assert result['published_dashboard_id'] == 'published-123'
+      assert result['embed_credentials']
+      assert result['warehouse_id'] == 'warehouse-123'
+      assert 'published_dashboard' in result
+
+  @pytest.mark.unit
+  def test_manage_dashboard_schedule(self, mcp_server, mock_env_vars):
+    """Test dashboard schedule management."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      mock_workspace = Mock()
+
+      # Mock schedule
+      mock_schedule = Mock()
+      mock_schedule.schedule_id = 'schedule-123'
+      mock_schedule.cron_schedule = Mock()
+      mock_schedule.cron_schedule.cron_expression = '0 9 * * 1-5'
+      mock_schedule.cron_schedule.timezone = 'UTC'
+      mock_schedule.pause_status = 'UNPAUSED'
+
+      # Setup mocks
+      mock_workspace.lakeview.create_schedule.return_value = mock_schedule
+      mock_workspace.lakeview.list_schedules.return_value = [mock_schedule]
+      mock_workspace.lakeview.delete_schedule.return_value = None
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['manage_dashboard_schedule']
+
+      # Mock the hasattr calls to ensure lakeview schedule methods are detected
+      with patch('builtins.hasattr') as mock_hasattr:
+
+        def hasattr_side_effect(obj, attr):
+          if attr in ['list_schedules', 'create_schedule', 'delete_schedule']:
+            return True
+          return hasattr(type(obj), attr)
+
+        mock_hasattr.side_effect = hasattr_side_effect
+
+        # Test schedule creation
+        schedule_config = {
+          'cron_expression': '0 9 * * 1-5',
+          'timezone': 'UTC',
+          'pause_status': 'UNPAUSED',
+        }
+        result = tool.fn(
+          dashboard_id='dash-123', operation='create', schedule_config=schedule_config
+        )
+        assert_success_response(result)
+
+        # Test schedule listing
+        result = tool.fn(dashboard_id='dash-123', operation='list')
+        assert_success_response(result)
+        assert result['schedules_count'] == 1
+
+        # Test schedule deletion
+        delete_config = {'schedule_id': 'schedule-123'}
+        result = tool.fn(dashboard_id='dash-123', operation='delete', schedule_config=delete_config)
+        assert_success_response(result)
+
+  @pytest.mark.unit
+  def test_widget_management_errors(self, mcp_server, mock_env_vars):
+    """Test error handling in widget management."""
+    with patch('server.tools.dashboards.WorkspaceClient') as mock_client:
+      # Mock workspace without dashboard_widgets API
+      mock_workspace = Mock()
+      delattr(mock_workspace, 'dashboard_widgets') if hasattr(
+        mock_workspace, 'dashboard_widgets'
+      ) else None
+      mock_client.return_value = mock_workspace
+
+      load_dashboard_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['manage_dashboard_widgets']
+
+      # Test API not available error
+      result = tool.fn(dashboard_id='dash-123', operation='create', widget_config={'type': 'chart'})
+      assert_error_response(result)
+      assert 'Dashboard widgets API not available' in result['error']
+
+      # Test invalid operation
+      mock_workspace.dashboard_widgets = Mock()  # Add back for this test
+      result = tool.fn(dashboard_id='dash-123', operation='invalid_operation')
+      assert_error_response(result)
+      assert 'Unsupported operation' in result['error']

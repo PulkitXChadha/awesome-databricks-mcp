@@ -5,6 +5,13 @@ import os
 import re
 
 from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.dashboards import (
+  CronSchedule,
+  Dashboard,
+  Schedule,
+  SchedulePauseStatus,
+)
+from databricks.sdk.service.sql import WidgetOptions
 
 
 def sanitize_field_name(field_name: str) -> str:
@@ -67,6 +74,113 @@ def sanitize_widget_name(name: str) -> str:
     sanitized = sanitized.replace(pattern, '')
 
   return sanitized.strip() or 'Unnamed Widget'
+
+
+def _create_dashboard_widget(
+  workspace_client, dashboard_id: str, widget_config: dict, widget_index: int
+) -> dict:
+  """Helper function to create a dashboard widget.
+
+  Args:
+      workspace_client: Databricks workspace client
+      dashboard_id: ID of the dashboard to add widget to
+      widget_config: Widget configuration dictionary
+      widget_index: Index of widget for error reporting
+
+  Returns:
+      Dictionary with widget creation result
+  """
+  try:
+    # Extract widget configuration
+    widget_type = widget_config.get('type', 'text')
+    widget_name = widget_config.get('name', f'Widget {widget_index + 1}')
+    width = widget_config.get('width', 4)  # Default width
+    text_content = widget_config.get('text', '')
+    visualization_id = widget_config.get('visualization_id')
+
+    # Create widget options
+    widget_options = WidgetOptions(
+      position=widget_config.get('position', {}),
+      parameterMappings=widget_config.get('parameter_mappings', {}),
+    )
+
+    # Create the widget
+    if hasattr(workspace_client, 'dashboard_widgets'):
+      widget = workspace_client.dashboard_widgets.create(
+        dashboard_id=dashboard_id,
+        options=widget_options,
+        width=width,
+        text=text_content if text_content else None,
+        visualization_id=visualization_id,
+      )
+
+      return {
+        'success': True,
+        'widget': {
+          'id': getattr(widget, 'id', None),
+          'type': widget_type,
+          'name': widget_name,
+          'width': width,
+          'position': widget_config.get('position', {}),
+        },
+      }
+    else:
+      return {'success': False, 'error': 'Dashboard widgets API not available in this SDK version'}
+
+  except Exception as e:
+    return {'success': False, 'error': f'Widget creation failed: {str(e)}'}
+
+
+def _create_dashboard_schedule(workspace_client, dashboard_id: str, schedule_config: dict) -> dict:
+  """Helper function to create a dashboard schedule.
+
+  Args:
+      workspace_client: Databricks workspace client
+      dashboard_id: ID of the dashboard to add schedule to
+      schedule_config: Schedule configuration dictionary
+
+  Returns:
+      Dictionary with schedule creation result
+  """
+  try:
+    # Extract schedule configuration
+    cron_expression = schedule_config.get('cron_expression')
+    timezone = schedule_config.get('timezone', 'UTC')
+    pause_status = schedule_config.get('pause_status', 'UNPAUSED')
+
+    if not cron_expression:
+      return {'success': False, 'error': 'cron_expression is required for schedule creation'}
+
+    # Create schedule object
+    cron_schedule = CronSchedule(cron_expression=cron_expression, timezone=timezone)
+
+    schedule = Schedule(
+      cron_schedule=cron_schedule,
+      pause_status=SchedulePauseStatus(pause_status)
+      if hasattr(SchedulePauseStatus, pause_status)
+      else None,
+    )
+
+    # Create the schedule
+    if hasattr(workspace_client.lakeview, 'create_schedule'):
+      created_schedule = workspace_client.lakeview.create_schedule(
+        dashboard_id=dashboard_id, schedule=schedule
+      )
+
+      return {
+        'success': True,
+        'schedule': {
+          'schedule_id': getattr(created_schedule, 'schedule_id', None),
+          'cron_expression': cron_expression,
+          'timezone': timezone,
+          'pause_status': pause_status,
+        },
+      }
+    else:
+      return {'success': False, 'error': 'Dashboard schedule API not available in this SDK version'}
+
+  except Exception as e:
+    return {'success': False, 'error': f'Schedule creation failed: {str(e)}'}
 
 
 def load_dashboard_tools(mcp_server):
@@ -288,13 +402,20 @@ def load_dashboard_tools(mcp_server):
 
   @mcp_server.tool()
   def create_lakeview_dashboard(dashboard_config: dict) -> dict:
-    """Create a new Lakeview dashboard.
+    """Create a new Lakeview dashboard with comprehensive widget support.
 
     Args:
-        dashboard_config: Dictionary containing dashboard configuration
+        dashboard_config: Dictionary containing dashboard configuration with optional widgets:
+            - name (required): Dashboard display name
+            - description (optional): Dashboard description
+            - tags (optional): Dictionary of tags
+            - widgets (optional): List of widget configurations
+            - parent_path (optional): Workspace path for dashboard
+            - warehouse_id (optional): Default warehouse ID for queries
+            - schedule (optional): Dashboard refresh schedule configuration
 
     Returns:
-        Dictionary with operation result or error message
+        Dictionary with operation result including dashboard ID, widgets created, and any errors
     """
     try:
       # Initialize Databricks SDK
@@ -306,36 +427,137 @@ def load_dashboard_tools(mcp_server):
       if not dashboard_config.get('name'):
         return {'success': False, 'error': 'Dashboard name is required in dashboard_config'}
 
+      # Extract and validate dashboard properties
+      display_name = dashboard_config.get('name')
+      description = dashboard_config.get('description')
+      tags = dashboard_config.get('tags', {})
+      widgets = dashboard_config.get('widgets', [])
+      parent_path = dashboard_config.get('parent_path')
+      schedule_config = dashboard_config.get('schedule')
+
+      # Create Dashboard object from config with comprehensive properties
+      dashboard_obj = Dashboard(display_name=display_name)
+
+      # Add optional properties if supported
+      if hasattr(dashboard_obj, 'description') and description:
+        dashboard_obj.description = description
+      if hasattr(dashboard_obj, 'tags') and tags:
+        dashboard_obj.tags = tags
+      if hasattr(dashboard_obj, 'parent_path') and parent_path:
+        dashboard_obj.parent_path = parent_path
+
       # Create dashboard using the Databricks SDK
       try:
-        # Try Lakeview API first (correct method name is 'create')
-        dashboard = w.lakeview.create(**dashboard_config)
-
+        # Try Lakeview API first with proper Dashboard object
+        dashboard = w.lakeview.create(dashboard=dashboard_obj)
         dashboard_type = 'lakeview'
-      except (AttributeError, Exception):
-        # Fallback to legacy dashboard API
+
+        # Extract dashboard ID for widget operations
+        dashboard_id = getattr(dashboard, 'dashboard_id', None)
+
+        if not dashboard_id:
+          return {
+            'success': False,
+            'error': 'Dashboard created but dashboard_id not returned from API',
+          }
+
+        # Initialize results tracking
+        created_widgets = []
+        widget_errors = []
+        schedule_result = None
+
+        # Create widgets if specified
+        if widgets and hasattr(w, 'dashboard_widgets'):
+          for i, widget_config in enumerate(widgets):
+            try:
+              widget_result = _create_dashboard_widget(w, dashboard_id, widget_config, i)
+              if widget_result.get('success'):
+                created_widgets.append(widget_result['widget'])
+              else:
+                widget_errors.append(
+                  {
+                    'widget_index': i,
+                    'error': widget_result.get('error', 'Unknown widget creation error'),
+                  }
+                )
+            except Exception as widget_error:
+              widget_errors.append(
+                {'widget_index': i, 'error': f'Widget creation failed: {str(widget_error)}'}
+              )
+
+        # Create schedule if specified
+        if schedule_config and hasattr(w.lakeview, 'create_schedule'):
+          try:
+            schedule_result = _create_dashboard_schedule(w, dashboard_id, schedule_config)
+          except Exception as schedule_error:
+            schedule_result = {
+              'success': False,
+              'error': f'Schedule creation failed: {str(schedule_error)}',
+            }
+
+        # Prepare comprehensive response
+        response = {
+          'success': True,
+          'dashboard_id': dashboard_id,
+          'name': display_name,
+          'type': dashboard_type,
+          'message': (
+            f'Successfully created {dashboard_type} dashboard {display_name} '
+            f'with ID {dashboard_id}'
+          ),
+          'widgets_created': len(created_widgets),
+          'widget_details': created_widgets,
+        }
+
+        if widget_errors:
+          response['widget_errors'] = widget_errors
+          response['message'] += f' (with {len(widget_errors)} widget creation errors)'
+
+        if schedule_result:
+          response['schedule'] = schedule_result
+
+        return response
+
+      except (AttributeError, Exception) as lakeview_error:
+        # Fallback to legacy dashboard API for basic dashboard creation
         try:
-          dashboard = w.dashboards.create(**dashboard_config)
+          # Create basic dashboard config for legacy API
+          legacy_config = {
+            'name': display_name,
+          }
+          if description:
+            legacy_config['description'] = description
+          if tags:
+            legacy_config['tags'] = list(tags.keys()) if isinstance(tags, dict) else tags
+
+          dashboard = w.dashboards.create(**legacy_config)
           dashboard_type = 'legacy'
+          dashboard_id = getattr(dashboard, 'id', None)
+
+          return {
+            'success': True,
+            'dashboard_id': dashboard_id,
+            'name': display_name,
+            'type': dashboard_type,
+            'message': (
+            f'Successfully created {dashboard_type} dashboard {display_name} '
+            f'with ID {dashboard_id}'
+          ),
+            'note': (
+              'Created using legacy API - advanced features like widgets may not be '
+              'supported'
+            ),
+            'lakeview_error': str(lakeview_error),
+          }
+
         except (AttributeError, Exception) as fallback_error:
           return {
             'success': False,
-            'error': f'Dashboard creation failed or API not available: {str(fallback_error)}',
+            'error': (
+              f'Both Lakeview and legacy dashboard creation failed. '
+              f'Lakeview error: {str(lakeview_error)}, Legacy error: {str(fallback_error)}'
+            ),
           }
-
-      # Extract dashboard details
-      dashboard_id = getattr(dashboard, 'dashboard_id', getattr(dashboard, 'id', None))
-      dashboard_name = getattr(dashboard, 'name', dashboard_config.get('name'))
-
-      return {
-        'success': True,
-        'dashboard_id': dashboard_id,
-        'name': dashboard_name,
-        'type': dashboard_type,
-        'message': (
-          f'Successfully created {dashboard_type} dashboard {dashboard_name} with ID {dashboard_id}'
-        ),
-      }
 
     except Exception as e:
       print(f'❌ Error creating Lakeview dashboard: {str(e)}')
@@ -343,14 +565,21 @@ def load_dashboard_tools(mcp_server):
 
   @mcp_server.tool()
   def update_lakeview_dashboard(dashboard_id: str, updates: dict) -> dict:
-    """Update an existing Lakeview dashboard.
+    """Update an existing Lakeview dashboard with comprehensive widget management.
 
     Args:
         dashboard_id: The ID of the dashboard to update
-        updates: Dictionary containing updates to apply
+        updates: Dictionary containing updates to apply:
+            - name/display_name (optional): New dashboard name
+            - description (optional): New dashboard description
+            - tags (optional): Updated tags dictionary
+            - add_widgets (optional): List of new widgets to add
+            - update_widgets (optional): List of widgets to update (must include widget_id)
+            - remove_widgets (optional): List of widget IDs to remove
+            - schedule_updates (optional): Schedule configuration updates
 
     Returns:
-        Dictionary with operation result or error message
+        Dictionary with comprehensive operation result including widget changes
     """
     try:
       # Initialize Databricks SDK
@@ -362,37 +591,468 @@ def load_dashboard_tools(mcp_server):
       if not updates:
         return {'success': False, 'error': 'No updates provided in updates parameter'}
 
-      # Update dashboard using the Databricks SDK
-      try:
-        # Try Lakeview API first (correct method name is 'update')
-        dashboard = w.lakeview.update(dashboard_id=dashboard_id, **updates)
-        dashboard_type = 'lakeview'
-      except (AttributeError, Exception):
-        # Fallback to legacy dashboard API
+      # Extract update components
+      dashboard_updates = {}
+      if updates.get('name') or updates.get('display_name'):
+        dashboard_updates['display_name'] = updates.get('name') or updates.get('display_name')
+      if updates.get('description'):
+        dashboard_updates['description'] = updates.get('description')
+      if updates.get('tags'):
+        dashboard_updates['tags'] = updates.get('tags')
+
+      add_widgets = updates.get('add_widgets', [])
+      update_widgets = updates.get('update_widgets', [])
+      remove_widgets = updates.get('remove_widgets', [])
+      schedule_updates = updates.get('schedule_updates')
+
+      # Initialize tracking variables
+      widget_operations_results = {
+        'widgets_added': [],
+        'widgets_updated': [],
+        'widgets_removed': [],
+        'widget_errors': [],
+      }
+      dashboard_type = 'unknown'
+      dashboard_name = 'Unknown'
+
+      # Update dashboard properties if provided
+      if dashboard_updates:
         try:
-          dashboard = w.dashboards.update(dashboard_id=dashboard_id, **updates)
-          dashboard_type = 'legacy'
-        except (AttributeError, Exception) as fallback_error:
-          return {
+          # Create Dashboard object from updates
+          dashboard_obj = Dashboard(display_name=dashboard_updates.get('display_name'))
+
+          # Add optional properties if supported
+          if hasattr(dashboard_obj, 'description') and dashboard_updates.get('description'):
+            dashboard_obj.description = dashboard_updates['description']
+          if hasattr(dashboard_obj, 'tags') and dashboard_updates.get('tags'):
+            dashboard_obj.tags = dashboard_updates['tags']
+
+          # Try Lakeview API first with proper Dashboard object
+          dashboard = w.lakeview.update(dashboard_id=dashboard_id, dashboard=dashboard_obj)
+          dashboard_type = 'lakeview'
+          dashboard_name = getattr(
+            dashboard, 'display_name', dashboard_updates.get('display_name', 'Unknown')
+          )
+
+        except (AttributeError, Exception):
+          # Fallback to legacy dashboard API
+          try:
+            # Prepare legacy updates format
+            legacy_updates = {}
+            if dashboard_updates.get('display_name'):
+              legacy_updates['name'] = dashboard_updates['display_name']
+            if dashboard_updates.get('description'):
+              legacy_updates['description'] = dashboard_updates['description']
+            if dashboard_updates.get('tags'):
+              legacy_updates['tags'] = (
+                list(dashboard_updates['tags'].keys())
+                if isinstance(dashboard_updates['tags'], dict)
+                else dashboard_updates['tags']
+              )
+
+            dashboard = w.dashboards.update(dashboard_id=dashboard_id, **legacy_updates)
+            dashboard_type = 'legacy'
+            dashboard_name = getattr(dashboard, 'name', legacy_updates.get('name', 'Unknown'))
+
+          except (AttributeError, Exception) as fallback_error:
+            return {
+              'success': False,
+              'error': f'Dashboard update failed or API not available: {str(fallback_error)}',
+              'dashboard_id': dashboard_id,
+            }
+
+      # Handle widget removals first
+      if remove_widgets and hasattr(w, 'dashboard_widgets'):
+        for widget_id in remove_widgets:
+          try:
+            w.dashboard_widgets.delete(id=widget_id)
+            widget_operations_results['widgets_removed'].append(
+              {'widget_id': widget_id, 'status': 'removed successfully'}
+            )
+          except Exception as e:
+            widget_operations_results['widget_errors'].append(
+              {'operation': 'remove', 'widget_id': widget_id, 'error': str(e)}
+            )
+
+      # Handle widget updates
+      if update_widgets and hasattr(w, 'dashboard_widgets'):
+        for widget_update in update_widgets:
+          widget_id = widget_update.get('widget_id')
+          if not widget_id:
+            widget_operations_results['widget_errors'].append(
+              {'operation': 'update', 'error': 'widget_id is required for widget updates'}
+            )
+            continue
+
+          try:
+            # Extract widget update properties
+            width = widget_update.get('width', 4)
+            text_content = widget_update.get('text')
+            visualization_id = widget_update.get('visualization_id')
+
+            # Create updated widget options
+            widget_options = WidgetOptions(
+              position=widget_update.get('position', {}),
+              parameterMappings=widget_update.get('parameter_mappings', {}),
+            )
+
+            # Update the widget
+            w.dashboard_widgets.update(
+              id=widget_id,
+              dashboard_id=dashboard_id,
+              options=widget_options,
+              width=width,
+              text=text_content,
+              visualization_id=visualization_id,
+            )
+
+            widget_operations_results['widgets_updated'].append(
+              {
+                'widget_id': widget_id,
+                'status': 'updated successfully',
+                'new_properties': {'width': width, 'position': widget_update.get('position', {})},
+              }
+            )
+
+          except Exception as e:
+            widget_operations_results['widget_errors'].append(
+              {'operation': 'update', 'widget_id': widget_id, 'error': str(e)}
+            )
+
+      # Handle widget additions
+      if add_widgets:
+        for i, widget_config in enumerate(add_widgets):
+          try:
+            widget_result = _create_dashboard_widget(w, dashboard_id, widget_config, i)
+            if widget_result.get('success'):
+              widget_operations_results['widgets_added'].append(widget_result['widget'])
+            else:
+              widget_operations_results['widget_errors'].append(
+                {
+                  'operation': 'add',
+                  'widget_index': i,
+                  'error': widget_result.get('error', 'Unknown widget creation error'),
+                }
+              )
+          except Exception as widget_error:
+            widget_operations_results['widget_errors'].append(
+              {
+                'operation': 'add',
+                'widget_index': i,
+                'error': f'Widget creation failed: {str(widget_error)}',
+              }
+            )
+
+      # Handle schedule updates
+      schedule_result = None
+      if schedule_updates and hasattr(w.lakeview, 'create_schedule'):
+        try:
+          # For now, this creates a new schedule - in practice you might need to list
+          # existing schedules
+          # and update them, but the exact update pattern depends on the specific use case
+          schedule_result = _create_dashboard_schedule(w, dashboard_id, schedule_updates)
+        except Exception as schedule_error:
+          schedule_result = {
             'success': False,
-            'error': f'Dashboard update failed or API not available: {str(fallback_error)}',
-            'dashboard_id': dashboard_id,
+            'error': f'Schedule update failed: {str(schedule_error)}',
           }
 
-      # Extract updated dashboard details
-      dashboard_name = getattr(dashboard, 'name', 'Unknown')
-
-      return {
+      # Prepare comprehensive response
+      response = {
         'success': True,
         'dashboard_id': dashboard_id,
         'name': dashboard_name,
         'type': dashboard_type,
         'updates_applied': updates,
         'message': f'Successfully updated {dashboard_type} dashboard {dashboard_id}',
+        'widget_operations': {
+          'widgets_added_count': len(widget_operations_results['widgets_added']),
+          'widgets_updated_count': len(widget_operations_results['widgets_updated']),
+          'widgets_removed_count': len(widget_operations_results['widgets_removed']),
+          'widget_errors_count': len(widget_operations_results['widget_errors']),
+        },
       }
+
+      # Add detailed widget operation results if any operations were performed
+      if any([add_widgets, update_widgets, remove_widgets]):
+        response['widget_details'] = widget_operations_results
+
+      # Add schedule result if applicable
+      if schedule_result:
+        response['schedule_update'] = schedule_result
+
+      return response
 
     except Exception as e:
       print(f'❌ Error updating Lakeview dashboard: {str(e)}')
+      return {'success': False, 'error': f'Error: {str(e)}'}
+
+  @mcp_server.tool()
+  def manage_dashboard_widgets(
+    dashboard_id: str, operation: str, widget_config: dict = None
+  ) -> dict:
+    """Comprehensive dashboard widget management tool.
+
+    Args:
+        dashboard_id: The ID of the dashboard
+        operation: Operation to perform ('create', 'update', 'delete', 'list')
+        widget_config: Widget configuration for create/update operations:
+            For 'create': {type, name, width, text, visualization_id, position, parameter_mappings}
+            For 'update': {widget_id (required), width, text, visualization_id, position, 
+                          parameter_mappings}
+            For 'delete': {widget_id (required)}
+            For 'list': Not needed
+
+    Returns:
+        Dictionary with widget operation result
+    """
+    try:
+      w = WorkspaceClient(
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
+
+      if not hasattr(w, 'dashboard_widgets'):
+        return {
+          'success': False,
+          'error': 'Dashboard widgets API not available in this SDK version',
+        }
+
+      if operation == 'list':
+        # Note: The SDK may not have a direct "list widgets" method,
+        # so this would typically be done by getting the dashboard and examining its layout
+        try:
+          dashboard = w.lakeview.get(dashboard_id=dashboard_id)
+          layout = getattr(dashboard, 'layout', {})
+          widgets = layout.get('widgets', []) if isinstance(layout, dict) else []
+
+          return {
+            'success': True,
+            'dashboard_id': dashboard_id,
+            'widgets_count': len(widgets),
+            'widgets': widgets,
+            'message': f'Listed {len(widgets)} widgets for dashboard {dashboard_id}',
+          }
+        except Exception as e:
+          return {'success': False, 'error': f'Failed to list widgets: {str(e)}'}
+
+      elif operation == 'create':
+        if not widget_config:
+          return {'success': False, 'error': 'widget_config is required for create operation'}
+
+        result = _create_dashboard_widget(w, dashboard_id, widget_config, 0)
+        return result
+
+      elif operation == 'update':
+        if not widget_config or not widget_config.get('widget_id'):
+          return {
+            'success': False,
+            'error': 'widget_config with widget_id is required for update operation',
+          }
+
+        try:
+          widget_id = widget_config['widget_id']
+          width = widget_config.get('width', 4)
+          text_content = widget_config.get('text')
+          visualization_id = widget_config.get('visualization_id')
+
+          widget_options = WidgetOptions(
+            position=widget_config.get('position', {}),
+            parameterMappings=widget_config.get('parameter_mappings', {}),
+          )
+
+          w.dashboard_widgets.update(
+            id=widget_id,
+            dashboard_id=dashboard_id,
+            options=widget_options,
+            width=width,
+            text=text_content,
+            visualization_id=visualization_id,
+          )
+
+          return {
+            'success': True,
+            'widget_id': widget_id,
+            'dashboard_id': dashboard_id,
+            'updated_properties': {'width': width, 'position': widget_config.get('position', {})},
+            'message': f'Successfully updated widget {widget_id}',
+          }
+
+        except Exception as e:
+          return {'success': False, 'error': f'Widget update failed: {str(e)}'}
+
+      elif operation == 'delete':
+        if not widget_config or not widget_config.get('widget_id'):
+          return {
+            'success': False,
+            'error': 'widget_config with widget_id is required for delete operation',
+          }
+
+        try:
+          widget_id = widget_config['widget_id']
+          w.dashboard_widgets.delete(id=widget_id)
+
+          return {
+            'success': True,
+            'widget_id': widget_id,
+            'dashboard_id': dashboard_id,
+            'message': f'Successfully deleted widget {widget_id}',
+          }
+
+        except Exception as e:
+          return {'success': False, 'error': f'Widget deletion failed: {str(e)}'}
+
+      else:
+        return {
+          'success': False,
+          'error': (
+            f'Unsupported operation: {operation}. '
+            f'Supported operations: create, update, delete, list'
+          ),
+        }
+
+    except Exception as e:
+      return {'success': False, 'error': f'Error: {str(e)}'}
+
+  @mcp_server.tool()
+  def publish_lakeview_dashboard(dashboard_id: str, publish_config: dict = None) -> dict:
+    """Publish a Lakeview dashboard for sharing and embedding.
+
+    Args:
+        dashboard_id: The ID of the dashboard to publish
+        publish_config: Publishing configuration:
+            - embed_credentials (optional): Whether to embed publisher's credentials
+            - warehouse_id (optional): Warehouse ID to override default
+
+    Returns:
+        Dictionary with publishing result
+    """
+    try:
+      w = WorkspaceClient(
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
+
+      if not hasattr(w.lakeview, 'publish'):
+        return {
+          'success': False,
+          'error': 'Dashboard publishing API not available in this SDK version',
+        }
+
+      # Extract publishing options
+      embed_credentials = None
+      warehouse_id = None
+      if publish_config:
+        embed_credentials = publish_config.get('embed_credentials')
+        warehouse_id = publish_config.get('warehouse_id')
+
+      # Publish the dashboard
+      published_dashboard = w.lakeview.publish(
+        dashboard_id=dashboard_id, embed_credentials=embed_credentials, warehouse_id=warehouse_id
+      )
+
+      return {
+        'success': True,
+        'dashboard_id': dashboard_id,
+        'published_dashboard_id': getattr(published_dashboard, 'dashboard_id', None),
+        'embed_credentials': embed_credentials,
+        'warehouse_id': warehouse_id,
+        'message': f'Successfully published dashboard {dashboard_id}',
+        'published_dashboard': {
+          'revision_id': getattr(published_dashboard, 'revision_id', None),
+          'embed_url': getattr(published_dashboard, 'embed_url', None),
+        },
+      }
+
+    except Exception as e:
+      return {'success': False, 'error': f'Error publishing dashboard: {str(e)}'}
+
+  @mcp_server.tool()
+  def manage_dashboard_schedule(
+    dashboard_id: str, operation: str, schedule_config: dict = None
+  ) -> dict:
+    """Manage dashboard refresh schedules.
+
+    Args:
+        dashboard_id: The ID of the dashboard
+        operation: Operation to perform ('create', 'list', 'delete', 'update')
+        schedule_config: Schedule configuration for create/update:
+            - cron_expression (required for create): Cron expression for schedule
+            - timezone (optional): Timezone for schedule (default: UTC)
+            - pause_status (optional): PAUSED or UNPAUSED
+            - schedule_id (required for delete/update): ID of existing schedule
+
+    Returns:
+        Dictionary with schedule operation result
+    """
+    try:
+      w = WorkspaceClient(
+        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
+      )
+
+      if operation == 'list':
+        if hasattr(w.lakeview, 'list_schedules'):
+          schedules = list(w.lakeview.list_schedules(dashboard_id=dashboard_id))
+          return {
+            'success': True,
+            'dashboard_id': dashboard_id,
+            'schedules_count': len(schedules),
+            'schedules': [
+              {
+                'schedule_id': getattr(schedule, 'schedule_id', None),
+                'cron_expression': getattr(
+                  getattr(schedule, 'cron_schedule', None), 'cron_expression', None
+                ),
+                'timezone': getattr(getattr(schedule, 'cron_schedule', None), 'timezone', None),
+                'pause_status': getattr(schedule, 'pause_status', None),
+              }
+              for schedule in schedules
+            ],
+            'message': f'Listed {len(schedules)} schedules for dashboard {dashboard_id}',
+          }
+        else:
+          return {'success': False, 'error': 'Dashboard schedule listing API not available'}
+
+      elif operation == 'create':
+        if not schedule_config or not schedule_config.get('cron_expression'):
+          return {
+            'success': False,
+            'error': 'schedule_config with cron_expression is required for create operation',
+          }
+
+        result = _create_dashboard_schedule(w, dashboard_id, schedule_config)
+        return result
+
+      elif operation == 'delete':
+        if not schedule_config or not schedule_config.get('schedule_id'):
+          return {
+            'success': False,
+            'error': 'schedule_config with schedule_id is required for delete operation',
+          }
+
+        try:
+          if hasattr(w.lakeview, 'delete_schedule'):
+            w.lakeview.delete_schedule(
+              dashboard_id=dashboard_id, schedule_id=schedule_config['schedule_id']
+            )
+            return {
+              'success': True,
+              'dashboard_id': dashboard_id,
+              'schedule_id': schedule_config['schedule_id'],
+              'message': f'Successfully deleted schedule {schedule_config["schedule_id"]}',
+            }
+          else:
+            return {'success': False, 'error': 'Dashboard schedule deletion API not available'}
+        except Exception as e:
+          return {'success': False, 'error': f'Schedule deletion failed: {str(e)}'}
+
+      else:
+        return {
+          'success': False,
+          'error': (
+            f'Unsupported operation: {operation}. Supported operations: create, list, delete'
+          ),
+        }
+
+    except Exception as e:
       return {'success': False, 'error': f'Error: {str(e)}'}
 
   @mcp_server.tool()
