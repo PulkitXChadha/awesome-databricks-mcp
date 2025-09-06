@@ -7,7 +7,7 @@ A Model Context Protocol (MCP) proxy client for Databricks Apps.
 Run the proxy directly from GitHub using uvx:
 
 ```bash
-uvx --from git+ssh://git@github.com/databricks-solutions/custom-mcp-databricks-app.git \
+uvx --from git+https://git@github.com/databricks-solutions/custom-mcp-databricks-app.git \
   dba-mcp-proxy \
   --databricks-host <HOST> \
   --databricks-app-url <URL>
@@ -22,13 +22,13 @@ uvx --from git+ssh://git@github.com/databricks-solutions/custom-mcp-databricks-a
 
 ```bash
 # Connect to local development server
-uvx --from git+ssh://git@github.com/databricks-solutions/custom-mcp-databricks-app.git \
+uvx --from git+https://git@github.com/databricks-solutions/custom-mcp-databricks-app.git \
   dba-mcp-proxy \
   --databricks-host https://workspace.cloud.databricks.com \
   --databricks-app-url http://localhost:8000
 
 # Connect to deployed Databricks App
-uvx --from git+ssh://git@github.com/databricks-solutions/custom-mcp-databricks-app.git \
+uvx --from git+https://git@github.com/databricks-solutions/custom-mcp-databricks-app.git \
   dba-mcp-proxy \
   --databricks-host https://workspace.cloud.databricks.com \
   --databricks-app-url https://myapp.databricksapps.com
