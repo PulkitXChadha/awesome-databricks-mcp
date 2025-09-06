@@ -296,3 +296,5 @@ mlartifacts/
 
 # Generated client
 client/src/client/
+
+project_artifacts/
