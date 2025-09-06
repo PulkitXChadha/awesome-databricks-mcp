@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+      
+      - name: Run Python linting
+        run: |
+          uv run ruff check .
+          uv run ruff format . --check
+      
+      - name: Run Python tests
+        env:
+          DATABRICKS_HOST: "https://test.databricks.com"
+          DATABRICKS_TOKEN: "test-token-123"
+          DATABRICKS_APP_NAME: "test-app"
+        run: |
+          uv run pytest tests/ -m "not slow" -v --tb=short
+      
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+      
+      - name: Build frontend
+        working-directory: ./client
+        run: |
+          bun install --frozen-lockfile
+          bun run lint
+          bun run build
+      
+      - name: Test requirements.txt generation
+        run: |
+          uv run python scripts/generate_semver_requirements.py
+          test -f requirements.txt

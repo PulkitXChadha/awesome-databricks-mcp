@@ -1,0 +1,57 @@
+name: Security
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday morning
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+      
+      - name: Scan Python dependencies
+        run: |
+          uv pip install pip-audit
+          uv run pip-audit --desc || true
+      
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+      
+      - name: Scan frontend dependencies
+        working-directory: ./client
+        run: |
+          bun install --frozen-lockfile
+          npm audit --audit-level moderate || true
+      
+      - name: Check for secrets
+        run: |
+          echo "Checking for common secret patterns..."
+          if grep -r -i "password.*=" server/ || grep -r -i "token.*=" server/ || grep -r -i "key.*=" server/; then
+            echo "⚠️ Potential secrets found in code"
+          else
+            echo "✅ No obvious secrets found"
+          fi
