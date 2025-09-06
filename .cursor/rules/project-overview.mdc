@@ -1,39 +1,71 @@
-# Databricks MCP Project Overview
+# Awesome Databricks MCP Project Overview
 
-This is a full-stack application that implements the Model Context Protocol (MCP) for AI assistants to interact with Databricks workspaces. The project consists of:
+This is a **simplified** Databricks MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with Databricks workspaces. The project has been deliberately simplified to prioritize maintainability and clarity.
 
-## Architecture
-- **Backend**: FastAPI server with integrated MCP server (`server/app.py`)
-- **Frontend**: React TypeScript application with TailwindCSS and Radix UI (`client/`)
-- **MCP Integration**: FastMCP server that exposes prompts and tools to AI assistants
-- **Databricks SDK**: Python tools leveraging Databricks APIs and Unity Catalog
+## Project Structure
 
-## Key Components
+### Core Components
+- **MCP Server**: FastAPI backend with integrated MCP server using FastMCP
+- **Web Interface**: React TypeScript frontend for MCP discovery and testing
+- **Modular Tools**: 100+ tools organized across 8 specialized modules for Databricks operations
+- **OAuth Integration**: Secure authentication via Databricks Apps deployment
 
-### Backend (`server/`)
-- [app.py](mdc:server/app.py) - Main FastAPI application with MCP integration
-- [tools.py](mdc:server/tools.py) - Python functions exposed as MCP tools
-- [prompts.py](mdc:server/prompts.py) - Dynamic prompt loading from markdown files
-- [routers/](mdc:server/routers/) - API endpoints for frontend communication
+### Key Files
+- [pyproject.toml](mdc:pyproject.toml) - Python project configuration and dependencies
+- [client/package.json](mdc:client/package.json) - Frontend dependencies and scripts
+- [server/app.py](mdc:server/app.py) - FastAPI application entry point with integrated MCP server
+- [server/tools/](mdc:server/tools/) - Modular tools system with specialized modules
+- [README.md](mdc:README.md) - Comprehensive project documentation
+- [CLAUDE.md](mdc:CLAUDE.md) - **CRITICAL**: Senior developer guidelines and simplified patterns
 
-### Frontend (`client/`)
-- [App.tsx](mdc:client/src/App.tsx) - Main React application entry point
-- [PromptsPage.tsx](mdc:client/src/pages/PromptsPage.tsx) - MCP discovery and management interface
-- [components/ui/](mdc:client/src/components/ui/) - Reusable UI components using Shadcn/Radix
-- [fastapi_client/](mdc:client/src/fastapi_client/) - Auto-generated TypeScript client for backend APIs
+### Simplified Architecture Pattern
+The project follows a **deliberately simplified** architecture:
+1. **MCP Layer**: Direct protocol handling via FastMCP integration
+2. **Tools Layer**: Simple, focused modules for Databricks operations
+3. **Presentation Layer**: React frontend for MCP discovery and management
+4. **Authentication Layer**: OAuth flow through Databricks Apps
 
-### Configuration
-- [config.yaml](mdc:config.yaml) - Server configuration including MCP server name
-- [pyproject.toml](mdc:pyproject.toml) - Python dependencies and build configuration
-- [client/package.json](mdc:client/package.json) - Node.js dependencies and build scripts
+### Development Philosophy
+- **SIMPLE over CLEVER**: Write obvious code that any developer can understand
+- **EXPLICIT over IMPLICIT**: Prefer clear, direct implementations over abstractions
+- **FLAT over NESTED**: Avoid deep inheritance, complex factories, or excessive abstraction layers
+- **FOCUSED over GENERIC**: Write code for the specific use case, not hypothetical future needs
+- **Type Safety**: Use TypeScript for frontend, type hints for Python
+- **Security**: OAuth authentication, input validation, and injection prevention
+- **Testing**: Simple, focused test coverage with basic validation
+- **Documentation**: Clear, maintainable documentation for all components
 
-## Development Workflow
-1. Backend changes in `server/` directory
-2. Frontend changes in `client/` directory  
-3. Use `./run_app_local.sh` for local development
-4. Use `./deploy.sh` to deploy to Databricks Apps
-5. MCP tools and prompts are automatically loaded and exposed
-description:
-globs:
-alwaysApply: false
----
+### Key Technologies
+- **Backend**: FastAPI, Databricks SDK, FastMCP, Python 3.11+
+- **Frontend**: React 18, TypeScript, TailwindCSS, Vite
+- **Testing**: Pytest, simple unit tests with basic mocking
+- **Deployment**: Databricks Apps, simplified CI/CD
+
+### Critical Development Commands
+- `./setup.sh` - Interactive setup for environment, authentication, and dependencies
+- `./watch.sh` - Start development servers (backend + frontend + file watching)
+- `./fix.sh` - Format code (ruff for Python, prettier for TypeScript)
+- `./deploy.sh` - Deploy to Databricks Apps
+- `./app_status.sh` - Check deployment status and get app URLs
+
+### Python Execution Rules
+**CRITICAL: Always use `uv run` instead of direct `python`:**
+```bash
+# ✅ CORRECT
+uv run python script.py
+uv run uvicorn server.app:app
+
+# ❌ WRONG  
+python script.py
+uvicorn server.app:app
+```
+
+### Databricks CLI Rules
+**CRITICAL: Always source environment before Databricks CLI:**
+```bash
+# ✅ CORRECT - Load environment first
+source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databricks current-user me
+
+# ❌ WRONG - Direct CLI usage
+databricks current-user me
+```

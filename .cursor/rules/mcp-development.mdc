@@ -1,54 +1,303 @@
 # MCP Development Guidelines
 
-## Model Context Protocol Implementation
+## Model Context Protocol (MCP) Architecture
 
-### MCP Server Architecture
-- **FastMCP Integration**: Uses FastMCP library for MCP protocol implementation
-- **Dual Protocol Support**: HTTP/SSE for web interface, stdio for CLI tools
-- **Automatic Discovery**: Tools and prompts are automatically exposed to MCP clients
+### Core Concepts
+- **MCP Server**: FastAPI application with integrated MCP server via FastMCP
+- **Tools**: Python functions that expose Databricks capabilities to AI assistants
+- **Prompts**: Markdown files that become MCP prompts for AI context
+- **Authentication**: OAuth flow through Databricks Apps for secure access
 
-### Prompt Development (`prompts/` directory)
-- **File Naming**: Filename becomes the prompt name (e.g., `check_system.md` → `check_system`)
-- **Format**: First line with `#` becomes the description, rest is content
-- **Example**:
-```markdown
-# Check system status and configuration
-This prompt provides system information including:
-- Databricks workspace status
-- Available resources
-- Configuration details
-```
+### Project Structure
+- [server/app.py](mdc:server/app.py) - Main FastAPI app with integrated MCP server
+- [server/tools/](mdc:server/tools/) - MCP tools organized by functionality
+- [prompts/](mdc:prompts/) - Markdown files that become MCP prompts
+- [dba_mcp_proxy/](mdc:dba_mcp_proxy/) - Local proxy for Claude CLI integration
 
-### Tool Development (`server/tools.py`)
-- **Decorator Pattern**: Use `@mcp_server.tool()` decorator
-- **Type Hints**: Always include proper Python type hints
-- **Documentation**: Docstrings become tool descriptions for MCP discovery
-- **Return Values**: Return structured data (dict, list, or primitive types)
+### MCP Tool Development
 
+#### Simple Tool Function Pattern
 ```python
-@mcp_server.tool()
-def list_databricks_jobs(workspace_id: str = None) -> list[dict]:
-    """List all Databricks jobs in the workspace."""
-    # Implementation here
-    return [{"job_id": "123", "name": "ETL Job"}]
+from typing import Dict, Any
+from databricks.sdk import WorkspaceClient
+from fastmcp import MCPServer
+
+def load_module_tools(mcp_server: MCPServer):
+    """Register tools from this module with the MCP server."""
+    
+    @mcp_server.tool
+    def databricks_tool(param1: str, param2: int = 10) -> Dict[str, Any]:
+        """
+        Brief description of what this tool does.
+        
+        Args:
+            param1: Description of parameter
+            param2: Description with default value
+            
+        Returns:
+            Dictionary with result or error information
+        """
+        try:
+            # Direct Databricks SDK call
+            client = WorkspaceClient()
+            
+            # Perform Databricks operation
+            result = client.some_api.method(param1, param2)
+            
+            return {
+                "success": True,
+                "data": result,
+                "message": "Operation completed successfully"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Operation failed"
+            }
 ```
 
-### MCP Client Integration
-- **Local Development**: Use `dba_mcp_proxy/` for local testing
-- **Claude Integration**: Copy-paste setup commands from web interface
-- **Authentication**: Handled automatically through Databricks OAuth
+#### Tool System Architecture
+The modular tools system (`server/tools/`) is organized into specialized modules:
+- `core.py` - Health checks and basic operations
+- `sql_operations.py` - SQL warehouse and query tools
+- `unity_catalog.py` - Unity Catalog operations (catalogs, schemas, tables)
+- `jobs_pipelines.py` - Job and DLT pipeline management
+- `workspace_files.py` - Workspace file operations
+- `dashboards.py` - **Comprehensive dashboard management tools** (only Lakeview Dashboards no support for legacy dashbaords)
+- `repositories.py` - Git repository integration
+- `data_management.py` - DBFS and data operations (commented out)
+- `governance.py` - Governance tools (commented out)
+
+### Adding New Tools
+Tools are automatically registered when added to modules. Follow existing patterns:
+```python
+def load_module_tools(mcp_server):
+    """Register tools from this module."""
+    
+    @mcp_server.tool
+    def your_new_tool(param: str) -> dict:
+        """Tool description for Claude."""
+        # Direct Databricks SDK implementation
+        return {"result": "data"}
+```
+
+**Key principles:**
+- Direct Databricks SDK calls (no wrappers)
+- Simple error handling with try/catch
+- Return dictionaries with consistent structure
+- No decorators, no abstractions, no magic
+
+### MCP Server Configuration
+
+#### FastAPI Integration
+```python
+from fastapi import FastAPI
+from fastmcp import MCPServer
+from server.tools import core, sql_operations, unity_catalog
+
+app = FastAPI(title="Databricks MCP Server")
+
+# Initialize MCP server
+mcp_server = MCPServer()
+
+# Load tools from modules
+core.load_module_tools(mcp_server)
+sql_operations.load_module_tools(mcp_server)
+unity_catalog.load_module_tools(mcp_server)
+
+# Mount MCP server
+app.mount("/mcp", mcp_server.app)
+```
+
+### Prompt Development
+
+#### Markdown Prompt Pattern
+```markdown
+# Databricks SQL Operations
+
+You can help users execute SQL queries and manage SQL warehouses in their Databricks workspace.
+
+## Available Operations
+
+### Execute SQL Query
+- **Tool**: `execute_sql_query`
+- **Parameters**: 
+  - `query`: SQL query to execute
+  - `warehouse_id`: ID of the SQL warehouse to use
+- **Returns**: Query results and execution status
+
+### List SQL Warehouses
+- **Tool**: `list_sql_warehouses`
+- **Parameters**: None
+- **Returns**: List of available SQL warehouses
+
+## Usage Examples
+
+1. To execute a simple query:
+   ```
+   execute_sql_query(
+     query="SELECT * FROM my_table LIMIT 10",
+     warehouse_id="1234567890"
+   )
+   ```
+
+2. To list available warehouses:
+   ```
+   list_sql_warehouses()
+   ```
+
+## Best Practices
+
+- Always specify a warehouse_id when executing queries
+- Use LIMIT clauses for large result sets
+- Handle errors gracefully with try-catch blocks
+```
+
+### Authentication Flow
+
+#### Direct OAuth Integration
+```python
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.errors import DatabricksError
+
+def get_authenticated_client() -> WorkspaceClient:
+    """
+    Get authenticated Databricks workspace client.
+    
+    The client automatically uses OAuth tokens from Databricks Apps.
+    """
+    try:
+        return WorkspaceClient()
+    except DatabricksError as e:
+        raise Exception(f"Authentication failed: {e}")
+```
+
+### Error Handling
+
+#### Simple Error Responses
+```python
+def handle_databricks_error(operation: str, error: Exception) -> Dict[str, Any]:
+    """Standard error handling for Databricks operations."""
+    return {
+        "success": False,
+        "error": str(error),
+        "operation": operation,
+        "message": f"Failed to {operation}",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+```
 
 ### Testing MCP Tools
-- **Web Interface**: Test tools through React frontend at `/mcp` endpoint
-- **Local Proxy**: Use `./run-mcp-proxy.sh` for local MCP testing
-- **Validation**: Tools automatically appear in MCP discovery response
+
+#### Simple Unit Test Pattern
+```python
+import pytest
+from unittest.mock import Mock, patch
+from server.tools.core import health_check
+
+def test_health_check_success():
+    """Test successful health check."""
+    with patch('server.tools.core.WorkspaceClient') as mock_client:
+        mock_client.return_value.current_user.me.return_value = Mock(
+            user_name="test_user",
+            display_name="Test User"
+        )
+        
+        result = health_check()
+        
+        assert result["success"] is True
+        assert "status" in result["data"]
+        assert result["data"]["user"] == "test_user"
+
+def test_health_check_failure():
+    """Test health check with authentication failure."""
+    with patch('server.tools.core.WorkspaceClient') as mock_client:
+        mock_client.side_effect = Exception("Authentication failed")
+        
+        result = health_check()
+        
+        assert result["success"] is False
+        assert "error" in result
+        assert "Authentication failed" in result["error"]
+```
 
 ### Best Practices
-- Keep tools focused and single-purpose
-- Use descriptive names and documentation
-- Handle errors gracefully with proper error messages
-- Return structured data that AI assistants can easily parse
-description:
-globs:
-alwaysApply: false
----
+
+#### Tool Design
+- **Single Responsibility**: Each tool should do one thing well
+- **Clear Documentation**: Include comprehensive docstrings
+- **Type Safety**: Use type hints for all parameters and return values
+- **Simple Error Handling**: Always handle exceptions and return structured responses
+- **Idempotency**: Tools should be safe to call multiple times
+
+#### Performance
+- **Direct SDK Calls**: Call Databricks SDK directly, no wrapper layers
+- **Simple Operations**: Keep operations straightforward and focused
+- **Resource Cleanup**: Properly close connections and clean up resources
+
+#### Security
+- **Input Validation**: Validate all input parameters
+- **Error Sanitization**: Don't expose sensitive information in error messages
+- **Authentication**: Always verify authentication before operations
+- **Authorization**: Check permissions before performing operations
+
+### Forbidden MCP Patterns (DO NOT ADD THESE)
+❌ **Complex tool abstractions** or wrapper layers around Databricks SDK
+❌ **Custom authentication systems** - use Databricks OAuth only
+❌ **Complex error handling systems** - keep error handling simple
+❌ **Tool factories** or complex tool registration patterns
+❌ **Custom MCP extensions** - use standard MCP patterns only
+❌ **Complex prompt generation** - keep prompts simple and direct
+
+### Required MCP Patterns (ALWAYS USE THESE)
+✅ **Direct SDK calls** - call Databricks SDK directly
+✅ **Simple tool functions** - one function per tool
+✅ **Basic error handling** - try/catch with simple return dictionaries
+✅ **Clear documentation** - simple docstrings for each tool
+✅ **Standard MCP patterns** - follow MCP specification exactly
+✅ **Simple prompts** - clear, direct markdown files
+
+### Code Review Questions
+Before adding any MCP tool, ask yourself:
+- "Is this the simplest way to expose this Databricks functionality?"
+- "Would a new developer understand this tool immediately?"
+- "Am I adding abstraction for a real need or hypothetical flexibility?"
+- "Can I solve this with direct Databricks SDK calls?"
+- "Does this follow the existing MCP patterns in the codebase?"
+
+### Examples of Good vs Bad MCP Tools
+
+**❌ BAD (Over-engineered):**
+```python
+class AbstractDatabricksTool(ABC):
+    @abstractmethod
+    def execute(self, params: Dict[str, Any]) -> Dict[str, Any]: ...
+
+class SQLQueryTool(AbstractDatabricksTool):
+    def __init__(self, client_factory: ClientFactory): ...
+    def execute(self, params: Dict[str, Any]) -> Dict[str, Any]: ...
+```
+
+**✅ GOOD (Simple):**
+```python
+@mcp_server.tool
+def execute_sql_query(query: str, warehouse_id: str) -> Dict[str, Any]:
+    """Execute a SQL query on Databricks."""
+    try:
+        client = WorkspaceClient()
+        result = client.sql.execute_query(query, warehouse_id=warehouse_id)
+        return {"success": True, "data": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+```
+
+## Summary: MCP Development Principles
+
+✅ **Readable**: Any developer can understand the MCP tool immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each tool has a single, clear purpose
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Exposes Databricks functionality without over-engineering
+
+When in doubt, choose the **simpler** MCP tool. Your future self (and your teammates) will thank you.

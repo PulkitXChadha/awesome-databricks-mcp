@@ -2,57 +2,367 @@
 
 ## React TypeScript Architecture
 
-### Tech Stack
-- **Framework**: React 18 with TypeScript 5.2
-- **Build Tool**: Vite with SWC for fast compilation
-- **Styling**: TailwindCSS with custom components
-- **UI Components**: Shadcn UI + Radix UI primitives
-- **State Management**: React Query for server state
-- **Package Manager**: Bun for fast dependency management
+### Core Principles
+- **SIMPLE over CLEVER**: Write obvious code that any developer can understand
+- **Functional Components**: Use functional components with hooks over class components
+- **Type Safety**: Use TypeScript interfaces for all props and state
+- **Direct Implementation**: Prefer straightforward patterns over complex abstractions
+- **Accessibility**: Implement proper ARIA attributes and keyboard navigation
 
 ### Project Structure
-- `client/src/App.tsx` - Main application component
-- `client/src/pages/` - Page-level components
-- `client/src/components/ui/` - Reusable UI components
-- `client/src/fastapi_client/` - Auto-generated TypeScript client
-- `client/src/lib/` - Utility functions and API helpers
+- [client/src/App.tsx](mdc:client/src/App.tsx) - Main React application
+- [client/src/components/](mdc:client/src/components/) - Reusable UI components
+- [client/src/pages/](mdc:client/src/pages/) - Page-level components
+- [client/src/fastapi_client/](mdc:client/src/fastapi_client/) - Auto-generated API client
+- [client/src/lib/](mdc:client/src/lib/) - Utility functions and configurations
 
-### Component Patterns
-```tsx
-// Use functional components with TypeScript interfaces
+### Component Development
+
+#### Simple Functional Component Pattern
+```typescript
+import React from 'react'
+import { cn } from '@/lib/utils'
+
 interface ComponentProps {
   title: string
-  onAction: () => void
+  description?: string
+  className?: string
+  onAction?: () => void
 }
 
-export function MyComponent({ title, onAction }: ComponentProps) {
+const Component: React.FC<ComponentProps> = ({
+  title,
+  description,
+  className,
+  onAction
+}) => {
+  const handleClick = () => {
+    onAction?.()
+  }
+
   return (
-    <div className="p-4 bg-background">
-      <h1 className="text-2xl font-bold">{title}</h1>
-      <Button onClick={onAction}>Action</Button>
+    <div className={cn('p-4 border rounded-lg', className)}>
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {description && (
+        <p className="text-sm text-gray-600 mt-2">{description}</p>
+      )}
+      <button
+        onClick={handleClick}
+        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        aria-label={`Action for ${title}`}
+      >
+        Action
+      </button>
     </div>
   )
+}
+
+export default Component
+```
+
+#### Simple Hook Pattern
+```typescript
+import { useState, useEffect } from 'react'
+
+interface UseDataReturn {
+  data: any[]
+  loading: boolean
+  error: string | null
+  refetch: () => void
+}
+
+const useData = (endpoint: string): UseDataReturn => {
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await fetch(endpoint)
+      const result = await response.json()
+      setData(result.data || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [endpoint])
+
+  return { data, loading, error, refetch: fetchData }
 }
 ```
 
 ### Styling Guidelines
-- Use TailwindCSS utility classes exclusively
-- Leverage Shadcn UI components for consistency
-- Use `class:` for conditional styling instead of ternary operators
-- Follow mobile-first responsive design principles
+
+#### TailwindCSS Usage
+- Use Tailwind utility classes for styling
+- Use `cn()` utility for conditional classes
+- Follow mobile-first responsive design
+- Use consistent spacing and color tokens
+
+```typescript
+import { cn } from '@/lib/utils'
+
+const Button: React.FC<ButtonProps> = ({ 
+  variant = 'primary', 
+  size = 'md',
+  className,
+  ...props 
+}) => {
+  const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background'
+  
+  const variants = {
+    primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+    destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+  }
+  
+  const sizes = {
+    sm: 'h-9 px-3 text-sm',
+    md: 'h-10 px-4 py-2',
+    lg: 'h-11 px-8'
+  }
+
+  return (
+    <button
+      className={cn(
+        baseClasses,
+        variants[variant],
+        sizes[size],
+        className
+      )}
+      {...props}
+    />
+  )
+}
+```
 
 ### API Integration
-- Use auto-generated FastAPI client from `fastapi_client/`
-- Implement React Query for caching and state management
-- Handle loading states and error boundaries properly
-- Use proper TypeScript interfaces for API responses
 
-### Code Quality
-- Use ESLint and Prettier for code formatting
-- Follow React best practices and hooks guidelines
-- Implement proper accessibility features (ARIA labels, keyboard navigation)
-- Use descriptive variable names with camelCase convention
-description:
-globs:
-alwaysApply: false
----
+#### FastAPI Client Usage
+```typescript
+import { FastAPIClient } from '@/fastapi_client'
+
+const client = new FastAPIClient({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000'
+})
+
+// Using the client in components
+const useMCPTools = () => {
+  const [tools, setTools] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchTools = async () => {
+      try {
+        const response = await client.getTools()
+        setTools(response.data)
+      } catch (error) {
+        console.error('Failed to fetch tools:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTools()
+  }, [])
+
+  return { tools, loading }
+}
+```
+
+### State Management
+
+#### Local State (Simple Pattern)
+```typescript
+import { useState, useCallback } from 'react'
+
+const useLocalState = <T>(initialValue: T) => {
+  const [value, setValue] = useState<T>(initialValue)
+  
+  const updateValue = useCallback((newValue: T | ((prev: T) => T)) => {
+    setValue(newValue)
+  }, [])
+  
+  return [value, updateValue] as const
+}
+```
+
+#### Form Handling (Simple Pattern)
+```typescript
+import { useState, useCallback } from 'react'
+
+interface FormData {
+  name: string
+  email: string
+  message: string
+}
+
+const useForm = (initialData: FormData) => {
+  const [data, setData] = useState<FormData>(initialData)
+  const [errors, setErrors] = useState<Partial<FormData>>({})
+
+  const handleChange = useCallback((field: keyof FormData, value: string) => {
+    setData(prev => ({ ...prev, [field]: value }))
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }))
+    }
+  }, [errors])
+
+  const validate = useCallback(() => {
+    const newErrors: Partial<FormData> = {}
+    
+    if (!data.name.trim()) newErrors.name = 'Name is required'
+    if (!data.email.includes('@')) newErrors.email = 'Valid email is required'
+    if (!data.message.trim()) newErrors.message = 'Message is required'
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }, [data])
+
+  return { data, errors, handleChange, validate }
+}
+```
+
+### Testing Guidelines
+
+#### Simple Component Testing
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import Component from './Component'
+
+describe('Component', () => {
+  it('renders with title and description', () => {
+    render(
+      <Component 
+        title="Test Title" 
+        description="Test Description" 
+      />
+    )
+    
+    expect(screen.getByText('Test Title')).toBeInTheDocument()
+    expect(screen.getByText('Test Description')).toBeInTheDocument()
+  })
+
+  it('calls onAction when button is clicked', () => {
+    const mockAction = vi.fn()
+    render(
+      <Component 
+        title="Test" 
+        onAction={mockAction} 
+      />
+    )
+    
+    fireEvent.click(screen.getByText('Action'))
+    expect(mockAction).toHaveBeenCalledTimes(1)
+  })
+})
+```
+
+### Code Quality Standards
+
+#### TypeScript Best Practices
+- Use strict TypeScript configuration
+- Define interfaces for all props and API responses
+- Use type guards for runtime type checking
+- Avoid `any` type - use proper typing
+
+#### Accessibility
+- Use semantic HTML elements
+- Include proper ARIA labels and roles
+- Ensure keyboard navigation works
+- Maintain proper color contrast ratios
+- Test with screen readers
+
+#### Performance (Simple Patterns)
+- Use React.memo for expensive components
+- Implement proper dependency arrays in useEffect
+- Use useCallback for event handlers passed to children
+- Use useMemo for expensive calculations
+
+### Forbidden Patterns (DO NOT ADD THESE)
+❌ **Complex state management libraries** (Redux, Zustand, etc.) unless absolutely necessary
+❌ **Abstract component factories** or complex HOC patterns
+❌ **Custom hooks with complex logic** - keep hooks simple and focused
+❌ **Complex form libraries** - use simple state management
+❌ **Performance optimization** patterns (premature optimization)
+❌ **Complex routing patterns** - use simple routing
+
+### Required Patterns (ALWAYS USE THESE)
+✅ **Direct API calls** - no complex abstraction layers
+✅ **Simple state management** - useState and useReducer only
+✅ **Clear component interfaces** - explicit props, no complex generics
+✅ **Basic error handling** - simple try/catch patterns
+✅ **Straightforward styling** - Tailwind classes, no complex CSS-in-JS
+✅ **Simple testing** - basic unit tests with simple mocks
+
+### Code Review Questions
+Before adding any frontend code, ask yourself:
+- "Is this the simplest way to solve this problem?"
+- "Would a new developer understand this immediately?"
+- "Am I adding abstraction for a real need or hypothetical flexibility?"
+- "Can I solve this with standard library or existing dependencies?"
+- "Does this follow the existing patterns in the codebase?"
+
+### Examples of Good vs Bad Code
+
+**❌ BAD (Over-engineered):**
+```typescript
+interface AbstractComponentProps<T extends string> {
+  id: T
+  data: Record<string, any>
+}
+
+class ComponentFactory<T extends string> {
+  static create(props: AbstractComponentProps<T>): React.Component {
+    // Complex implementation
+  }
+}
+```
+
+**✅ GOOD (Simple):**
+```typescript
+interface ComponentProps {
+  id: string
+  data: Record<string, any>
+}
+
+const Component: React.FC<ComponentProps> = ({ id, data }) => {
+  return <div>{/* Simple implementation */}</div>
+}
+```
+
+**❌ BAD (Complex state management):**
+```typescript
+const useComplexState = () => {
+  const [state, dispatch] = useReducer(complexReducer, initialState)
+  const actions = useMemo(() => createActions(dispatch), [dispatch])
+  return { state, actions }
+}
+```
+
+**✅ GOOD (Simple state):**
+```typescript
+const useSimpleState = () => {
+  const [value, setValue] = useState(initialValue)
+  return { value, setValue }
+}
+```
+
+## Summary: Frontend Development Principles
+
+✅ **Readable**: Any developer can understand the component immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each component has a single, clear responsibility
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Solves the specific problem without over-engineering
+
+When in doubt, choose the **simpler** solution. Your future self (and your teammates) will thank you.

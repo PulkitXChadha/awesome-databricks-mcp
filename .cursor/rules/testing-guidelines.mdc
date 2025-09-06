@@ -1,0 +1,396 @@
+# Testing Guidelines
+
+## Testing Strategy
+
+### Testing Philosophy
+- **SIMPLE over CLEVER**: Write straightforward, readable tests
+- **Focused Coverage**: Test critical functionality only
+- **Fast Execution**: Keep tests fast and reliable
+- **Clear Assertions**: Use descriptive test names and clear assertions
+- **Basic Testing**: Simple unit tests with basic mocking, no complex test frameworks
+
+### Test Structure
+- [tests/](mdc:tests/) - Python backend tests
+- [client/src/](mdc:client/src/) - Frontend tests alongside components
+- [claude_scripts/](mdc:claude_scripts/) - MCP validation and integration tests
+
+## Backend Testing (Python)
+
+### Test Organization
+```
+tests/
+├── test_tools/           # MCP tools testing
+│   ├── test_core.py      # Core tools tests
+│   ├── test_sql.py       # SQL operations tests
+│   ├── test_unity_catalog.py # Unity Catalog tests
+│   └── test_dashboards.py # Dashboard tools tests
+├── test_api/             # API endpoint testing
+├── test_services/        # Service layer testing
+└── conftest.py           # Shared test fixtures
+```
+
+### Simple Unit Test Pattern
+```python
+import pytest
+from unittest.mock import Mock, patch
+from server.tools.core import health_check
+
+def test_health_check_success():
+    """Test successful health check."""
+    with patch('server.tools.core.WorkspaceClient') as mock_client:
+        # Setup mock
+        mock_user = Mock()
+        mock_user.user_name = "test_user"
+        mock_user.display_name = "Test User"
+        mock_client.return_value.current_user.me.return_value = mock_user
+        
+        # Execute
+        result = health_check()
+        
+        # Assert
+        assert result["success"] is True
+        assert "status" in result["data"]
+        assert result["data"]["user"] == "test_user"
+        assert result["data"]["status"] == "healthy"
+
+def test_health_check_authentication_failure():
+    """Test health check with authentication failure."""
+    with patch('server.tools.core.WorkspaceClient') as mock_client:
+        # Setup mock to raise exception
+        mock_client.side_effect = Exception("Authentication failed")
+        
+        # Execute
+        result = health_check()
+        
+        # Assert
+        assert result["success"] is False
+        assert "error" in result
+        assert "Authentication failed" in result["error"]
+```
+
+### Simple Integration Test Pattern
+```python
+import pytest
+from fastapi.testclient import TestClient
+from server.app import app
+
+client = TestClient(app)
+
+def test_health_endpoint():
+    """Test health check API endpoint."""
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert data["status"] == "healthy"
+
+def test_tools_endpoint():
+    """Test tools listing API endpoint."""
+    response = client.get("/api/v1/tools")
+    assert response.status_code == 200
+    data = response.json()
+    assert "tools" in data
+    assert isinstance(data["tools"], list)
+```
+
+### Simple Mocking Patterns
+
+#### Databricks Client Mocking
+```python
+@pytest.fixture
+def mock_databricks_client():
+    """Mock Databricks workspace client."""
+    with patch('server.tools.core.WorkspaceClient') as mock_client:
+        # Setup default mock behavior
+        mock_user = Mock()
+        mock_user.user_name = "test_user"
+        mock_client.return_value.current_user.me.return_value = mock_user
+        yield mock_client
+
+def test_with_mocked_client(mock_databricks_client):
+    """Test using mocked Databricks client."""
+    # Customize mock behavior for specific test
+    mock_databricks_client.return_value.sql.list_warehouses.return_value = [
+        Mock(id="warehouse1", name="Test Warehouse", state="RUNNING")
+    ]
+    
+    result = list_sql_warehouses()
+    assert result["success"] is True
+    assert len(result["data"]) == 1
+```
+
+#### Error Testing
+```python
+def test_sql_query_execution_error():
+    """Test SQL query execution with error handling."""
+    with patch('server.tools.sql_operations.WorkspaceClient') as mock_client:
+        # Setup mock to raise specific error
+        mock_client.return_value.sql.execute_query.side_effect = Exception("Invalid query")
+        
+        result = execute_sql_query("INVALID SQL", "warehouse_id")
+        
+        assert result["success"] is False
+        assert "error" in result
+        assert "Invalid query" in result["error"]
+```
+
+## Frontend Testing (TypeScript)
+
+### Test Organization
+```
+client/src/
+├── components/
+│   ├── Component.tsx
+│   └── Component.test.tsx    # Tests alongside components
+├── pages/
+│   ├── Page.tsx
+│   └── Page.test.tsx         # Page-level tests
+└── __tests__/               # Shared test utilities
+```
+
+### Simple Component Test Pattern
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import Component from './Component'
+
+describe('Component', () => {
+  it('renders with title and description', () => {
+    render(
+      <Component 
+        title="Test Title" 
+        description="Test Description" 
+      />
+    )
+    
+    expect(screen.getByText('Test Title')).toBeInTheDocument()
+    expect(screen.getByText('Test Description')).toBeInTheDocument()
+  })
+
+  it('calls onAction when button is clicked', () => {
+    const mockAction = vi.fn()
+    render(
+      <Component 
+        title="Test" 
+        onAction={mockAction} 
+      />
+    )
+    
+    fireEvent.click(screen.getByText('Action'))
+    expect(mockAction).toHaveBeenCalledTimes(1)
+  })
+})
+```
+
+### Simple Hook Testing
+```typescript
+import { renderHook, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { useData } from './useData'
+
+describe('useData', () => {
+  it('fetches data successfully', async () => {
+    const mockData = [{ id: 1, name: 'Test' }]
+    global.fetch = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ data: mockData })
+    })
+
+    const { result } = renderHook(() => useData('/api/data'))
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    expect(result.current.data).toEqual(mockData)
+    expect(result.current.error).toBeNull()
+  })
+
+  it('handles fetch errors', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
+
+    const { result } = renderHook(() => useData('/api/data'))
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    expect(result.current.error).toBe('Network error')
+    expect(result.current.data).toEqual([])
+  })
+})
+```
+
+## MCP Testing
+
+### Simple MCP Tool Validation
+```python
+import pytest
+from claude_scripts.test_mcp_tools import validate_mcp_tools
+
+def test_mcp_tools_validation():
+    """Test MCP tools are properly registered and functional."""
+    result = validate_mcp_tools()
+    assert result["success"] is True
+    assert "tools" in result["data"]
+    assert len(result["data"]["tools"]) > 0
+```
+
+### Simple Integration Testing
+```python
+def test_mcp_server_integration():
+    """Test MCP server responds correctly to requests."""
+    from fastapi.testclient import TestClient
+    from server.app import app
+    
+    client = TestClient(app)
+    
+    # Test MCP discovery
+    response = client.get("/mcp/")
+    assert response.status_code == 200
+    
+    # Test tool execution
+    response = client.post("/mcp/tools/health_check")
+    assert response.status_code == 200
+    data = response.json()
+    assert "success" in data
+```
+
+## Test Configuration
+
+### Simple pytest Configuration
+```python
+# pytest.ini
+[tool:pytest]
+testpaths = tests
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+addopts = -v --tb=short
+```
+
+### Simple Frontend Test Configuration
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react-swc'
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    globals: true
+  }
+})
+```
+
+## Best Practices
+
+### Test Design
+- **Arrange-Act-Assert**: Structure tests with clear sections
+- **Descriptive Names**: Use clear, descriptive test names
+- **Single Assertion**: Focus each test on one behavior
+- **Independent Tests**: Tests should not depend on each other
+
+### Mocking Strategy
+- **Minimal Mocking**: Only mock external dependencies
+- **Realistic Mocks**: Make mocks behave like real objects
+- **Consistent Mocks**: Use consistent mock patterns across tests
+
+### Performance
+- **Fast Tests**: Keep tests fast and reliable
+- **Parallel Execution**: Enable parallel test execution
+- **Selective Testing**: Run only relevant tests during development
+
+### Coverage
+- **Critical Paths**: Ensure all critical functionality is tested
+- **Error Cases**: Test error handling and edge cases
+- **Integration Points**: Test API endpoints and external integrations
+
+## Simplified Testing Suite
+
+### Basic Testing Suite
+
+The project includes a **focused** test suite with essential tests only:
+- **Unit Tests**: Basic component testing with simple mocks
+- **Tool Tests**: Individual MCP tool functionality
+- **API Tests**: Basic FastAPI endpoint testing
+
+### Running Tests
+
+```bash
+# Run all tests (simple and fast)
+make test
+
+# Or directly with uv
+uv run pytest tests/ -v
+```
+
+### Test Structure
+
+Tests use minimal pytest configuration:
+- **9 test files** covering core functionality
+- **Basic markers**: unit, tools, integration
+- **Simple fixtures**: Basic mocking utilities only
+- **No coverage requirements**: Focus on functionality, not metrics
+
+### Writing Tests
+
+Follow the **simple pattern**:
+```python
+def test_your_feature(mcp_server, mock_env_vars):
+    """Test your feature."""
+    # Load tools
+    load_tools(mcp_server)
+
+    # Mock Databricks SDK calls
+    with patch('server.tools.module.get_workspace_client') as mock_client:
+        mock_client.return_value.some_api.method.return_value = expected_data
+
+        # Test the tool
+        tool = mcp_server._tools['tool_name']
+        result = tool.func()
+
+        # Basic assertions
+        assert result['status'] == 'success'
+```
+
+**Testing principles:**
+- Keep tests simple and focused
+- Mock external dependencies (Databricks SDK)
+- Test success and error cases only
+- No complex test infrastructure or frameworks
+
+### Forbidden Testing Patterns (DO NOT ADD THESE)
+❌ **Complex test frameworks** or custom testing utilities
+❌ **Complex fixtures** with nested setup and teardown
+❌ **Test data factories** or complex test data generation
+❌ **Performance testing** or benchmarking
+❌ **Complex mocking strategies** - keep mocks simple
+❌ **Test coverage requirements** - focus on functionality
+
+### Required Testing Patterns (ALWAYS USE THESE)
+✅ **Simple unit tests** - basic functionality testing
+✅ **Basic mocking** - mock external dependencies only
+✅ **Clear test names** - descriptive test function names
+✅ **Simple assertions** - basic assert statements
+✅ **Independent tests** - no test dependencies
+✅ **Fast execution** - keep tests quick and reliable
+
+### Code Review Questions
+Before adding any tests, ask yourself:
+- "Is this the simplest way to test this functionality?"
+- "Would a new developer understand this test immediately?"
+- "Am I adding complexity for a real need or hypothetical flexibility?"
+- "Can I test this with basic assertions and simple mocks?"
+- "Does this follow the existing testing patterns in the codebase?"
+
+## Summary: Testing Principles
+
+✅ **Readable**: Any developer can understand the test immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each test has a single, clear purpose
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Tests the specific functionality without over-engineering
+
+When in doubt, choose the **simpler** test. Your future self (and your teammates) will thank you.

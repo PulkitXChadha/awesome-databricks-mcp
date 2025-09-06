@@ -1,0 +1,535 @@
+# Performance Optimization Guidelines
+
+## Backend Performance
+
+### FastAPI Optimization
+
+#### Simple Response Optimization
+```python
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from typing import Dict, Any
+
+app = FastAPI()
+
+# Use JSONResponse for better performance
+@app.get("/api/data")
+async def get_data() -> JSONResponse:
+    data = {"items": [{"id": i, "name": f"Item {i}"} for i in range(100)]}
+    return JSONResponse(content=data)
+
+# Implement pagination for large datasets
+@app.get("/api/large-dataset")
+async def get_large_dataset(page: int = 1, limit: int = 50) -> Dict[str, Any]:
+    offset = (page - 1) * limit
+    # Fetch only required data
+    data = fetch_data_with_pagination(offset, limit)
+    return {
+        "data": data,
+        "page": page,
+        "limit": limit,
+        "total": get_total_count()
+    }
+```
+
+#### Simple Database Query Optimization
+```python
+from databricks.sdk import WorkspaceClient
+from typing import List, Dict, Any
+
+def simple_list_tables(catalog_name: str, schema_name: str) -> Dict[str, Any]:
+    """Simple table listing with basic pagination."""
+    try:
+        client = WorkspaceClient()
+        
+        # Use basic pagination for large datasets
+        tables = []
+        page_token = None
+        
+        while True:
+            result = client.unity_catalog.list_tables(
+                catalog_name=catalog_name,
+                schema_name=schema_name,
+                max_results=100,  # Limit results per request
+                page_token=page_token
+            )
+            
+            tables.extend([{
+                "name": t.name,
+                "table_type": t.table_type,
+                "created_at": t.created_at.isoformat() if t.created_at else None
+            } for t in result.tables])
+            
+            if not result.next_page_token:
+                break
+            page_token = result.next_page_token
+        
+        return {
+            "success": True,
+            "data": tables,
+            "count": len(tables)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+```
+
+#### Simple Caching
+```python
+from functools import lru_cache
+from typing import Dict, Any
+
+# Simple cache for expensive operations
+@lru_cache(maxsize=128)
+def get_catalog_metadata(catalog_name: str) -> Dict[str, Any]:
+    """Cache catalog metadata to avoid repeated API calls."""
+    client = WorkspaceClient()
+    catalog = client.unity_catalog.get_catalog(catalog_name)
+    return {
+        "name": catalog.name,
+        "comment": catalog.comment,
+        "owner": catalog.owner
+    }
+```
+
+### MCP Tool Optimization
+
+#### Simple Tool Execution
+```python
+from typing import Dict, Any
+
+def simple_sql_query(query: str, warehouse_id: str) -> Dict[str, Any]:
+    """Simple SQL query execution."""
+    try:
+        client = WorkspaceClient()
+        
+        # Execute query with basic timeout handling
+        result = client.sql.execute_query(
+            query=query,
+            warehouse_id=warehouse_id
+        )
+        
+        return {
+            "success": True,
+            "data": result
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+```
+
+#### Simple Batch Operations
+```python
+def simple_list_resources(resource_type: str) -> Dict[str, Any]:
+    """Simple batch operation for listing resources."""
+    try:
+        client = WorkspaceClient()
+        
+        if resource_type == "jobs":
+            jobs = client.jobs.list()
+            resources = [{
+                "job_id": j.job_id,
+                "name": j.settings.name if j.settings else None,
+                "created_time": j.created_time.isoformat() if j.created_time else None
+            } for j in jobs]
+        
+        elif resource_type == "warehouses":
+            warehouses = client.sql.list_warehouses()
+            resources = [{
+                "id": w.id,
+                "name": w.name,
+                "state": w.state
+            } for w in warehouses]
+        
+        return {
+            "success": True,
+            "data": resources,
+            "count": len(resources)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+```
+
+## Frontend Performance
+
+### React Optimization
+
+#### Simple Component Memoization
+```typescript
+import React, { memo, useMemo, useCallback } from 'react'
+
+interface DataTableProps {
+  data: any[]
+  onRowClick: (id: string) => void
+  sortBy?: string
+}
+
+const DataTable: React.FC<DataTableProps> = memo(({ 
+  data, 
+  onRowClick, 
+  sortBy 
+}) => {
+  // Simple memoization for sorted data
+  const sortedData = useMemo(() => {
+    if (!sortBy) return data
+    return [...data].sort((a, b) => {
+      if (a[sortBy] < b[sortBy]) return -1
+      if (a[sortBy] > b[sortBy]) return 1
+      return 0
+    })
+  }, [data, sortBy])
+
+  // Simple memoization for click handler
+  const handleRowClick = useCallback((id: string) => {
+    onRowClick(id)
+  }, [onRowClick])
+
+  return (
+    <table className="min-w-full divide-y divide-gray-200">
+      <thead className="bg-gray-50">
+        <tr>
+          {Object.keys(data[0] || {}).map(key => (
+            <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {key}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody className="bg-white divide-y divide-gray-200">
+        {sortedData.map((row, index) => (
+          <tr 
+            key={row.id || index}
+            onClick={() => handleRowClick(row.id)}
+            className="hover:bg-gray-50 cursor-pointer"
+          >
+            {Object.values(row).map((value, i) => (
+              <td key={i} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {String(value)}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+})
+
+DataTable.displayName = 'DataTable'
+```
+
+#### Simple Lazy Loading
+```typescript
+import React, { Suspense, lazy } from 'react'
+
+// Simple lazy loading for components
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Settings = lazy(() => import('./pages/Settings'))
+
+const App: React.FC = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Dashboard />
+    </Suspense>
+  )
+}
+
+// Simple lazy loading for data
+const useLazyData = <T,>(fetchFn: () => Promise<T>) => {
+  const [data, setData] = React.useState<T | null>(null)
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const loadData = React.useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await fetchFn()
+      setData(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchFn])
+
+  return { data, loading, error, loadData }
+}
+```
+
+### Simple API Call Optimization
+
+#### Simple Request Debouncing
+```typescript
+import { useState, useEffect, useCallback } from 'react'
+
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+
+  return debouncedValue
+}
+
+const SearchComponent: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  const searchResults = useApiCall(
+    () => fetch(`/api/search?q=${debouncedSearchTerm}`),
+    [debouncedSearchTerm]
+  )
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="Search..."
+        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+      />
+      {searchResults.loading && <div>Searching...</div>}
+      {searchResults.data && (
+        <div>
+          {searchResults.data.map((result: any) => (
+            <div key={result.id}>{result.name}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+#### Simple Request Caching
+```typescript
+class SimpleApiCache {
+  private cache = new Map<string, { data: any; timestamp: number }>()
+  private ttl: number
+
+  constructor(ttlMs: number = 5 * 60 * 1000) { // 5 minutes default
+    this.ttl = ttlMs
+  }
+
+  get(key: string): any | null {
+    const cached = this.cache.get(key)
+    if (cached && Date.now() - cached.timestamp < this.ttl) {
+      return cached.data
+    }
+    this.cache.delete(key)
+    return null
+  }
+
+  set(key: string, data: any): void {
+    this.cache.set(key, { data, timestamp: Date.now() })
+  }
+
+  clear(): void {
+    this.cache.clear()
+  }
+}
+
+const apiCache = new SimpleApiCache()
+
+const useCachedApiCall = <T,>(url: string, options?: RequestInit) => {
+  const [data, setData] = useState<T | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const cachedData = apiCache.get(url)
+    if (cachedData) {
+      setData(cachedData)
+      return
+    }
+
+    setLoading(true)
+    fetch(url, options)
+      .then(res => res.json())
+      .then(result => {
+        apiCache.set(url, result)
+        setData(result)
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [url])
+
+  return { data, loading, error }
+}
+```
+
+## Simple Performance Monitoring
+
+### Backend Monitoring
+```python
+import time
+from functools import wraps
+from typing import Callable, Any
+
+def simple_performance_monitor(func: Callable) -> Callable:
+    """Simple decorator to monitor function performance."""
+    @wraps(func)
+    def wrapper(*args, **kwargs) -> Any:
+        start_time = time.time()
+        try:
+            result = func(*args, **kwargs)
+            execution_time = time.time() - start_time
+            print(f"{func.__name__} executed in {execution_time:.2f} seconds")
+            return result
+        except Exception as e:
+            execution_time = time.time() - start_time
+            print(f"{func.__name__} failed after {execution_time:.2f} seconds: {e}")
+            raise
+    return wrapper
+
+# Usage
+@simple_performance_monitor
+def expensive_operation():
+    # Simulate expensive operation
+    time.sleep(1)
+    return "result"
+```
+
+### Frontend Monitoring
+```typescript
+// Simple performance monitoring utility
+const measurePerformance = <T,>(name: string, fn: () => T): T => {
+  const start = performance.now()
+  try {
+    const result = fn()
+    const duration = performance.now() - start
+    console.log(`${name} took ${duration.toFixed(2)}ms`)
+    return result
+  } catch (error) {
+    const duration = performance.now() - start
+    console.error(`${name} failed after ${duration.toFixed(2)}ms:`, error)
+    throw error
+  }
+}
+
+// Usage
+const expensiveComponent = () => {
+  return measurePerformance('Component Render', () => {
+    // Expensive rendering logic
+    return <div>Rendered component</div>
+  })
+}
+```
+
+## Best Practices
+
+### Backend Optimization
+- **Use pagination** for large datasets
+- **Implement simple caching** for frequently accessed data
+- **Use basic async/await** for I/O operations
+- **Set simple timeouts** for long-running operations
+
+### Frontend Optimization
+- **Use React.memo** for expensive components
+- **Implement simple lazy loading** for components and data
+- **Debounce** user input for search operations
+- **Cache API responses** to reduce network requests
+
+### General Guidelines
+- **Profile before optimizing** - measure performance first
+- **Optimize bottlenecks** - focus on the slowest parts
+- **Test performance** - include performance testing in CI/CD
+- **Monitor in production** - track real-world performance metrics
+
+### Forbidden Performance Patterns (DO NOT ADD THESE)
+❌ **Complex performance frameworks** or custom optimization libraries
+❌ **Premature optimization** - optimize only when needed
+❌ **Complex caching systems** - keep caching simple
+❌ **Custom performance monitoring** - use standard tools
+❌ **Complex async patterns** - keep async operations simple
+❌ **Custom virtual scrolling** - use standard libraries
+
+### Required Performance Patterns (ALWAYS USE THESE)
+✅ **Simple pagination** - basic page-based data loading
+✅ **Basic caching** - use lru_cache and simple time-based caching
+✅ **Simple memoization** - use React.memo and useMemo
+✅ **Basic lazy loading** - use React.lazy and Suspense
+✅ **Simple debouncing** - basic input debouncing
+✅ **Standard monitoring** - use console.log and basic timing
+
+### Code Review Questions
+Before adding any performance optimization, ask yourself:
+- "Is this the simplest way to improve performance?"
+- "Would a new developer understand this optimization immediately?"
+- "Am I adding complexity for a real performance need or hypothetical optimization?"
+- "Can I solve this with standard libraries and patterns?"
+- "Does this follow the existing performance patterns in the codebase?"
+
+### Examples of Good vs Bad Performance Optimization
+
+**❌ BAD (Over-engineered optimization):**
+```python
+class ComplexPerformanceOptimizer:
+    def __init__(self, cache_manager, performance_monitor, optimization_engine):
+        self.cache = cache_manager
+        self.monitor = performance_monitor
+        self.optimizer = optimization_engine
+    
+    def optimize_operation(self, operation):
+        # Complex optimization logic
+        pass
+```
+
+**✅ GOOD (Simple optimization):**
+```python
+@lru_cache(maxsize=128)
+def get_expensive_data(key: str) -> Dict[str, Any]:
+    """Simple caching for expensive operations."""
+    return fetch_data_from_api(key)
+```
+
+**❌ BAD (Over-engineered frontend optimization):**
+```typescript
+class ComplexPerformanceManager {
+  private cacheManager: CacheManager
+  private performanceMonitor: PerformanceMonitor
+  private optimizationEngine: OptimizationEngine
+  
+  constructor() {
+    this.cacheManager = new CacheManager()
+    this.performanceMonitor = new PerformanceMonitor()
+    this.optimizationEngine = new OptimizationEngine()
+  }
+}
+```
+
+**✅ GOOD (Simple frontend optimization):**
+```typescript
+const ExpensiveComponent = React.memo(({ data }) => {
+  const processedData = useMemo(() => {
+    return data.map(item => ({ ...item, processed: true }))
+  }, [data])
+  
+  return <div>{processedData.map(item => <Item key={item.id} {...item} />)}</div>
+})
+```
+
+## Summary: Performance Optimization Principles
+
+✅ **Readable**: Any developer can understand the optimization immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each optimization has a single, clear purpose
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Optimizes performance without over-engineering
+
+When in doubt, choose the **simpler** optimization. Your future self (and your teammates) will thank you.

@@ -1,0 +1,344 @@
+# Deployment and DevOps Guidelines
+
+## Local Development Environment
+
+### Prerequisites
+- **Python**: 3.11+ with uv package manager
+- **Node.js**: Latest LTS with bun package manager
+- **Databricks CLI**: Configured with workspace access
+- **Environment Variables**: `.env.local` file for local configuration
+
+### Local Setup Commands
+```bash
+# Initial setup
+./setup.sh
+
+# Start local development
+./watch.sh
+
+# Check application status
+./app_status.sh
+```
+
+### Local Development URLs
+- **Backend API**: http://localhost:8000
+- **Frontend Dev Server**: http://localhost:5173
+- **MCP Endpoint**: http://localhost:8000/mcp
+- **API Documentation**: http://localhost:8000/docs
+
+## Databricks Apps Deployment
+
+### Simple Deployment Configuration
+- **App Config**: [app.yaml](mdc:app.yaml) defines Databricks App settings
+- **Requirements**: [requirements.txt](mdc:requirements.txt) for Python dependencies
+- **Build Script**: [deploy.sh](mdc:deploy.sh) automates deployment process
+
+### Simple Deployment Process
+```bash
+# Deploy to Databricks Apps
+./deploy.sh
+
+# Check deployment status
+./app_status.sh
+
+# View application logs
+databricks apps logs --app-id <app-id>
+```
+
+### Simple Environment Configuration
+```yaml
+# app.yaml configuration
+name: databricks-mcp-app
+runtime: python3.11
+entrypoint: server.app:app
+resources:
+  memory: 2g
+  cpu: 1
+env:
+  - name: DATABRICKS_HOST
+    value: "{{env.DATABRICKS_HOST}}"
+  - name: DATABRICKS_TOKEN
+    secret: "databricks-token"
+```
+
+## Simple CI/CD Pipeline
+
+### Basic Testing
+- **Pre-deployment Tests**: Run test suite before deployment
+- **Code Quality Checks**: Lint and format code automatically
+- **Basic Security Scanning**: Scan dependencies for vulnerabilities
+- **Simple Integration Tests**: Test MCP tools and API endpoints
+
+### Simple Deployment Stages
+1. **Development**: Local development and testing
+2. **Production**: Deploy to production Databricks workspace
+3. **Rollback**: Simple rollback on deployment failures
+
+### Simple GitHub Actions Example
+```yaml
+name: Deploy to Databricks
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv sync
+      - name: Run tests
+        run: pytest
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy to Databricks
+        run: ./deploy.sh
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+```
+
+## Simple Monitoring and Observability
+
+### Basic Application Monitoring
+- **Health Checks**: Implement health check endpoints
+- **Simple Metrics**: Collect basic performance metrics
+- **Basic Logging**: Centralize logs for analysis
+- **Simple Alerting**: Set up basic alerts for critical issues
+
+### Simple Databricks Monitoring
+```python
+# Simple health check endpoint
+@app.get("/health")
+async def health_check():
+  """Health check endpoint for monitoring."""
+  try:
+    # Check Databricks connectivity
+    client = WorkspaceClient()
+    client.workspace.list()
+    
+    return {
+      "status": "healthy",
+      "timestamp": datetime.utcnow().isoformat(),
+      "databricks": "connected"
+    }
+  except Exception as e:
+    return {
+      "status": "unhealthy",
+      "timestamp": datetime.utcnow().isoformat(),
+      "error": str(e)
+    }
+```
+
+### Simple Logging Configuration
+```python
+import logging
+
+# Simple logging configuration
+logging.basicConfig(
+  level=logging.INFO,
+  format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
+logger = logging.getLogger("databricks-mcp")
+
+# Simple structured logging
+logger.info("MCP tool called", extra={
+  "tool": "list_jobs",
+  "user": user_id,
+  "workspace": workspace_id
+})
+```
+
+## Simple Security and Compliance
+
+### Basic Secrets Management
+- **Environment Variables**: Use Databricks Apps secrets for sensitive data
+- **Token Management**: Use Databricks OAuth for authentication
+- **Access Control**: Limit access to deployment scripts and configurations
+- **Basic Audit Logging**: Log deployment and configuration changes
+
+### Simple Network Security
+- **HTTPS Only**: Enforce HTTPS in production
+- **Basic CORS**: Configure CORS for frontend-backend communication
+- **Simple Rate Limiting**: Implement basic rate limiting for API endpoints
+
+## Simple Troubleshooting
+
+### Common Deployment Issues
+- **Authentication Errors**: Verify Databricks token and permissions
+- **Resource Limits**: Check memory and CPU allocation in app.yaml
+- **Dependency Issues**: Ensure all dependencies are in requirements.txt
+- **Build Failures**: Check build logs and fix compilation errors
+
+### Simple Debug Commands
+```bash
+# Check application logs
+databricks apps logs --app-id <app-id> --follow
+
+# Test MCP endpoint locally
+./run-mcp-proxy.sh
+
+# Validate configuration
+python -c "from server.app import app; print('Config valid')"
+
+# Check frontend build
+cd client && bun run build
+```
+
+### Simple Performance Monitoring
+- **Response Times**: Monitor API response times
+- **Resource Usage**: Track memory and CPU usage
+- **Error Rates**: Monitor error rates and types
+- **User Experience**: Track frontend performance metrics
+
+## Best Practices
+
+### Simple Deployment Checklist
+- [ ] Run full test suite before deployment
+- [ ] Validate configuration files
+- [ ] Check environment variables
+- [ ] Test MCP tools locally
+- [ ] Monitor deployment logs
+- [ ] Verify application health after deployment
+- [ ] Test rollback procedures
+
+### Simple Maintenance
+- **Regular Updates**: Keep dependencies updated
+- **Security Patches**: Apply security patches promptly
+- **Performance Monitoring**: Monitor and optimize performance
+- **Backup Procedures**: Implement backup and recovery procedures
+
+### Critical Development Rules
+
+#### Python Execution Rules
+**CRITICAL: Always use `uv run` instead of direct `python`:**
+```bash
+# ✅ CORRECT
+uv run python script.py
+uv run uvicorn server.app:app
+
+# ❌ WRONG  
+python script.py
+uvicorn server.app:app
+```
+
+#### Databricks CLI Rules
+**CRITICAL: Always source environment before Databricks CLI:**
+```bash
+# ✅ CORRECT - Load environment first
+source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databricks current-user me
+
+# ❌ WRONG - Direct CLI usage
+databricks current-user me
+```
+
+#### Package Management
+- **Python**: Use `uv add/remove` for dependencies, never edit pyproject.toml manually
+- **Frontend**: Use `bun add/remove` for dependencies, never edit package.json manually
+- Always check if dependencies already exist before adding new ones
+- **Principle**: Only add dependencies if absolutely critical
+
+### Forbidden DevOps Patterns (DO NOT ADD THESE)
+❌ **Complex CI/CD frameworks** or custom deployment systems
+❌ **Custom monitoring platforms** - use standard tools
+❌ **Complex infrastructure as code** - keep infrastructure simple
+❌ **Custom security scanning** - use standard security tools
+❌ **Complex deployment strategies** - use simple deployment
+❌ **Custom logging frameworks** - use standard logging
+
+### Required DevOps Patterns (ALWAYS USE THESE)
+✅ **Simple deployment scripts** - use deploy.sh and app_status.sh
+✅ **Basic CI/CD** - use GitHub Actions with simple workflows
+✅ **Standard monitoring** - use basic health checks and logging
+✅ **Simple secrets management** - use environment variables and Databricks secrets
+✅ **Basic testing** - use pytest and simple integration tests
+✅ **Standard logging** - use Python logging module
+
+### Code Review Questions
+Before adding any DevOps or deployment features, ask yourself:
+- "Is this the simplest way to achieve this deployment goal?"
+- "Would a new developer understand this immediately?"
+- "Am I adding complexity for a real need or hypothetical flexibility?"
+- "Can I solve this with standard tools and scripts?"
+- "Does this follow the existing deployment patterns in the codebase?"
+
+### Examples of Good vs Bad DevOps
+
+**❌ BAD (Over-engineered deployment):**
+```yaml
+# Complex multi-stage deployment with custom scripts
+deployment:
+  stages:
+    - name: "pre-deployment"
+      steps:
+        - run: "./complex-pre-deployment.sh"
+        - run: "./validate-infrastructure.sh"
+        - run: "./security-scan.sh"
+    - name: "deployment"
+      steps:
+        - run: "./deploy-with-rollback.sh"
+        - run: "./health-check.sh"
+        - run: "./performance-test.sh"
+```
+
+**✅ GOOD (Simple deployment):**
+```yaml
+# Simple deployment with standard tools
+deployment:
+  steps:
+    - run: "./deploy.sh"
+    - run: "./app_status.sh"
+```
+
+**❌ BAD (Over-engineered monitoring):**
+```python
+class ComplexMonitoringSystem:
+    def __init__(self, metrics_collector, alert_manager, performance_analyzer):
+        self.metrics = metrics_collector
+        self.alerts = alert_manager
+        self.analyzer = performance_analyzer
+    
+    def monitor_application(self):
+        # Complex monitoring logic
+        pass
+```
+
+**✅ GOOD (Simple monitoring):**
+```python
+@app.get("/health")
+async def health_check():
+    """Simple health check."""
+    try:
+        client = WorkspaceClient()
+        client.workspace.list()
+        return {"status": "healthy"}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
+```
+
+## Summary: Deployment and DevOps Principles
+
+✅ **Readable**: Any developer can understand the deployment process immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each deployment step has a single, clear purpose
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Deploys the application without over-engineering
+
+When in doubt, choose the **simpler** deployment approach. Your future self (and your teammates) will thank you.
+
+description:
+globs:
+alwaysApply: false
+---
