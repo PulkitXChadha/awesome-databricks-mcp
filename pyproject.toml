@@ -21,9 +21,10 @@ dependencies = [
     "mlflow[databricks]>=3.1.1",
     "debugpy>=1.8.15",
     "fastapi-mcp>=0.3.7",
-    "fastmcp",
+    "fastmcp>=2.10.6",
     "mcp>=1.12.0",
     "pyyaml>=6.0.2",
+    "psutil>=7.0.0",
 ]
 requires-python = ">=3.11"
 
@@ -124,5 +125,11 @@ convention = "google"
 
 [dependency-groups]
 dev = [
+    "aiohttp>=3.12.15",
+    "fastmcp>=2.10.6",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "pytest-mock>=3.14.1",
+    "ruff>=0.12.2",
     "tomli>=2.2.1",
 ]
