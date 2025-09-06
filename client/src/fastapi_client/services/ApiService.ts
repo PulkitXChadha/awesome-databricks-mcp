@@ -9,6 +9,18 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class ApiService {
     /**
+     * Health
+     * Health check endpoint.
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static healthApiHealthGet(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/health',
+        });
+    }
+    /**
      * Get Current User
      * Get current user information from Databricks.
      * @returns UserInfo Successful Response
