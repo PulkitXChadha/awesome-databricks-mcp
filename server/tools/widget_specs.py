@@ -8,7 +8,9 @@ import uuid
 from typing import Any, Dict, List
 
 # Widget version mapping according to schema requirements
+# Each widget type has a specific version that matches Lakeview's schema expectations
 WIDGET_VERSIONS = {
+  # Chart widgets - mostly version 3 for advanced features
   'bar': 3,
   'line': 3,
   'area': 3,
@@ -19,25 +21,38 @@ WIDGET_VERSIONS = {
   'box': 3,
   'funnel': 3,
   'combo': 3,
+  
+  # Specialized widgets - version 1 for basic functionality
   'sankey': 1,
   'pivot': 1,
-  'counter': 2,
   'table': 1,
+  
+  # Filter widgets - version 2 for parameter support
   'filter-single-select': 2,
   'filter-multi-select': 2,
   'filter-date-range-picker': 2,
+  
+  # Advanced widgets
   'range-slider': 3,
+  'counter': 2,
+  
+  # Map widgets - version 3 for geographic features
   'choropleth-map': 3,
   'symbol-map': 3,
 }
 
 
 def generate_id() -> str:
-  """Generate 8-character hex ID for Lakeview objects."""
+  """Generate 8-character hex ID for Lakeview objects.
+  
+  Lakeview requires unique identifiers for widgets, datasets, and other objects.
+  This function creates short, readable IDs by truncating UUID4 strings.
+  """
   return str(uuid.uuid4())[:8]
 
 
 # Simple SQL Expression Helper Functions (Phase 1 Enhancement)
+# These functions help generate common SQL expressions for widget field transformations
 
 
 def get_aggregation_expression(field: str, func: str) -> str:
@@ -121,15 +136,16 @@ def validate_expression_basic(expression: str) -> Dict[str, Any]:
       validate_expression_basic("revenue") -> {"valid": False, "error": "Expression should reference fields with backticks"}
   """
   try:
-    # Basic checks for SQL injection patterns
+    # Basic checks for SQL injection patterns - prevent dangerous operations
     dangerous_patterns = ['DROP', 'DELETE', 'UPDATE', 'INSERT', '--', ';']
     expression_upper = expression.upper()
 
+    # Scan for potentially harmful SQL keywords
     for pattern in dangerous_patterns:
       if pattern in expression_upper:
         return {'valid': False, 'error': f'Potentially dangerous pattern: {pattern}'}
 
-    # Check for basic SQL structure
+    # Check for basic SQL structure - fields should be backtick-quoted in Databricks
     if '`' not in expression and expression != 'COUNT(`*)':
       return {'valid': False, 'error': 'Expression should reference fields with backticks'}
 
@@ -139,12 +155,25 @@ def validate_expression_basic(expression: str) -> Dict[str, Any]:
 
 
 def find_dataset_id(dataset_name: str, datasets: List[Dict[str, Any]]) -> str:
-  """Find dataset ID by display name."""
+  """Find dataset ID by display name.
+  
+  Searches through the datasets list to find a matching displayName and returns
+  the corresponding dataset ID (name field). Falls back to first available dataset
+  or generates a new ID if no match is found.
+  
+  Args:
+      dataset_name: Human-readable dataset name to search for
+      datasets: List of dataset dictionaries with 'displayName' and 'name' fields
+      
+  Returns:
+      Dataset ID string for use in widget queries
+  """
+  # Search for exact displayName match
   for ds in datasets:
     if ds['displayName'] == dataset_name:
       return ds['name']
 
-  # If not found, return the first dataset or generate new ID
+  # Fallback: return the first dataset or generate new ID if none available
   return datasets[0]['name'] if datasets else generate_id()
 
 
@@ -152,35 +181,39 @@ def create_standard_axis_encoding(
   field_name: str, scale_type: str, config: Dict, encoding_type: str = None
 ) -> Dict:
   """Create standardized axis encoding with required scale structure.
+  
+  This function builds the encoding structure that Lakeview expects for chart axes.
+  It handles scale types, display names, axis titles, and sorting configuration.
 
   Args:
-      field_name: The field name for the encoding
+      field_name: The field name for the encoding (must match dataset column)
       scale_type: Scale type (categorical, quantitative, temporal)
       config: Widget configuration containing additional settings
-      encoding_type: Optional encoding type for config key lookups
+      encoding_type: Optional encoding type for config key lookups (x, y, color, etc.)
 
   Returns:
       Standardized encoding structure with scale, axis, and display settings
   """
+  # Base encoding structure with field name and scale type
   encoding = {'fieldName': field_name, 'scale': {'type': scale_type}}
 
-  # Add display name
+  # Add display name for user-friendly axis labels
   if encoding_type:
     display_name_key = f'{encoding_type}_display_name'
     if display_name_key in config:
       encoding['displayName'] = config[display_name_key]
     else:
-      encoding['displayName'] = field_name
+      encoding['displayName'] = field_name  # Fallback to field name
   else:
     encoding['displayName'] = config.get(f'{field_name}_display_name', field_name)
 
-  # Add axis configuration if present
+  # Add axis configuration if custom title is specified
   if encoding_type:
     axis_title_key = f'{encoding_type}_axis_title'
     if axis_title_key in config:
       encoding['axis'] = {'title': config[axis_title_key]}
 
-  # Add sort configuration for categorical scales
+  # Add sort configuration for categorical scales (for ordering categories)
   if scale_type == 'categorical' and encoding_type:
     sort_key = f'{encoding_type}_sort'
     if sort_key in config:
@@ -191,6 +224,9 @@ def create_standard_axis_encoding(
 
 def create_color_scale(scale_type: str, config: Dict) -> Dict[str, Any]:
   """Create color scale with ramp and mapping support.
+  
+  Color scales control how data values map to colors in visualizations.
+  Supports both quantitative (continuous) and categorical (discrete) color schemes.
 
   Args:
       scale_type: Scale type (categorical, quantitative)
@@ -201,16 +237,16 @@ def create_color_scale(scale_type: str, config: Dict) -> Dict[str, Any]:
   """
   scale = {'type': scale_type}
 
-  # Add color ramp for quantitative scales
+  # Add color ramp for quantitative scales (continuous color gradients)
   if scale_type == 'quantitative' and 'color_scheme' in config:
     scale['colorRamp'] = {
       'mode': 'scheme',
-      'scheme': config['color_scheme'],  # redblue, viridis, plasma, etc.
+      'scheme': config['color_scheme'],  # Built-in schemes: redblue, viridis, plasma, etc.
     }
 
-  # Add custom mappings for categorical scales
+  # Add custom mappings for categorical scales (discrete color assignments)
   if scale_type == 'categorical' and 'color_mappings' in config:
-    scale['mappings'] = config['color_mappings']
+    scale['mappings'] = config['color_mappings']  # List of {value: str, color: str} mappings
 
   return scale
 
@@ -219,9 +255,13 @@ def create_advanced_encoding(
   field_name: str, config: Dict[str, Any], encoding_type: str
 ) -> Dict[str, Any]:
   """Create advanced encoding with scale, axis, and display configuration.
+  
+  This is the main encoding builder that handles all widget encoding types with
+  intelligent defaults and advanced configuration options like custom scales,
+  axis titles, legends, and sorting.
 
   Args:
-      field_name: The field name for the encoding
+      field_name: The field name for the encoding (must match dataset column)
       config: Widget configuration containing scale/axis settings
       encoding_type: Type of encoding (x, y, color, size, etc.)
 
@@ -230,28 +270,28 @@ def create_advanced_encoding(
   """
   encoding = {'fieldName': field_name}
 
-  # Add scale configuration with defaults if not specified
+  # Determine scale type from config or use intelligent defaults
   scale_key = f'{encoding_type}_scale_type'
   scale_type = config.get(scale_key)
 
-  # Set default scale types if not provided
+  # Set default scale types based on encoding type if not explicitly provided
   if scale_type is None:
     if encoding_type == 'x':
-      scale_type = 'categorical'  # Default for x-axis in bar charts
+      scale_type = 'categorical'  # X-axis typically categorical for bar charts
     elif encoding_type == 'y':
-      scale_type = 'quantitative'  # Default for y-axis in bar charts
+      scale_type = 'quantitative'  # Y-axis typically quantitative for measurements
     elif encoding_type == 'color':
-      scale_type = 'categorical'  # Default for color grouping
+      scale_type = 'categorical'  # Color typically categorical for grouping
     else:
       scale_type = 'quantitative'  # Default for other encodings like size
 
-  # Create scale configuration
+  # Create scale configuration - color scales need special handling
   if encoding_type == 'color':
     encoding['scale'] = create_color_scale(scale_type, config)
   else:
     scale = {'type': scale_type}
 
-    # Add sort configuration for categorical scales
+    # Add sort configuration for categorical scales (controls category ordering)
     if scale_type == 'categorical':
       sort_key = f'{encoding_type}_sort'
       if sort_key in config:
@@ -259,17 +299,17 @@ def create_advanced_encoding(
 
     encoding['scale'] = scale
 
-  # Add axis configuration
+  # Add axis configuration for custom axis titles
   axis_title_key = f'{encoding_type}_axis_title'
   if axis_title_key in config:
     encoding['axis'] = {'title': config[axis_title_key]}
 
-  # Add display name
+  # Add display name for user-friendly labels
   display_name_key = f'{encoding_type}_display_name'
   if display_name_key in config:
     encoding['displayName'] = config[display_name_key]
   else:
-    encoding['displayName'] = field_name
+    encoding['displayName'] = field_name  # Fallback to field name
 
   # Add legend configuration for color encoding
   if encoding_type == 'color' and 'legend_title' in config:
@@ -279,12 +319,23 @@ def create_advanced_encoding(
 
 
 def create_frame_config(config: Dict[str, Any]) -> Dict[str, Any]:
-  """Create frame configuration for widget title and display."""
+  """Create frame configuration for widget title and display.
+  
+  The frame controls the widget's outer appearance including title display.
+  This is separate from the chart content and appears at the top of each widget.
+  
+  Args:
+      config: Widget configuration dictionary
+      
+  Returns:
+      Frame configuration dict with title and display settings
+  """
   frame = {}
 
+  # Add title configuration if specified
   if 'title' in config:
     frame['title'] = config['title']
-    frame['showTitle'] = config.get('show_title', True)
+    frame['showTitle'] = config.get('show_title', True)  # Default to showing title
 
   return frame
 
@@ -293,44 +344,58 @@ def create_widget_queries(
   widget_config: Dict[str, Any], datasets: List[Dict]
 ) -> List[Dict[str, Any]]:
   """Create widget queries with field expressions and aggregations.
+  
+  This function generates the query structure that tells Lakeview how to fetch
+  and transform data for each widget. It automatically creates field expressions
+  for all referenced fields and supports custom SQL expressions.
 
   Based on analysis of actual Lakeview dashboard examples, widgets typically need
   a 'fields' array in the query to specify which fields to use and how to aggregate them.
   This function now generates fields arrays by default for all widgets with field references.
+  
+  Args:
+      widget_config: Complete widget configuration including dataset and field references
+      datasets: List of available datasets for ID lookup
+      
+  Returns:
+      List containing a single query dict with dataset reference and field expressions
   """
   config = widget_config.get('config', {})
   dataset_id = find_dataset_id(widget_config['dataset'], datasets)
 
+  # Base query structure with dataset reference and aggregation setting
   query = {'datasetName': dataset_id, 'disaggregated': config.get('disaggregated', False)}
 
-  # Always generate fields array for widgets with field references
+  # Build fields array for all field references in the widget
   # This matches the structure seen in real Lakeview dashboard examples
   fields = []
 
-  # Add field expressions for each encoding
+  # Standard field keys that widgets commonly use
+  # Each corresponds to a different encoding type (x-axis, y-axis, color, etc.)
   for field_key in [
-    'x_field',
-    'y_field',
-    'color_field',
-    'size_field',
-    'value_field',
-    'category_field',
-    'source_field',
-    'target_field',
-    'stage_field',
-    'location_field',
-    'latitude_field',
-    'longitude_field',
+    'x_field',          # X-axis field for charts
+    'y_field',          # Y-axis field for charts  
+    'color_field',      # Color grouping field
+    'size_field',       # Size encoding field (for bubble charts, etc.)
+    'value_field',      # Value field for counters, pie charts
+    'category_field',   # Category field for pie charts, filters
+    'source_field',     # Source field for Sankey diagrams
+    'target_field',     # Target field for Sankey diagrams
+    'stage_field',      # Stage field for funnel charts
+    'location_field',   # Location field for maps
+    'latitude_field',   # Latitude field for symbol maps
+    'longitude_field',  # Longitude field for symbol maps
   ]:
     if field_key in config:
       field_name = config[field_key]
 
-      # Check if there's a custom expression
+      # Check if there's a custom SQL expression for this field
       expression_key = field_key.replace('_field', '_expression')
       if expression_key in config:
+        # Use custom expression (e.g., "SUM(`revenue`)", "DATE_TRUNC('MONTH', `date`)")
         fields.append({'name': field_name, 'expression': config[expression_key]})
       else:
-        # Default expression (direct field reference)
+        # Default expression: direct field reference with backticks (Databricks standard)
         # This matches the format seen in example dashboards: "`field_name`"
         fields.append({'name': field_name, 'expression': f'`{field_name}`'})
 
@@ -341,11 +406,12 @@ def create_widget_queries(
       if not any(f['name'] == col for f in fields):
         fields.append({'name': col, 'expression': f'`{col}`'})
 
-  # Add fields array if we have any fields
+  # Add fields array to query if we have any fields
   # This ensures the query format matches actual Lakeview dashboard examples
   if fields:
     query['fields'] = fields
 
+  # Return as single-item list with named query (Lakeview expects this structure)
   return [{'name': 'main_query', 'query': query}]
 
 
@@ -353,32 +419,37 @@ def create_widget_spec(
   widget_config: Dict[str, Any], datasets: List[Dict], dashboard_id: str = None
 ) -> Dict[str, Any]:
   """Create widget spec for any widget type with advanced Lakeview features.
+  
+  This is the main widget factory function that routes widget creation to the
+  appropriate specialized function based on widget type. It supports all 16+
+  Lakeview widget types with backward compatibility for legacy names.
 
   Args:
       widget_config: Widget configuration with structure:
           {
-              "type": str,
-              "dataset": str,
+              "type": str,                    # Widget type (bar, line, table, etc.)
+              "dataset": str,                 # Dataset name to use
               "config": {
-                  "x_field": str,
+                  "x_field": str,             # Field mappings
                   "y_field": str,
                   "x_scale_type": "categorical|quantitative|temporal",
                   "y_scale_type": "categorical|quantitative|temporal",
                   "color_mappings": [{"value": str, "color": str}],
-                  "title": str,
-                  "show_title": bool,
-                  "version": int,
-                  "custom_expressions": bool
+                  "title": str,               # Widget title
+                  "show_title": bool,         # Show/hide title
+                  "version": int,             # Widget version override
+                  "custom_expressions": bool  # Enable custom SQL expressions
               }
           }
-      datasets: List of available datasets
+      datasets: List of available datasets for field validation
+      dashboard_id: Optional dashboard ID for filter widget parameter generation
 
   Returns:
       Complete widget specification for Lakeview dashboard with advanced features
   """
-  widget_type = widget_config.get('type', 'table')
+  widget_type = widget_config.get('type', 'table')  # Default to table if type not specified
 
-  # Chart widgets
+  # Chart widgets - visualization types for data analysis
   if widget_type == 'bar':
     return create_advanced_bar_widget(widget_config, datasets)
   elif widget_type == 'line':
@@ -408,7 +479,7 @@ def create_widget_spec(
   elif widget_type == 'range-slider':
     return create_range_slider_widget(widget_config, datasets)
 
-  # Display widgets
+  # Display widgets - for showing data in tabular or summary formats
   elif widget_type == 'counter':
     return create_advanced_counter_widget(widget_config, datasets)
   elif widget_type == 'table':
@@ -418,7 +489,7 @@ def create_widget_spec(
   elif widget_type == 'text':
     return create_advanced_text_widget(widget_config, datasets)
 
-  # Filter widgets - Standardized versions with parameter support
+  # Filter widgets - Standardized versions with parameter support for dashboard interactivity
   elif widget_type == 'filter-single-select':
     return create_filter_single_select_widget(widget_config, datasets, dashboard_id)
   elif widget_type == 'filter-multi-select':
@@ -428,7 +499,7 @@ def create_widget_spec(
   elif widget_type == 'filter-date-range':  # Legacy compatibility
     return create_filter_date_range_widget(widget_config, datasets, dashboard_id)
 
-  # Legacy filter widget names (for compatibility)
+  # Legacy filter widget names (for backward compatibility with older configurations)
   elif widget_type == 'dropdown':
     return create_filter_single_select_widget(widget_config, datasets, dashboard_id)
   elif widget_type == 'multi_select':
@@ -441,37 +512,49 @@ def create_widget_spec(
     return create_text_search_widget(widget_config, datasets)
 
   else:
-    # Default to table widget for unknown types
+    # Default fallback: create table widget for unknown types
     return create_advanced_table_widget(widget_config, datasets)
 
 
 # Advanced Chart Widgets
+# These functions create sophisticated chart widgets with full Lakeview feature support
 
 
 def create_advanced_bar_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
-  """Create advanced bar chart widget spec with scales, axes, and legends."""
+  """Create advanced bar chart widget spec with scales, axes, and legends.
+  
+  Bar charts are ideal for comparing categorical data. This function supports
+  grouped bars (via color encoding), custom scales, axis titles, and sorting.
+  
+  Args:
+      config: Widget configuration containing field mappings and display options
+      datasets: Available datasets for query generation
+      
+  Returns:
+      Complete bar widget specification with encodings and queries
+  """
   widget_config = config.get('config', {})
 
   encodings = {}
 
-  # X-axis encoding with advanced features
+  # X-axis encoding with advanced features (typically categorical for bar charts)
   if 'x_field' in widget_config:
     encodings['x'] = create_advanced_encoding(widget_config['x_field'], widget_config, 'x')
 
-  # Y-axis encoding with advanced features
+  # Y-axis encoding with advanced features (typically quantitative for measurements)
   if 'y_field' in widget_config:
     encodings['y'] = create_advanced_encoding(widget_config['y_field'], widget_config, 'y')
 
-  # Color encoding with custom mappings
+  # Color encoding with custom mappings (for grouped/stacked bars)
   if 'color_field' in widget_config:
     encodings['color'] = create_advanced_encoding(
       widget_config['color_field'], widget_config, 'color'
     )
 
-  # Build widget spec
+  # Build widget spec with version and encodings
   spec = {'version': WIDGET_VERSIONS['bar'], 'widgetType': 'bar', 'encodings': encodings}
 
-  # Add frame configuration
+  # Add frame configuration (title, etc.)
   frame = create_frame_config(widget_config)
   if frame:
     spec['frame'] = frame
@@ -481,32 +564,48 @@ def create_advanced_bar_widget(config: Dict, datasets: List[Dict]) -> Dict[str, 
 
 # Legacy function for backward compatibility
 def create_bar_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
-  """Legacy bar widget creation - redirects to advanced version."""
+  """Legacy bar widget creation - redirects to advanced version.
+  
+  Maintained for backward compatibility with older code that uses the legacy function name.
+  """
   return create_advanced_bar_widget(config, datasets)
 
 
 def create_advanced_line_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
-  """Create advanced line chart widget spec with scales, axes, and legends."""
+  """Create advanced line chart widget spec with scales, axes, and legends.
+  
+  Line charts are perfect for showing trends over time or continuous data.
+  Supports multiple series via color encoding and temporal/quantitative scales.
+  
+  Args:
+      config: Widget configuration containing field mappings and display options
+      datasets: Available datasets for query generation
+      
+  Returns:
+      Complete line widget specification with encodings and queries
+  """
   widget_config = config.get('config', {})
 
   encodings = {}
 
-  # X-axis encoding (typically temporal for line charts)
+  # X-axis encoding (typically temporal for time series or quantitative for continuous data)
   if 'x_field' in widget_config:
     encodings['x'] = create_advanced_encoding(widget_config['x_field'], widget_config, 'x')
 
-  # Y-axis encoding
+  # Y-axis encoding (quantitative values to plot)
   if 'y_field' in widget_config:
     encodings['y'] = create_advanced_encoding(widget_config['y_field'], widget_config, 'y')
 
-  # Color encoding for multiple series
+  # Color encoding for multiple series (creates separate lines for each category)
   if 'color_field' in widget_config:
     encodings['color'] = create_advanced_encoding(
       widget_config['color_field'], widget_config, 'color'
     )
 
+  # Build complete widget specification
   spec = {'version': WIDGET_VERSIONS['line'], 'widgetType': 'line', 'encodings': encodings}
 
+  # Add frame configuration for title display
   frame = create_frame_config(widget_config)
   if frame:
     spec['frame'] = frame
@@ -635,6 +734,9 @@ def create_pie_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
 
 def create_advanced_histogram_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create advanced histogram widget spec.
+  
+  Histograms show the distribution of numeric data by grouping values into bins.
+  This is one of the more complex widgets due to the binning requirements.
 
   Histograms require both X and Y encodings according to the Lakeview schema:
   - X: quantitative or temporal scale with binning for numeric distribution
@@ -642,26 +744,34 @@ def create_advanced_histogram_widget(config: Dict, datasets: List[Dict]) -> Dict
 
   Critical: The query fields must match the encoding fieldNames exactly.
   For histograms, this means the query must provide binned fields with proper SQL expressions.
+  
+  Args:
+      config: Widget configuration with x_field (numeric field to bin) and optional bin_width
+      datasets: Available datasets for query generation
+      
+  Returns:
+      Complete histogram widget specification with binned field expressions
   """
   widget_config = config.get('config', {})
 
   encodings = {}
 
-  # X-field encoding with binning (required)
+  # X-field encoding with binning (required for histogram distribution)
   if 'x_field' in widget_config:
     x_field = widget_config['x_field']
-    bin_width = widget_config.get('bin_width', 10)  # Default bin width
+    bin_width = widget_config.get('bin_width', 10)  # Default bin width for grouping
 
-    # Create binned field expression for histograms
+    # Create binned field expression for histograms - this creates the bins
     binned_field = f'bin({x_field}, binWidth={bin_width})'
 
     encodings['x'] = {
-      'fieldName': binned_field,
+      'fieldName': binned_field,  # Must match the query field name exactly
       'scale': {'type': 'quantitative'},
       'displayName': widget_config.get('x_display_name', x_field),
     }
 
   # Y-field encoding with count aggregation (required for histograms)
+  # This counts how many records fall into each bin
   y_field = widget_config.get('y_field', 'count(*)')
 
   encodings['y'] = {
@@ -671,6 +781,7 @@ def create_advanced_histogram_widget(config: Dict, datasets: List[Dict]) -> Dict
   }
 
   # Prepare config for query generation with proper binned fields
+  # This is critical: the query must provide the exact fields that encodings reference
   updated_config = config.copy()
   histogram_config = widget_config.copy()
 
@@ -686,7 +797,7 @@ def create_advanced_histogram_widget(config: Dict, datasets: List[Dict]) -> Dict
     histogram_config['x_field'] = binned_field  # This matches the encoding fieldName
     histogram_config['x_expression'] = get_bin_expression(
       x_field, bin_width
-    )  # This is the SQL expression
+    )  # This is the actual SQL expression: BIN_FLOOR(`field`, width)
 
   # Set up count field with proper expression
   histogram_config['y_field'] = y_field
@@ -770,27 +881,41 @@ def create_heatmap_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
 
 
 # Display Widgets
+# These widgets focus on presenting data in non-chart formats (tables, counters, text)
 
 
 def create_advanced_counter_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create advanced counter widget spec with proper encoding structure.
+  
+  Counter widgets display a single numeric value prominently, often used for KPIs,
+  totals, or summary statistics. They're perfect for dashboard headers or key metrics.
 
   Counter widgets have a simple value encoding without scale properties,
   according to the Lakeview schema and dashboard examples.
+  
+  Args:
+      config: Widget configuration with value_field and optional display settings
+      datasets: Available datasets for query generation
+      
+  Returns:
+      Complete counter widget specification with value encoding
   """
   widget_config = config.get('config', {})
 
   encodings = {}
 
   # Value encoding with display name - NO scale property for counter widgets
+  # Counter widgets are unique in that they don't use scale configurations
   if 'value_field' in widget_config:
     encodings['value'] = {
       'fieldName': widget_config['value_field'],
       'displayName': widget_config.get('value_display_name', widget_config['value_field']),
     }
 
+  # Build widget specification
   spec = {'version': WIDGET_VERSIONS['counter'], 'widgetType': 'counter', 'encodings': encodings}
 
+  # Add frame configuration for title display
   frame = create_frame_config(widget_config)
   if frame:
     spec['frame'] = frame
@@ -965,35 +1090,49 @@ def create_text_search_widget(config: Dict, datasets: List[Dict]) -> Dict[str, A
 def create_filter_single_select_widget(
   config: Dict, datasets: List[Dict], dashboard_id: str = None
 ) -> Dict[str, Any]:
-  """Create standardized single-select filter widget."""
+  """Create standardized single-select filter widget.
+  
+  Single-select filters allow users to choose one value from a dropdown list,
+  which then filters other widgets on the dashboard. These are essential for
+  dashboard interactivity and require proper parameter configuration.
+  
+  Args:
+      config: Widget configuration with field definitions and display options
+      datasets: Available datasets for field validation
+      dashboard_id: Dashboard ID for generating parameter query names
+      
+  Returns:
+      Complete filter widget specification with field encodings
+  """
   widget_config = config.get('config', {})
 
   fields = []
 
-  # Support both new and legacy field configurations
+  # Support both new and legacy field configurations for backward compatibility
   if 'fields' in widget_config:
-    # New array-based field configuration
+    # New array-based field configuration (preferred approach)
     for field_config in widget_config['fields']:
       if isinstance(field_config, dict) and 'fieldName' in field_config:
         field = {
-          'fieldName': field_config['fieldName'],
-          'displayName': field_config.get('displayName', field_config['fieldName']),
+          'fieldName': field_config['fieldName'],  # Field to filter on
+          'displayName': field_config.get('displayName', field_config['fieldName']),  # UI label
         }
+        # QueryName links this filter to dashboard parameters
         if 'queryName' in field_config:
           field['queryName'] = field_config['queryName']
         fields.append(field)
   elif 'field' in widget_config:
-    # Legacy single field configuration
+    # Legacy single field configuration (for backward compatibility)
     field = {
       'fieldName': widget_config['field'],
       'displayName': widget_config.get('display_name', widget_config['field']),
     }
 
-    # Generate queryName from dataset if available
+    # Generate queryName from dataset if available (required for parameter binding)
     if 'query_name' in widget_config:
       field['queryName'] = widget_config['query_name']
     elif datasets and dashboard_id:
-      # Auto-generate queryName from first dataset
+      # Auto-generate queryName from first dataset for parameter system
       dataset_id = find_dataset_id(widget_config.get('dataset', ''), datasets)
       if dataset_id:
         field['queryName'] = (
@@ -1002,7 +1141,7 @@ def create_filter_single_select_widget(
 
     fields.append(field)
 
-  # If no fields configured, try to infer from query data
+  # Fallback: if no fields configured, try to infer from query data
   if not fields and datasets and dashboard_id:
     # Get first available string/categorical field from dataset
     dataset_id = find_dataset_id(widget_config.get('dataset', ''), datasets)
@@ -1011,7 +1150,7 @@ def create_filter_single_select_widget(
       default_field = widget_config.get('default_field', 'category')
       field = {
         'fieldName': default_field,
-        'displayName': default_field.replace('_', ' ').title(),
+        'displayName': default_field.replace('_', ' ').title(),  # Convert snake_case to Title Case
         'queryName': f'dashboards/{dashboard_id}/datasets/{dataset_id}_{default_field}',
       }
       fields.append(field)
@@ -1021,9 +1160,10 @@ def create_filter_single_select_widget(
     'spec': {
       'version': WIDGET_VERSIONS['filter-single-select'],
       'widgetType': 'filter-single-select',
-      'encodings': {'fields': fields},
+      'encodings': {'fields': fields},  # Fields array defines what can be filtered
       'frame': create_frame_config(widget_config),
     },
+    # Note: Filter widgets typically don't have queries - they generate parameters instead
   }
 
 
@@ -1158,19 +1298,33 @@ def create_filter_date_range_widget(
 
 
 def create_sankey_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
-  """Create Sankey diagram widget."""
+  """Create Sankey diagram widget.
+  
+  Sankey diagrams show flows between different stages or categories, with the
+  width of flows proportional to the quantity. Perfect for visualizing data
+  movement, user journeys, or resource allocation between different states.
+  
+  Args:
+      config: Widget configuration with value_field, source_field, and target_field
+      datasets: Available datasets for query generation
+      
+  Returns:
+      Complete Sankey widget specification with value and stages encodings
+  """
   widget_config = config.get('config', {})
 
   encodings = {}
 
-  # Value field (required)
+  # Value field (required) - determines the width of the flow lines
+  # This represents the quantity flowing from source to target
   if 'value_field' in widget_config:
     encodings['value'] = {
       'fieldName': widget_config['value_field'],
       'displayName': widget_config.get('value_display_name', 'Value'),
     }
 
-  # Stages array (source and target fields)
+  # Stages array (source and target fields) - defines the flow connections
+  # Each stage represents a node in the Sankey diagram
   stages = []
   if 'source_field' in widget_config:
     stages.append(
@@ -1187,11 +1341,14 @@ def create_sankey_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
       }
     )
 
+  # Add stages to encodings if we have any defined
   if stages:
     encodings['stages'] = stages
 
+  # Build widget specification (note: Sankey uses version 1)
   spec = {'version': 1, 'widgetType': 'sankey', 'encodings': encodings}
 
+  # Add frame configuration for title
   frame = create_frame_config(widget_config)
   if frame:
     spec['frame'] = frame
@@ -1322,87 +1479,99 @@ def create_choropleth_widget(config: Dict, datasets: List[Dict]) -> Dict[str, An
 
 
 def create_advanced_table_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
-  """Create table widget with full column specifications."""
+  """Create table widget with full column specifications.
+  
+  Table widgets display data in rows and columns with extensive formatting options.
+  Supports column types, custom formatting, links, images, and search functionality.
+  This is one of the most feature-rich widgets in Lakeview.
+  
+  Args:
+      config: Widget configuration with columns array and table options
+      datasets: Available datasets for query generation
+      
+  Returns:
+      Complete table widget specification with column configurations
+  """
   widget_config = config.get('config', {})
 
   columns = []
   if 'columns' in widget_config:
     for i, col_config in enumerate(widget_config['columns']):
       if isinstance(col_config, str):
-        # Simple column name - create basic column
+        # Simple column name - create basic column with defaults
         column = {
           'fieldName': col_config,
-          'type': 'string',  # Default type
-          'displayAs': 'string',  # Default display
+          'type': 'string',  # Default data type
+          'displayAs': 'string',  # Default display format
           'visible': True,
-          'order': i,
-          'title': col_config,
+          'order': i,  # Column order in table
+          'title': col_config,  # Column header text
         }
       else:
-        # Full column configuration
+        # Full column configuration with advanced options
         column = {
           'fieldName': col_config['field'],
-          'type': col_config.get('type', 'string'),
-          'displayAs': col_config.get('display_as', 'string'),
-          'visible': col_config.get('visible', True),
-          'order': col_config.get('order', i),
-          'title': col_config.get('title', col_config['field']),
+          'type': col_config.get('type', 'string'),  # Data type: string, number, boolean, date
+          'displayAs': col_config.get('display_as', 'string'),  # Display format: string, link, image
+          'visible': col_config.get('visible', True),  # Show/hide column
+          'order': col_config.get('order', i),  # Column position
+          'title': col_config.get('title', col_config['field']),  # Header text
         }
 
-        # Add optional formatting
+        # Add optional number/date formatting
         if 'number_format' in col_config:
-          column['numberFormat'] = col_config['number_format']
+          column['numberFormat'] = col_config['number_format']  # e.g., "#,##0.00"
         if 'date_format' in col_config:
-          column['dateTimeFormat'] = col_config['date_format']
+          column['dateTimeFormat'] = col_config['date_format']  # e.g., "MM/dd/yyyy"
 
-        # Add link configuration
+        # Add link configuration for clickable links
         if col_config.get('display_as') == 'link':
-          column['linkUrlTemplate'] = col_config.get('link_url', '')
-          column['linkTextTemplate'] = col_config.get('link_text', '')
-          column['linkOpenInNewTab'] = col_config.get('link_new_tab', True)
+          column['linkUrlTemplate'] = col_config.get('link_url', '')  # URL template
+          column['linkTextTemplate'] = col_config.get('link_text', '')  # Link text template
+          column['linkOpenInNewTab'] = col_config.get('link_new_tab', True)  # Open in new tab
 
-        # Add image configuration
+        # Add image configuration for displaying images
         if col_config.get('display_as') == 'image':
-          column['imageUrlTemplate'] = col_config.get('image_url', '')
-          column['imageWidth'] = col_config.get('image_width', '100px')
-          column['imageHeight'] = col_config.get('image_height', '100px')
+          column['imageUrlTemplate'] = col_config.get('image_url', '')  # Image URL template
+          column['imageWidth'] = col_config.get('image_width', '100px')  # Image width
+          column['imageHeight'] = col_config.get('image_height', '100px')  # Image height
 
-        # Add boolean values
+        # Add boolean display values (how true/false are shown)
         if col_config.get('type') == 'boolean':
           column['booleanValues'] = col_config.get('boolean_values', ['false', 'true'])
 
-        # Add content alignment
+        # Add content alignment (left, center, right)
         if 'align' in col_config:
           column['alignContent'] = col_config['align']
 
-        # Add search capability
+        # Add search capability for this column
         column['allowSearch'] = col_config.get('allow_search', True)
 
-        # Add HTML support
+        # Add HTML rendering support (for rich content)
         column['allowHTML'] = col_config.get('allow_html', False)
 
       columns.append(column)
 
-  # Build table spec
+  # Build table specification with column encodings
   spec = {
     'version': WIDGET_VERSIONS['table'],
     'widgetType': 'table',
     'encodings': {'columns': columns},
   }
 
-  # Add table-specific options
+  # Add table-specific display options
   if 'items_per_page' in widget_config:
-    spec['itemsPerPage'] = widget_config['items_per_page']
+    spec['itemsPerPage'] = widget_config['items_per_page']  # Rows per page
   if 'pagination_size' in widget_config:
-    spec['paginationSize'] = widget_config['pagination_size']
+    spec['paginationSize'] = widget_config['pagination_size']  # Pagination control size
   if 'condensed' in widget_config:
-    spec['condensed'] = widget_config['condensed']
+    spec['condensed'] = widget_config['condensed']  # Compact row spacing
   if 'with_row_number' in widget_config:
-    spec['withRowNumber'] = widget_config['with_row_number']
+    spec['withRowNumber'] = widget_config['with_row_number']  # Show row numbers
   if 'allow_html_default' in widget_config:
-    spec['allowHTMLByDefault'] = widget_config['allow_html_default']
+    spec['allowHTMLByDefault'] = widget_config['allow_html_default']  # Default HTML rendering
 
-  # Add frame
+  # Add frame configuration for title
   frame = create_frame_config(widget_config)
   if frame:
     spec['frame'] = frame
@@ -1473,15 +1642,26 @@ def create_symbol_map_widget(config: Dict, datasets: List[Dict]) -> Dict[str, An
 
 def create_funnel_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create funnel widget with x/y encodings matching working examples.
-
+  
+  Funnel charts visualize conversion rates through sequential stages, perfect for
+  sales pipelines, user journeys, or any process with drop-off between steps.
+  
   Funnel charts require both value_field (quantitative) and stage_field (categorical).
   If stage_field is missing, we'll attempt to infer it from available fields.
+  
+  Args:
+      config: Widget configuration with value_field and stage_field (or alternatives)
+      datasets: Available datasets for query generation
+      
+  Returns:
+      Complete funnel widget specification with x/y encodings
   """
   widget_config = config.get('config', {})
 
   encodings = {}
 
-  # X encoding (quantitative value) - required
+  # X encoding (quantitative value) - required for funnel width
+  # This represents the metric being measured at each stage (e.g., user count, revenue)
   if 'value_field' in widget_config:
     encodings['x'] = {
       'fieldName': widget_config['value_field'],
@@ -1489,7 +1669,8 @@ def create_funnel_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
       'displayName': widget_config.get('value_display_name', widget_config['value_field']),
     }
 
-  # Y encoding (categorical stage) - required
+  # Y encoding (categorical stage) - required for funnel levels
+  # This represents the sequential stages (e.g., "Awareness", "Interest", "Purchase")
   if 'stage_field' in widget_config:
     encodings['y'] = {
       'fieldName': widget_config['stage_field'],
@@ -1515,7 +1696,7 @@ def create_funnel_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
         'displayName': widget_config.get('stage_display_name', stage_field),
       }
 
-  # Add label configuration as shown in working examples
+  # Add label configuration as shown in working examples (shows values on funnel)
   encodings['label'] = {'show': True}
 
   # Validation: Ensure both x and y encodings are present for funnel charts

@@ -11,12 +11,15 @@ QueryLines Format (based on actual Lakeview dashboard JSON structure):
 
 """
 
+# Standard library imports for JSON handling, file operations, and type hints
 import json
 import os
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List
 
+# Import widget specification creation function
+# Try relative import first (when used as module), fallback to direct import
 try:
   from .widget_specs import create_widget_spec
 except ImportError:
@@ -24,7 +27,15 @@ except ImportError:
 
 
 def generate_id() -> str:
-  """Generate 8-character hex ID for Lakeview objects."""
+  """Generate 8-character hex ID for Lakeview objects.
+  
+  Lakeview dashboards use short hex IDs for internal object identification.
+  This function creates a unique 8-character identifier by truncating a UUID.
+  
+  Returns:
+      str: 8-character hexadecimal string (e.g., 'a1b2c3d4')
+  """
+  # Generate a full UUID and take the first 8 characters for brevity
   return str(uuid.uuid4())[:8]
 
 
@@ -44,20 +55,23 @@ def query_to_querylines(query: str) -> List[str]:
   Returns:
       List of strings in proper Lakeview queryLines array format
   """
+  # Remove leading/trailing whitespace from the input query
   query = query.strip()
 
   # If query already contains newlines, split and preserve formatting
+  # This handles multi-line queries that are already formatted
   if '\n' in query:
     result = []
     lines = query.split('\n')
 
+    # Process each line to maintain Lakeview queryLines format
     for i in range(len(lines)):
       line = lines[i]
       if i < len(lines) - 1:
-        # Add \n to all lines except the last
+        # Add \n to all lines except the last to preserve line breaks
         result.append(line + '\n')
       else:
-        # Last line: only add if it's not empty
+        # Last line: only add if it's not empty (avoid trailing empty strings)
         if line.strip():
           result.append(line)
 
@@ -65,19 +79,21 @@ def query_to_querylines(query: str) -> List[str]:
 
   # For single-line queries, check if they should be formatted as multi-line
   # Threshold: queries longer than 120 characters or containing multiple clauses
+  # This improves readability for complex queries in the dashboard
   should_format_multiline = (
-    len(query) > 120
-    or query.upper().count(' FROM ') >= 1
+    len(query) > 120  # Long queries benefit from multi-line formatting
+    or query.upper().count(' FROM ') >= 1  # Has FROM clause
     and (
-      query.upper().count(' WHERE ') >= 1
-      or query.upper().count(' GROUP BY ') >= 1
-      or query.upper().count(' ORDER BY ') >= 1
-      or query.upper().count(' HAVING ') >= 1
-      or query.upper().count(' JOIN ') >= 1
-      or query.upper().count(',') >= 3
+      query.upper().count(' WHERE ') >= 1     # Plus WHERE
+      or query.upper().count(' GROUP BY ') >= 1  # Or GROUP BY
+      or query.upper().count(' ORDER BY ') >= 1  # Or ORDER BY
+      or query.upper().count(' HAVING ') >= 1    # Or HAVING
+      or query.upper().count(' JOIN ') >= 1      # Or JOIN
+      or query.upper().count(',') >= 3           # Or many columns
     )
   )
 
+  # Simple queries stay as single-line for cleaner queryLines format
   if not should_format_multiline:
     return [query]
 
@@ -85,54 +101,73 @@ def query_to_querylines(query: str) -> List[str]:
   import re
 
   # Simplified approach: split on major SQL keywords and format columns
+  # This creates a more readable queryLines array for complex queries
   result = []
 
   # Split on major SQL clauses while preserving them
+  # Uses regex to identify SQL keywords as clause boundaries
   pattern = r'\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|UNION)\b'
   parts = re.split(pattern, query, flags=re.IGNORECASE)
   parts = [p.strip() for p in parts if p.strip()]
 
   current_clause = ''
 
+  # Process each part to build formatted clauses
   for i, part in enumerate(parts):
     part_upper = part.upper()
 
     if part_upper in ['SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'HAVING', 'UNION']:
-      # Start new clause
+      # Start new clause - format the previous one first
       if current_clause.strip():
         result.extend(_format_clause_content(current_clause))
       current_clause = part + ' '
     else:
+      # Continue building current clause
       current_clause += part
 
   # Add the final clause
   if current_clause.strip():
     result.extend(_format_clause_content(current_clause))
 
+  # Return formatted result or fallback to original query
   return result if result else [query]
 
 
 def _format_clause_content(clause: str) -> List[str]:
-  """Format the content of a SQL clause into properly formatted lines."""
+  """Format the content of a SQL clause into properly formatted lines.
+  
+  This function handles special formatting for SELECT clauses with multiple columns,
+  creating indented, comma-separated lines for better readability.
+  
+  Args:
+      clause: SQL clause string to format
+      
+  Returns:
+      List of formatted lines with proper indentation and line breaks
+  """
   clause = clause.strip()
 
   # Check if this is a SELECT clause with multiple columns
+  # Multi-column SELECT statements benefit from line-by-line formatting
   if clause.upper().startswith('SELECT ') and ',' in clause:
     # Extract the SELECT keyword and column list
     select_part = clause[:6]  # "SELECT"
     columns_part = clause[6:].strip()
 
     # Split columns more carefully, respecting parentheses and CASE statements
+    # This ensures we don't break on commas inside functions or expressions
     columns = _split_columns_safely(columns_part)
 
     if len(columns) > 1:
-      # Format as multi-line
-      lines = [select_part + ' \n']
+      # Format as multi-line with proper indentation
+      lines = [select_part + ' \n']  # SELECT keyword on its own line
       for j, col in enumerate(columns):
         col = col.strip()
         if j < len(columns) - 1:
+          # Add comma after each column except the last
           lines.append('    ' + col + ',\n')
         else:
+          # Last column without comma
           lines.append('    ' + col + '\n')
       return lines
 
@@ -141,30 +176,43 @@ def _format_clause_content(clause: str) -> List[str]:
 
 
 def _split_columns_safely(columns_text: str) -> List[str]:
-  """Split column list while respecting parentheses, CASE statements, etc."""
+  """Split column list while respecting parentheses, CASE statements, etc.
+  
+  This function intelligently splits a comma-separated column list without
+  breaking on commas that are inside function calls, CASE statements, or
+  other nested expressions.
+  
+  Args:
+      columns_text: String containing comma-separated column expressions
+      
+  Returns:
+      List of individual column expressions as strings
+  """
   columns = []
   current_col = ''
-  paren_depth = 0
-  case_depth = 0
+  paren_depth = 0  # Track nested parentheses
+  case_depth = 0   # Track nested CASE statements
 
   i = 0
   while i < len(columns_text):
     char = columns_text[i]
 
     if char == '(':
+      # Entering a nested expression (function call, subquery, etc.)
       paren_depth += 1
       current_col += char
     elif char == ')':
+      # Exiting a nested expression
       paren_depth -= 1
       current_col += char
     elif char == ',' and paren_depth == 0 and case_depth == 0:
-      # This is a real column separator
+      # This is a real column separator (not inside parentheses or CASE)
       columns.append(current_col.strip())
       current_col = ''
     else:
       current_col += char
 
-      # Check for CASE/END keywords
+      # Check for CASE/END keywords to track CASE statement nesting
       if i >= 3:
         last_4 = columns_text[i - 3 : i + 1].upper()
         if last_4 == 'CASE':
@@ -174,7 +222,7 @@ def _split_columns_safely(columns_text: str) -> List[str]:
 
     i += 1
 
-  # Add the last column
+  # Add the last column if it exists
   if current_col.strip():
     columns.append(current_col.strip())
 
@@ -204,10 +252,12 @@ def create_dashboard_json(
   Returns:
       Complete dashboard JSON ready for .lvdash.json file with proper queryLines array format
   """
+  # Initialize widgets list if not provided
   if widgets is None:
     widgets = []
 
-  # Generate dashboard ID
+  # Generate dashboard ID - Lakeview uses 32-character hex IDs
+  # Concatenate four 8-character IDs to match the expected format
   dashboard_id = (
     generate_id() + generate_id() + generate_id() + generate_id()
   )  # 32 character ID like real examples
@@ -216,38 +266,44 @@ def create_dashboard_json(
   lv_datasets = []
   for ds in datasets:
     # Convert query to proper Lakeview queryLines format using simplified function
+    # This handles both single-line and multi-line queries appropriately
     query_lines = query_to_querylines(ds['query'])
 
+    # Create dataset object with generated ID and user-provided display name
     dataset = {'name': generate_id(), 'displayName': ds['name'], 'queryLines': query_lines}
 
-    # Add parameters if provided
+    # Add parameters if provided (for parameterized queries)
     if 'parameters' in ds and ds['parameters']:
       dataset['parameters'] = ds['parameters']
 
     lv_datasets.append(dataset)
 
   # Convert widgets to layout items with custom positioning support
+  # Lakeview uses a grid-based layout system (12 columns wide)
   layout = []
   for i, widget in enumerate(widgets):
-    # Check if custom position is provided
+    # Check if custom position is provided by the user
     if 'position' in widget:
       position = widget['position']
     else:
       # Default grid layout: 2 columns, auto-flow vertically
-      x = (i % 2) * 6
-      y = (i // 2) * 4
+      # Each widget takes 6 columns (half width) and 4 rows height
+      x = (i % 2) * 6  # Alternate between columns 0 and 6
+      y = (i // 2) * 4  # Move down every 2 widgets
       position = {'x': x, 'y': y, 'width': 6, 'height': 4}
 
+    # Create layout item with position and widget specification
     layout.append(
       {'position': position, 'widget': create_widget_spec(widget, lv_datasets, dashboard_id)}
     )
 
+  # Return complete Lakeview dashboard JSON structure
   return {
-    'dashboard_id': dashboard_id,
-    'displayName': name,
-    'warehouseId': warehouse_id,
-    'datasets': lv_datasets,
-    'pages': [{'name': generate_id(), 'displayName': name, 'layout': layout}],
+    'dashboard_id': dashboard_id,        # Unique dashboard identifier
+    'displayName': name,                 # Dashboard title shown in UI
+    'warehouseId': warehouse_id,         # SQL warehouse for query execution
+    'datasets': lv_datasets,             # Data sources with queryLines format
+    'pages': [{'name': generate_id(), 'displayName': name, 'layout': layout}],  # Single page with widgets
   }
 
 
@@ -273,15 +329,17 @@ def create_optimized_dashboard_json(
   Returns:
       Optimized dashboard JSON with intelligent layout
   """
+  # Initialize widgets list if not provided
   if widgets is None:
     widgets = []
 
+  # Apply layout optimization if enabled
   if enable_optimization:
     try:
-      # Import layout optimization functions
+      # Import layout optimization functions (optional dependency)
       from .layout_optimization import optimize_dashboard_layout
 
-      # Optimize widget layout
+      # Optimize widget layout based on data characteristics and best practices
       optimized_widgets = optimize_dashboard_layout(widgets, warehouse_id, datasets)
 
       # Use the core function with optimized widgets
@@ -292,11 +350,11 @@ def create_optimized_dashboard_json(
       print('Layout optimization module not found, using default layout')
       return create_dashboard_json(name, warehouse_id, datasets, widgets)
     except Exception as e:
-      # Fallback on any error - use default layout
+      # Fallback on any error - use default layout to ensure dashboard creation succeeds
       print(f'Layout optimization failed, using default layout: {str(e)}')
       return create_dashboard_json(name, warehouse_id, datasets, widgets)
   else:
-    # Optimization disabled, use default
+    # Optimization disabled, use default layout algorithm
     return create_dashboard_json(name, warehouse_id, datasets, widgets)
 
 
@@ -309,18 +367,18 @@ def prepare_dashboard_for_client(dashboard_json: Dict[str, Any], file_path: str)
   import os
 
   try:
-    # Ensure the directory exists
+    # Ensure the directory exists - create parent directories if needed
     file_path_obj = Path(file_path)
     file_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-    # Format JSON content with proper indentation
+    # Format JSON content with proper indentation for readability
     json_content = json.dumps(dashboard_json, indent=2)
 
-    # Write the file to the filesystem
+    # Write the file to the filesystem with UTF-8 encoding
     with open(file_path, 'w', encoding='utf-8') as f:
       f.write(json_content)
 
-    # Verify file was created and get file size
+    # Verify file was created successfully and get file size for confirmation
     if os.path.exists(file_path):
       file_size = os.path.getsize(file_path)
       return {
@@ -354,12 +412,24 @@ def prepare_dashboard_for_client(dashboard_json: Dict[str, Any], file_path: str)
 
 
 def find_dataset_id(dataset_name: str, datasets: List[Dict[str, Any]]) -> str:
-  """Find dataset ID by display name."""
+  """Find dataset ID by display name.
+  
+  This helper function maps user-friendly dataset names to internal Lakeview IDs.
+  Widgets reference datasets by display name, but Lakeview uses internal IDs.
+  
+  Args:
+      dataset_name: User-provided dataset display name
+      datasets: List of dataset objects with 'name' (ID) and 'displayName' fields
+      
+  Returns:
+      str: Internal dataset ID for use in widget specifications
+  """
+  # Search for matching display name in datasets
   for ds in datasets:
     if ds['displayName'] == dataset_name:
       return ds['name']
 
-  # If not found, return the first dataset or generate new ID
+  # If not found, return the first dataset or generate new ID as fallback
   return datasets[0]['name'] if datasets else generate_id()
 
 
@@ -390,7 +460,7 @@ def validate_sql_query(
     # Import here to avoid circular dependencies
     from databricks.sdk import WorkspaceClient
 
-    # Initialize Databricks SDK
+    # Initialize Databricks SDK with environment credentials
     w = WorkspaceClient(
       host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
     )
@@ -399,24 +469,26 @@ def validate_sql_query(
     clean_query = str(query).strip().rstrip(';').strip()
 
     # Create validation query - use LIMIT 0 to check syntax without returning data
-    # Also get column information for widget field validation
+    # This approach validates the query structure and gets column metadata efficiently
     validation_query = f'SELECT * FROM ({clean_query}) AS validation_subquery LIMIT 0'
 
-    # Build the full query with catalog/schema if provided
+    # Build the full query with catalog/schema context if provided
+    # This ensures validation happens in the correct database context
     full_query = validation_query
     if catalog and schema:
       full_query = f'USE CATALOG {catalog}; USE SCHEMA {schema}; {validation_query}'
 
     print(f'🔍 Validating SQL query: {clean_query[:100]}...')
 
-    # Execute the validation query
+    # Execute the validation query with short timeout
     result = w.statement_execution.execute_statement(
       warehouse_id=warehouse_id,
       statement=full_query,
-      wait_timeout='10s',  # Shorter timeout for validation
+      wait_timeout='10s',  # Shorter timeout for validation (not data processing)
     )
 
     # Extract column information for widget field validation
+    # This metadata is crucial for validating widget field references
     columns = []
     if result.manifest and result.manifest.schema and result.manifest.schema.columns:
       columns = [col.name for col in result.manifest.schema.columns]
@@ -432,7 +504,8 @@ def validate_sql_query(
     error_msg = str(e)
     print(f'❌ SQL validation failed: {error_msg}')
 
-    # Parse common SQL errors to provide helpful feedback
+    # Parse common SQL errors to provide helpful feedback to users
+    # This helps developers understand and fix common issues quickly
     if 'TABLE_OR_VIEW_NOT_FOUND' in error_msg:
       return {
         'valid': False,
@@ -452,6 +525,7 @@ def validate_sql_query(
         'columns': [],
       }
     else:
+      # Generic error fallback for unexpected issues
       return {'valid': False, 'error': f'Query validation failed: {error_msg}', 'columns': []}
 
 
@@ -467,15 +541,16 @@ def validate_widget_fields(
   Returns:
       {"valid": bool, "error": str, "warnings": list} - validation result
   """
+  # Extract widget configuration and type for validation
   config = widget_config.get('config', {})
   widget_type = widget_config.get('type', '')
 
   warnings = []
   missing_fields = []
 
-  # Check fields based on widget type
+  # Check fields based on widget type - each widget type has specific field requirements
   if widget_type in ['bar', 'line', 'area', 'scatter']:
-    # Chart widgets with x/y axes
+    # Chart widgets with x/y axes - validate axis field references
     if 'x_field' in config and config['x_field'] not in available_columns:
       missing_fields.append(f"x_field: '{config['x_field']}'")
     if 'y_field' in config and config['y_field'] not in available_columns:
@@ -484,25 +559,26 @@ def validate_widget_fields(
       missing_fields.append(f"color_field: '{config['color_field']}'")
 
   elif widget_type == 'pie':
-    # Pie chart with category/value
+    # Pie chart with category/value - requires both fields for proper rendering
     if 'category_field' in config and config['category_field'] not in available_columns:
       missing_fields.append(f"category_field: '{config['category_field']}'")
     if 'value_field' in config and config['value_field'] not in available_columns:
       missing_fields.append(f"value_field: '{config['value_field']}'")
 
   elif widget_type == 'counter':
-    # Counter with value field
+    # Counter with value field - single numeric display widget
     if 'value_field' in config and config['value_field'] not in available_columns:
       missing_fields.append(f"value_field: '{config['value_field']}'")
 
   elif widget_type == 'funnel':
-    # Funnel with stage and value fields
+    # Funnel with stage and value fields - conversion analysis widget
     if 'stage_field' in config and config['stage_field'] not in available_columns:
       missing_fields.append(f"stage_field: '{config['stage_field']}'")
     if 'value_field' in config and config['value_field'] not in available_columns:
       missing_fields.append(f"value_field: '{config['value_field']}'")
 
     # Check for fallback categorical fields if stage_field is missing
+    # Funnel widgets can use alternative categorical fields for stages
     if 'stage_field' not in config:
       fallback_found = False
       for field_key in ['category_field', 'x_field', 'color_field']:
@@ -518,26 +594,26 @@ def validate_widget_fields(
         warnings.append('Funnel widget: no valid categorical field found for stage dimension')
 
   elif widget_type == 'histogram':
-    # Histogram with x field
+    # Histogram with x field - distribution analysis widget
     if 'x_field' in config and config['x_field'] not in available_columns:
       missing_fields.append(f"x_field: '{config['x_field']}'")
 
   elif widget_type == 'table':
-    # Table with specific columns
+    # Table with specific columns - validate each column exists
     if 'columns' in config:
       for col in config['columns']:
         if col not in available_columns:
           missing_fields.append(f"table column: '{col}'")
 
   elif widget_type == 'choropleth-map':
-    # Choropleth map with location and color fields
+    # Choropleth map with location and color fields - geographic visualization
     if 'location_field' in config and config['location_field'] not in available_columns:
       missing_fields.append(f"location_field: '{config['location_field']}'")
     if 'color_field' in config and config['color_field'] not in available_columns:
       missing_fields.append(f"color_field: '{config['color_field']}'")
 
   elif widget_type == 'symbol-map':
-    # Symbol map with lat/lng and optional color/size fields
+    # Symbol map with lat/lng and optional color/size fields - point-based geographic visualization
     if 'latitude_field' in config and config['latitude_field'] not in available_columns:
       missing_fields.append(f"latitude_field: '{config['latitude_field']}'")
     if 'longitude_field' in config and config['longitude_field'] not in available_columns:
@@ -547,7 +623,7 @@ def validate_widget_fields(
     if 'size_field' in config and config['size_field'] not in available_columns:
       missing_fields.append(f"size_field: '{config['size_field']}'")
 
-  # Generate result
+  # Generate validation result with detailed error information
   if missing_fields:
     return {
       'valid': False,
@@ -555,11 +631,21 @@ def validate_widget_fields(
       'warnings': warnings,
     }
 
+  # All field references are valid
   return {'valid': True, 'error': None, 'warnings': warnings}
 
 
 def load_dashboard_tools(mcp_server):
-  """Register simplified dashboard tools with MCP server."""
+  """Register simplified dashboard tools with MCP server.
+  
+  This function registers three main MCP tools for Lakeview dashboard management:
+  1. create_dashboard_file - Creates complete dashboard files with validation
+  2. validate_dashboard_sql - Validates SQL queries and widget field references  
+  3. get_widget_configuration_guide - Provides widget configuration documentation
+  
+  Args:
+      mcp_server: MCP server instance to register tools with
+  """
 
   @mcp_server.tool()
   def create_dashboard_file(
@@ -841,10 +927,11 @@ def load_dashboard_tools(mcp_server):
         # This approach uses 1 dataset to support 3 different aggregated visualizations!
     """
     try:
+      # Initialize widgets list if not provided
       if widgets is None:
         widgets = []
 
-      # Validate basic requirements
+      # Validate basic requirements before proceeding
       if not name or not warehouse_id or not file_path:
         return {
           'success': False,
@@ -854,17 +941,19 @@ def load_dashboard_tools(mcp_server):
       if not datasets:
         return {'success': False, 'error': 'At least one dataset is required'}
 
-      # Ensure file path ends with .lvdash.json
+      # Ensure file path has correct extension for Lakeview dashboards
       if not file_path.endswith('.lvdash.json'):
         file_path += '.lvdash.json'
 
-      # SQL Validation Phase
+      # Initialize validation results structure
+      # This tracks all validation steps for comprehensive error reporting
       validation_results = {'queries_validated': [], 'widget_validations': [], 'warnings': []}
 
+      # SQL Validation Phase - validates queries and widget field references
       if validate_sql:
         print('🔍 Starting SQL validation for dashboard datasets...')
 
-        # Validate each dataset query
+        # Validate each dataset query against the Databricks warehouse
         for i, dataset in enumerate(datasets):
           query = dataset['query']
           dataset_name = dataset['name']
@@ -872,6 +961,7 @@ def load_dashboard_tools(mcp_server):
           print(f"🔍 Validating dataset '{dataset_name}' query...")
           validation_result = validate_sql_query(query, warehouse_id, catalog, schema)
 
+          # Record validation result for this dataset
           validation_results['queries_validated'].append(
             {
               'dataset': dataset_name,
@@ -882,7 +972,7 @@ def load_dashboard_tools(mcp_server):
             }
           )
 
-          # If query is invalid, return error immediately
+          # If query is invalid, return error immediately to prevent dashboard creation
           if not validation_result['valid']:
             return {
               'success': False,
@@ -891,6 +981,7 @@ def load_dashboard_tools(mcp_server):
             }
 
           # Validate widgets that reference this dataset
+          # This ensures widget field references match actual query columns
           dataset_columns = validation_result['columns']
           for widget in widgets:
             if widget.get('dataset') == dataset_name:
@@ -899,6 +990,7 @@ def load_dashboard_tools(mcp_server):
               )
               widget_validation = validate_widget_fields(widget, dataset_columns)
 
+              # Record widget validation result
               validation_results['widget_validations'].append(
                 {
                   'widget_type': widget.get('type', 'unknown'),
@@ -909,7 +1001,7 @@ def load_dashboard_tools(mcp_server):
                 }
               )
 
-              # If widget field validation fails, return error
+              # If widget field validation fails, return error to prevent dashboard creation
               if not widget_validation['valid']:
                 return {
                   'success': False,
@@ -917,25 +1009,30 @@ def load_dashboard_tools(mcp_server):
                   'validation_results': validation_results,
                 }
 
-              # Collect warnings
+              # Collect warnings for user awareness (non-blocking issues)
               validation_results['warnings'].extend(widget_validation['warnings'])
 
         print('✅ All SQL queries and widget fields validated successfully!')
       else:
+        # Validation was skipped - note this for transparency
         validation_results['warnings'].append('SQL validation was skipped (validate_sql=False)')
 
-      # Create dashboard JSON with automatic layout optimization
+      # Dashboard Creation Phase - generate the complete Lakeview JSON structure
+      # Uses optimized layout algorithm for better widget positioning
       dashboard_json = create_optimized_dashboard_json(
         name, warehouse_id, datasets, widgets, enable_optimization=True
       )
 
-      # Prepare dashboard content for client
+      # File Creation Phase - write dashboard JSON to filesystem
       result = prepare_dashboard_for_client(dashboard_json, file_path)
+      
+      # Include validation results in response for transparency
       result['validation_results'] = validation_results
 
       return result
 
     except Exception as e:
+      # Catch-all error handler for unexpected issues during dashboard creation
       return {'success': False, 'error': f'Failed to create dashboard: {str(e)}'}
 
   @mcp_server.tool()
@@ -1120,14 +1217,17 @@ def load_dashboard_tools(mcp_server):
         )
     """
     try:
+      # Initialize widgets list if not provided
       if widgets is None:
         widgets = []
 
+      # Initialize validation results structure
       validation_results = {'queries_validated': [], 'widget_validations': [], 'warnings': []}
 
       print('🔍 Starting SQL validation for dashboard datasets...')
 
-      # Validate each dataset query
+      # Validate each dataset query - this is the standalone validation tool
+      # Unlike create_dashboard_file, this continues validation even if errors are found
       for dataset in datasets:
         query = dataset['query']
         dataset_name = dataset['name']
@@ -1202,6 +1302,10 @@ def load_dashboard_tools(mcp_server):
   def get_widget_configuration_guide(widget_type: str = None) -> Dict[str, Any]:
     """Get comprehensive configuration guide for Lakeview dashboard widgets.
 
+    This is a documentation and reference tool that provides detailed information about
+    widget configuration options, field requirements, and best practices. Use this tool
+    to understand available widget types and their configuration before creating dashboards.
+
     Provides detailed configuration options, required fields, examples, and best practices
     for creating dashboard widgets. Use this to understand available options before
     creating dashboards with create_dashboard_file.
@@ -1219,24 +1323,25 @@ def load_dashboard_tools(mcp_server):
     Returns:
         Comprehensive widget configuration guide with examples and best practices.
     """
-    # Widget categories for overview
+    # Widget categories for overview - organized by functional purpose
+    # This categorization helps users understand widget types and their use cases
     widget_categories = {
       'chart': [
-        'bar',
-        'line',
-        'area',
-        'scatter',
-        'pie',
-        'histogram',
-        'heatmap',
-        'box',
-        'funnel',
-        'combo',
+        'bar',           # Bar charts for categorical comparisons
+        'line',          # Line charts for trends over time
+        'area',          # Area charts for cumulative values
+        'scatter',       # Scatter plots for correlation analysis
+        'pie',           # Pie charts for part-to-whole relationships
+        'histogram',     # Histograms for distribution analysis
+        'heatmap',       # Heatmaps for matrix/correlation visualization
+        'box',           # Box plots for statistical distribution
+        'funnel',        # Funnel charts for conversion analysis
+        'combo',         # Combination charts (multiple chart types)
       ],
-      'map': ['choropleth-map', 'symbol-map'],
-      'display': ['counter', 'table', 'pivot', 'text'],
-      'advanced': ['sankey'],
-      'filter': [
+      'map': ['choropleth-map', 'symbol-map'],  # Geographic visualizations
+      'display': ['counter', 'table', 'pivot', 'text'],  # Data display widgets
+      'advanced': ['sankey'],  # Advanced flow/relationship visualizations
+      'filter': [  # Interactive filter controls for dashboard interactivity
         'filter-single-select',
         'filter-multi-select',
         'filter-date-range-picker',
