@@ -112,10 +112,11 @@ graph TB
    - Built with TailwindCSS, Radix UI, and modern React patterns
    - Uses Vite for fast development and building
 
-3. **Prompts** (`prompts/`): Simple markdown files where:
-   - Filename = prompt name (e.g., `build_lakeview_dashboard.md` → `build_lakeview_dashboard` prompt)
-   - First line with `#` = description
-   - File content = what gets returned to Claude
+3. **Prompts** (`prompts/`): MCP-compliant markdown files with YAML frontmatter:
+   - **YAML frontmatter**: Required metadata defining prompt name, description, and arguments
+   - **Argument validation**: Built-in validation for required arguments and data types
+   - **Placeholder substitution**: Automatic replacement of `${argument}` placeholders
+   - **Security**: Input sanitization and validation to prevent injection attacks
 
 4. **Modular Tools System** (`server/tools/`): Organized tool modules that:
    - Break down functionality into logical, manageable components
@@ -422,6 +423,50 @@ echo "What MCP prompts are available from databricks-mcp-local?" | claude
 4. **Edit backend**: Update FastAPI routes in `server/`
 
 All changes automatically reload thanks to the file watchers in `./watch.sh`.
+
+#### Creating New MCP Prompts
+
+All prompts require YAML frontmatter for MCP compliance. Create a new markdown file in `prompts/`:
+
+```markdown
+---
+name: your_prompt_name
+description: Brief description of what the prompt does
+arguments:
+  - name: warehouse_id
+    description: SQL Warehouse ID for query execution
+    required: true
+    schema:
+      type: string
+      pattern: "^[a-f0-9]{16}$"
+  
+  - name: catalog
+    description: Unity Catalog name
+    required: false
+    schema:
+      type: string
+      
+mutually_exclusive:
+  - [option1, option2]  # Optional: Define mutually exclusive arguments
+---
+
+# Your Prompt Title
+
+## Configuration
+- **Warehouse ID**: ${warehouse_id}
+- **Catalog**: ${catalog}
+
+Your prompt content here. Use ${argument_name} for placeholder substitution.
+```
+
+The YAML frontmatter provides:
+- **Structured documentation**: Clear definition of expected arguments
+- **Future MCP compliance**: Prepared for when FastMCP adds full argument support
+- **Schema definitions**: JSON Schema ready for validation
+- **Argument metadata**: Required/optional flags and descriptions
+
+Note: FastMCP's current version doesn't support runtime argument validation in prompts,
+but the YAML metadata documents the expected interface for future compatibility.
 
 #### Testing Changes
 
