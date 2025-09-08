@@ -4,8 +4,6 @@ import os
 
 from databricks.sdk import WorkspaceClient
 
-from .utils import sanitize_error_message
-
 
 def load_uc_tools(mcp_server):
   """Register Unity Catalog MCP tools with the server.
@@ -13,51 +11,6 @@ def load_uc_tools(mcp_server):
   Args:
       mcp_server: The FastMCP server instance to register tools with
   """
-
-  @mcp_server.tool()
-  def list_uc_catalogs() -> dict:
-    """List all available Unity Catalogs.
-
-    Shows catalog names, descriptions, and types.
-    Starting point for data discovery.
-
-    Returns:
-        Dictionary containing list of catalogs with their details
-    """
-    try:
-      # Initialize Databricks SDK
-      w = WorkspaceClient(
-        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
-      )
-
-      # List all catalogs
-      catalogs = w.catalogs.list()
-
-      catalog_list = []
-      for catalog in catalogs:
-        catalog_list.append(
-          {
-            'name': catalog.name,
-            'type': catalog.catalog_type,
-            'comment': catalog.comment,
-            'owner': catalog.owner,
-            'created_at': catalog.created_at,
-            'updated_at': catalog.updated_at,
-            'properties': catalog.properties,
-          }
-        )
-
-      return {
-        'success': True,
-        'catalogs': catalog_list,
-        'count': len(catalog_list),
-        'message': f'Found {len(catalog_list)} catalog(s)',
-      }
-
-    except Exception as e:
-      sanitized_error = sanitize_error_message(str(e))
-      print(f'❌ Error listing catalogs: {sanitized_error}')
-      return {'success': False, 'error': f'Error: {sanitized_error}', 'catalogs': [], 'count': 0}
 
   @mcp_server.tool()
   def describe_uc_catalog(catalog_name: str) -> dict:

@@ -1,0 +1,618 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Complete Lakeview Widget Type Schemas",
+  "description": "Comprehensive schemas for all observed Lakeview widget types including advanced visualizations",
+  "definitions": {
+    
+    "areaWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [3]},
+        "widgetType": {"const": "area"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"type": "string", "enum": ["temporal", "quantitative", "categorical"]}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "scale"]
+            },
+            "y": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "quantitative"}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "scale"]
+            },
+            "color": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "categorical"}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              }
+            }
+          },
+          "required": ["x", "y"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "histogramWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [3]},
+        "widgetType": {"const": "histogram"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"type": "string", "enum": ["quantitative", "temporal"]}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "scale"]
+            },
+            "y": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "quantitative"}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "scale"]
+            }
+          },
+          "required": ["x", "y"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "boxWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [3]},
+        "widgetType": {"const": "box"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "categorical"}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "scale"]
+            },
+            "y": {
+              "type": "object",
+              "properties": {
+                "whiskerStart": {
+                  "type": "object",
+                  "properties": {
+                    "fieldName": {"type": "string"}
+                  },
+                  "required": ["fieldName"]
+                },
+                "boxStart": {
+                  "type": "object",
+                  "properties": {
+                    "fieldName": {"type": "string"}
+                  },
+                  "required": ["fieldName"]
+                },
+                "boxMid": {
+                  "type": "object",
+                  "properties": {
+                    "fieldName": {"type": "string"}
+                  },
+                  "required": ["fieldName"]
+                },
+                "boxEnd": {
+                  "type": "object",
+                  "properties": {
+                    "fieldName": {"type": "string"}
+                  },
+                  "required": ["fieldName"]
+                },
+                "whiskerEnd": {
+                  "type": "object",
+                  "properties": {
+                    "fieldName": {"type": "string"}
+                  },
+                  "required": ["fieldName"]
+                },
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "quantitative"}
+                  },
+                  "required": ["type"]
+                },
+                "fieldName": {"type": "string"},
+                "displayName": {"type": "string"}
+              },
+              "required": ["scale"]
+            }
+          },
+          "required": ["x", "y"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "sankeyWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [1]},
+        "widgetType": {"const": "sankey"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName"]
+            },
+            "stages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fieldName": {"type": "string"},
+                  "displayName": {"type": "string"}
+                },
+                "required": ["fieldName"]
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": ["value", "stages"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "funnelWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [3]},
+        "widgetType": {"const": "funnel"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "categorical"}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "scale"]
+            },
+            "value": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "quantitative"}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "scale"]
+            }
+          },
+          "required": ["stage", "value"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "comboWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [3]},
+        "widgetType": {"const": "combo"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"type": "string", "enum": ["categorical", "temporal"]}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "scale"]
+            },
+            "y": {
+              "type": "object",
+              "properties": {
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fieldName": {"type": "string"},
+                      "displayName": {"type": "string"},
+                      "chartType": {"type": "string", "enum": ["bar", "line"]}
+                    },
+                    "required": ["fieldName", "chartType"]
+                  }
+                },
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "quantitative"}
+                  },
+                  "required": ["type"]
+                }
+              },
+              "required": ["fields", "scale"]
+            },
+            "y2": {
+              "type": "object",
+              "properties": {
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fieldName": {"type": "string"},
+                      "displayName": {"type": "string"},
+                      "chartType": {"type": "string", "enum": ["bar", "line"]}
+                    },
+                    "required": ["fieldName", "chartType"]
+                  }
+                },
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "quantitative"}
+                  },
+                  "required": ["type"]
+                }
+              }
+            }
+          },
+          "required": ["x", "y"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "choroplethMapWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [3]},
+        "widgetType": {"const": "choropleth-map"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "geo": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "geoType": {"type": "string", "enum": ["country", "state", "county", "zipcode"]},
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "geoType"]
+            },
+            "color": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "quantitative"},
+                    "colorRamp": {
+                      "type": "object",
+                      "properties": {
+                        "mode": {"const": "scheme"},
+                        "scheme": {"type": "string"}
+                      }
+                    }
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName", "scale"]
+            }
+          },
+          "required": ["geo", "color"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "symbolMapWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [3]},
+        "widgetType": {"const": "symbol-map"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "latitude": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName"]
+            },
+            "longitude": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "displayName": {"type": "string"}
+              },
+              "required": ["fieldName"]
+            },
+            "size": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"const": "quantitative"}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              }
+            },
+            "color": {
+              "type": "object",
+              "properties": {
+                "fieldName": {"type": "string"},
+                "scale": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"type": "string", "enum": ["categorical", "quantitative"]}
+                  },
+                  "required": ["type"]
+                },
+                "displayName": {"type": "string"}
+              }
+            }
+          },
+          "required": ["latitude", "longitude"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "pivotWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [1]},
+        "widgetType": {"const": "pivot"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fieldName": {"type": "string"},
+                  "displayName": {"type": "string"}
+                },
+                "required": ["fieldName"]
+              }
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fieldName": {"type": "string"},
+                  "displayName": {"type": "string"}
+                },
+                "required": ["fieldName"]
+              }
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fieldName": {"type": "string"},
+                  "displayName": {"type": "string"},
+                  "aggregation": {"type": "string", "enum": ["sum", "count", "avg", "min", "max"]}
+                },
+                "required": ["fieldName", "aggregation"]
+              }
+            }
+          },
+          "required": ["rows", "values"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "rangeSliderWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [3]},
+        "widgetType": {"const": "range-slider"},
+        "encodings": {
+          "type": "object",
+          "properties": {
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fieldName": {"type": "string"},
+                  "displayName": {"type": "string"},
+                  "dataType": {"type": "string", "enum": ["integer", "float", "date"]},
+                  "min": {"type": ["number", "string"]},
+                  "max": {"type": ["number", "string"]},
+                  "step": {"type": "number"}
+                },
+                "required": ["fieldName", "displayName", "dataType"]
+              }
+            }
+          },
+          "required": ["fields"]
+        },
+        "frame": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "showTitle": {"type": "boolean"}
+          }
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    }
+  },
+
+  "oneOf": [
+    {"$ref": "#/definitions/areaWidget"},
+    {"$ref": "#/definitions/histogramWidget"},
+    {"$ref": "#/definitions/boxWidget"},
+    {"$ref": "#/definitions/sankeyWidget"},
+    {"$ref": "#/definitions/funnelWidget"},
+    {"$ref": "#/definitions/comboWidget"},
+    {"$ref": "#/definitions/choroplethMapWidget"},
+    {"$ref": "#/definitions/symbolMapWidget"},
+    {"$ref": "#/definitions/pivotWidget"},
+    {"$ref": "#/definitions/rangeSliderWidget"}
+  ]
+}

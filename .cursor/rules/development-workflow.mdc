@@ -1,26 +1,183 @@
 # Development Workflow
 
-## 🚨 SIMPLIFIED DEVELOPMENT APPROACH 🚨
+## Project Setup and Development
 
-**CRITICAL: Follow SIMPLE, MAINTAINABLE development patterns. NO over-engineering!**
+### Initial Setup
+1. **Environment Setup**: Run [setup.sh](mdc:setup.sh) for interactive environment configuration
+2. **Dependencies**: Install Python dependencies with `uv` and Node.js dependencies with `bun`
+3. **Authentication**: Configure Databricks OAuth through Databricks Apps
+4. **Local Development**: Use [watch.sh](mdc:watch.sh) for development servers
 
-### Development Philosophy
-- **Direct development** over complex workflows
-- **Simple commands** over sophisticated tooling
-- **Immediate feedback** over complex debugging systems
-- **Standard tools** over custom development utilities
+### Development Commands
 
-## Essential Commands
+#### Essential Scripts
+- [setup.sh](mdc:setup.sh) - Interactive setup for environment, authentication, and dependencies
+- [watch.sh](mdc:watch.sh) - Start development servers (backend + frontend + file watching)
+- [fix.sh](mdc:fix.sh) - Format code (ruff for Python, prettier for TypeScript)
+- [deploy.sh](mdc:deploy.sh) - Deploy to Databricks Apps
+- [app_status.sh](mdc:app_status.sh) - Check deployment status and get app URLs
 
-### Core Development Commands
-- `./setup.sh` - Interactive setup for environment, authentication, and dependencies
-- `./watch.sh` - Start development servers (backend + frontend + file watching)
-- `./fix.sh` - Format code (ruff for Python, prettier for TypeScript)
-- `./deploy.sh` - Deploy to Databricks Apps
-- `./app_status.sh` - Check deployment status and get app URLs
+#### Python Development
+```bash
+# ✅ CORRECT - Use uv for Python execution
+uv run python script.py
+uv run uvicorn server.app:app --reload
+uv run pytest tests/
 
-## Python Execution Rules
+# ❌ WRONG - Direct Python execution
+python script.py
+uvicorn server.app:app
+```
 
+#### Frontend Development
+```bash
+# Start development server
+cd client && bun run dev
+
+# Build for production
+cd client && bun run build
+
+# Run tests
+cd client && bun run test
+```
+
+### Development Environment
+
+#### Backend Development
+- **FastAPI Server**: Runs on `http://localhost:8000`
+- **MCP Server**: Available at `http://localhost:8000/mcp`
+- **Auto-reload**: Enabled with `--reload` flag
+- **Hot reload**: File watching with [watch.sh](mdc:watch.sh)
+
+#### Frontend Development
+- **Vite Dev Server**: Runs on `http://localhost:5173`
+- **Hot Module Replacement**: Automatic reload on file changes
+- **TypeScript**: Strict mode enabled with type checking
+- **TailwindCSS**: JIT compilation for fast styling
+
+#### MCP Proxy Development
+- **Local Proxy**: [dba_mcp_proxy/](mdc:dba_mcp_proxy/) for Claude CLI integration
+- **OAuth Flow**: Handles authentication for local development
+- **Testing**: Use [run-mcp-proxy.sh](mdc:run-mcp-proxy.sh) for local MCP testing
+
+### Code Quality Workflow
+
+#### Formatting and Linting
+```bash
+# Format Python code
+uv run ruff format .
+
+# Lint Python code
+uv run ruff check .
+
+# Format TypeScript code
+cd client && bun run format
+
+# Lint TypeScript code
+cd client && bun run lint
+```
+
+#### Testing Workflow
+```bash
+# Run Python tests
+uv run pytest tests/ -v
+
+# Run frontend tests
+cd client && bun run test
+
+# Run MCP validation
+python claude_scripts/test_mcp_tools.py
+```
+
+### Deployment Workflow
+
+#### Local Testing
+1. **Backend**: Start with `uv run uvicorn server.app:app --reload`
+2. **Frontend**: Start with `cd client && bun run dev`
+3. **MCP Proxy**: Test with [run-mcp-proxy.sh](mdc:run-mcp-proxy.sh)
+4. **Integration**: Test full flow through web interface
+
+#### Production Deployment
+1. **Build**: Run [deploy.sh](mdc:deploy.sh) for automated deployment
+2. **Status**: Check deployment with [app_status.sh](mdc:app_status.sh)
+3. **Validation**: Test deployed MCP server through web interface
+4. **Monitoring**: Monitor logs and performance
+
+### File Organization
+
+#### Backend Structure
+```
+server/
+├── app.py              # Main FastAPI application with integrated MCP server
+├── tools/              # MCP tools organized by functionality
+│   ├── core.py         # Health checks and basic operations
+│   ├── sql_operations.py # SQL warehouse and query tools
+│   ├── unity_catalog.py # Unity Catalog operations
+│   ├── jobs_pipelines.py # Job and DLT pipeline management
+│   ├── dashboards.py   # Dashboard management tools
+│   ├── workspace_files.py # Workspace file operations
+│   ├── repositories.py # Git repository integration
+│   ├── data_management.py # DBFS and data operations (commented out)
+│   └── governance.py   # Governance tools (commented out)
+├── routers/            # API endpoints for frontend
+├── services/           # Business logic and external integrations
+├── models/             # Pydantic models and data structures
+└── prompts.py          # Dynamic prompt loading
+```
+
+#### Frontend Structure
+```
+client/src/
+├── App.tsx             # Main React application
+├── components/         # Reusable UI components
+├── pages/              # Page-level components
+├── fastapi_client/     # Auto-generated TypeScript client
+└── lib/                # Utility functions and configurations
+```
+
+### Development Best Practices
+
+#### Code Organization
+- **Single Responsibility**: Each file should have a clear, single purpose
+- **Consistent Naming**: Use descriptive names following project conventions
+- **Modular Design**: Keep components and functions focused and reusable
+- **Documentation**: Include docstrings and comments for complex logic
+
+#### Version Control
+- **Feature Branches**: Create branches for new features
+- **Commit Messages**: Use descriptive commit messages
+- **Pull Requests**: Review code before merging
+- **CI/CD**: Automated testing and deployment
+
+#### Testing Strategy
+- **Unit Tests**: Test individual functions and components
+- **Integration Tests**: Test API endpoints and MCP tools
+- **E2E Tests**: Test complete user workflows
+- **MCP Validation**: Ensure tools work correctly with AI assistants
+
+#### Performance Considerations
+- **Backend**: Optimize database queries and API responses
+- **Frontend**: Use React.memo and proper dependency arrays
+- **Caching**: Implement appropriate caching strategies
+- **Monitoring**: Track performance metrics and errors
+
+### Troubleshooting
+
+#### Common Issues
+1. **Authentication Errors**: Check Databricks OAuth configuration
+2. **Import Errors**: Ensure all dependencies are installed
+3. **Port Conflicts**: Check for port conflicts on 8000 or 5173
+4. **MCP Tool Errors**: Validate tool function signatures and return types
+
+#### Debugging Tools
+- **Backend Logs**: Check FastAPI logs for detailed error information
+- **Frontend DevTools**: Use browser developer tools for frontend issues
+- **MCP Validation**: Use [claude_scripts/](mdc:claude_scripts/) for MCP testing
+- **Network Monitoring**: Check network requests and responses
+
+### Critical Development Rules
+
+#### Python Execution Rules
 **CRITICAL: Always use `uv run` instead of direct `python`:**
 ```bash
 # ✅ CORRECT
@@ -32,8 +189,7 @@ python script.py
 uvicorn server.app:app
 ```
 
-## Databricks CLI Rules
-
+#### Databricks CLI Rules
 **CRITICAL: Always source environment before Databricks CLI:**
 ```bash
 # ✅ CORRECT - Load environment first
@@ -43,9 +199,15 @@ source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databr
 databricks current-user me
 ```
 
-## Development Workflow
+#### Package Management
+- **Python**: Use `uv add/remove` for dependencies, never edit pyproject.toml manually
+- **Frontend**: Use `bun add/remove` for dependencies, never edit package.json manually
+- Always check if dependencies already exist before adding new ones
+- **Principle**: Only add dependencies if absolutely critical
 
-### Starting Development
+### Development Workflow Summary
+
+#### Starting Development
 1. Run `./setup.sh` for first-time setup or configuration changes
 2. Run `./watch.sh` to start development servers:
    - Backend: http://localhost:8000 (FastAPI + MCP server)
@@ -53,7 +215,7 @@ databricks current-user me
    - MCP endpoint: http://localhost:8000/mcp/
    - API docs: http://localhost:8000/docs
 
-### Making Changes
+#### Making Changes
 - **Tools**: Edit functions in `server/tools/*.py` modules
 - **Prompts**: Add/edit markdown files in `prompts/` directory
 - **Frontend**: Modify React components in `client/src/`
@@ -61,96 +223,36 @@ databricks current-user me
 
 All changes auto-reload via file watchers in `./watch.sh`.
 
-### Package Management
-- **Python**: Use `uv add/remove` for dependencies, never edit pyproject.toml manually
-- **Frontend**: Use `bun add/remove` for dependencies, never edit package.json manually
-- Always check if dependencies already exist before adding new ones
-- **Principle**: Only add dependencies if absolutely critical
+### Forbidden Development Patterns (DO NOT ADD THESE)
+❌ **Complex build scripts** or custom development tools
+❌ **Custom development servers** or complex dev environments
+❌ **Complex dependency management** or custom package managers
+❌ **Complex testing frameworks** or custom test runners
+❌ **Complex deployment scripts** or custom CI/CD pipelines
+❌ **Complex development workflows** or custom development processes
 
-## Development Principles
+### Required Development Patterns (ALWAYS USE THESE)
+✅ **Simple commands** - use existing scripts and tools
+✅ **Direct execution** - use uv run for Python, bun for frontend
+✅ **Simple testing** - use pytest and vitest
+✅ **Simple deployment** - use deploy.sh script
+✅ **Simple debugging** - use standard tools and logs
+✅ **Simple workflows** - follow existing patterns
 
-### Keep It Simple
-- **Direct file editing**: Edit files directly, no complex workflows
-- **Immediate testing**: Test changes immediately with auto-reload
-- **Simple debugging**: Use print statements and basic logging
-- **NO complex debugging tools** or sophisticated development environments
+### Code Review Questions
+Before adding any development workflow, ask yourself:
+- "Is this the simplest way to achieve this workflow?"
+- "Would a new developer understand this immediately?"
+- "Am I adding complexity for a real need or hypothetical flexibility?"
+- "Can I solve this with existing tools and scripts?"
+- "Does this follow the existing development patterns in the codebase?"
 
-### File Organization
-- **One concept per file**: Each file should have a single, clear purpose
-- **Direct imports**: Import exactly what you need, no complex import systems
-- **Simple structure**: Keep file organization flat and obvious
-- **NO complex file hierarchies** or sophisticated organization patterns
-
-### Code Changes
-- **Incremental changes**: Make small, focused changes
-- **Immediate testing**: Test each change before moving on
-- **Simple commits**: Commit changes with clear, simple messages
-- **NO complex branching strategies** or sophisticated version control workflows
-
-## Development Tools
-
-### Essential Tools Only
-- **Editor**: Use any editor that supports the project languages
-- **Terminal**: Basic terminal for running commands
-- **Browser**: For testing frontend and API endpoints
-- **NO complex IDEs** or sophisticated development environments
-
-### Testing Changes
-- **Backend**: Check terminal output and API docs
-- **Frontend**: Check browser console and network tab
-- **MCP**: Use testing scripts in `claude_scripts/`
-- **NO complex testing workflows** or sophisticated debugging tools
-
-## Troubleshooting
-
-### Common Issues
-- **Authentication failures**: Run `databricks auth login` or check `.env.local` configuration
-- **MCP connection issues**: Verify app deployment with `./app_status.sh`
-- **TypeScript client not found**: Auto-generated by `./watch.sh`, check logs
-- **Port conflicts**: Default ports 8000 (backend) and 5173 (frontend)
-
-### Debug Commands
-```bash
-# Check development server logs
-tail -f /tmp/databricks-app-watch.log
-
-# Test Databricks connection
-source .env.local && databricks current-user me
-
-# Verify MCP endpoint
-curl http://localhost:8000/mcp/
-
-# Check Claude MCP integration
-echo "What MCP prompts are available from databricks-mcp?" | claude
-```
-
-## Forbidden Development Patterns
-❌ **Complex development workflows** or sophisticated tooling
-❌ **Advanced debugging systems** or complex debugging tools
-❌ **Sophisticated version control strategies** or complex branching
-❌ **Custom development utilities** or complex development environments
-❌ **Performance profiling** or sophisticated optimization tools
-❌ **Enterprise development patterns** or complex development methodologies
-
-## Required Development Patterns
-✅ **Simple file editing** with immediate testing
-✅ **Basic terminal commands** for development tasks
-✅ **Auto-reload development** with file watchers
-✅ **Simple debugging** with print statements and basic logging
-✅ **Direct package management** with uv and bun
-✅ **Immediate feedback** through auto-reload and simple testing
-
-## Summary: What Makes Development "Senior Developer Approved"
+## Summary: Development Workflow Principles
 
 ✅ **Readable**: Any developer can understand the workflow immediately
-✅ **Maintainable**: Simple patterns that are easy to follow
-✅ **Focused**: Each step has a single, clear purpose
-✅ **Direct**: No unnecessary complexity or indirection
-✅ **Practical**: Gets the job done without over-engineering
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each workflow has a single, clear purpose
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Solves the specific development need without over-engineering
 
-When in doubt, choose the **simpler** development approach. Your future self (and your teammates) will thank you.
-
-description: Development workflow emphasizing simple, maintainable patterns over complex development systems
-globs:
-alwaysApply: false
----
+When in doubt, choose the **simpler** workflow. Your future self (and your teammates) will thank you.

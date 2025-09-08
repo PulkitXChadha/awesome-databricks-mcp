@@ -1,0 +1,572 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Master Lakeview Dashboard Schema",
+  "description": "Complete JSON schema for Lakeview dashboards including all widget types, layouts, and configurations",
+  "type": "object",
+  "properties": {
+    "datasets": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/dataset"}
+    },
+    "pages": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/page"}
+    }
+  },
+  "required": ["datasets", "pages"],
+  "definitions": {
+    
+    "dataset": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "displayName": {"type": "string"},
+        "queryLines": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "parameters": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/parameter"}
+        },
+        "columns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/column"}
+        }
+      },
+      "required": ["name", "displayName", "queryLines"]
+    },
+
+    "parameter": {
+      "type": "object",
+      "properties": {
+        "displayName": {"type": "string"},
+        "keyword": {"type": "string"},
+        "dataType": {
+          "type": "string",
+          "enum": ["STRING", "INTEGER", "FLOAT", "DATE", "DATETIME", "BOOLEAN"]
+        },
+        "complexType": {
+          "type": "string",
+          "enum": ["MULTI", "RANGE"]
+        },
+        "defaultSelection": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "values": {
+                  "type": "object",
+                  "properties": {
+                    "dataType": {"type": "string"},
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {"type": "string"}
+                        },
+                        "required": ["value"]
+                      }
+                    }
+                  },
+                  "required": ["dataType", "values"]
+                }
+              },
+              "required": ["values"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "range": {
+                  "type": "object",
+                  "properties": {
+                    "dataType": {"type": "string"},
+                    "min": {
+                      "type": "object",
+                      "properties": {
+                        "value": {"type": "string"}
+                      },
+                      "required": ["value"]
+                    },
+                    "max": {
+                      "type": "object",
+                      "properties": {
+                        "value": {"type": "string"}
+                      },
+                      "required": ["value"]
+                    }
+                  },
+                  "required": ["dataType", "min", "max"]
+                }
+              },
+              "required": ["range"]
+            }
+          ]
+        }
+      },
+      "required": ["displayName", "keyword", "dataType"]
+    },
+
+    "column": {
+      "type": "object",
+      "properties": {
+        "displayName": {"type": "string"},
+        "description": {"type": "string"},
+        "expression": {"type": "string"}
+      },
+      "required": ["displayName", "expression"]
+    },
+
+    "page": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "displayName": {"type": "string"},
+        "layout": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/layoutWidget"}
+        },
+        "pageType": {
+          "type": "string",
+          "enum": ["PAGE_TYPE_CANVAS"]
+        }
+      },
+      "required": ["name", "displayName", "layout"]
+    },
+
+    "layoutWidget": {
+      "type": "object",
+      "properties": {
+        "widget": {"$ref": "#/definitions/widget"},
+        "position": {"$ref": "#/definitions/position"}
+      },
+      "required": ["widget", "position"]
+    },
+
+    "widget": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "queries": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/query"}
+        },
+        "spec": {"$ref": "#/definitions/widgetSpec"},
+        "multilineTextboxSpec": {"$ref": "#/definitions/multilineTextboxSpec"}
+      },
+      "oneOf": [
+        {"required": ["name", "queries", "spec"]},
+        {"required": ["name", "multilineTextboxSpec"]}
+      ]
+    },
+
+    "query": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "query": {
+          "type": "object",
+          "properties": {
+            "datasetName": {"type": "string"},
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {"type": "string"},
+                  "expression": {"type": "string"}
+                },
+                "required": ["name", "expression"]
+              }
+            },
+            "disaggregated": {"type": "boolean"}
+          },
+          "required": ["datasetName"]
+        }
+      },
+      "required": ["name", "query"]
+    },
+
+    "widgetSpec": {
+      "oneOf": [
+        {"$ref": "#/definitions/chartWidget"},
+        {"$ref": "#/definitions/filterWidget"},
+        {"$ref": "#/definitions/tableWidget"},
+        {"$ref": "#/definitions/mapWidget"}
+      ]
+    },
+
+    "chartWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [1, 2, 3]},
+        "widgetType": {
+          "type": "string",
+          "enum": [
+            "line", "bar", "pie", "counter", "area", "histogram", 
+            "box", "scatter", "funnel", "sankey", "combo", "pivot"
+          ]
+        },
+        "encodings": {"$ref": "#/definitions/chartEncodings"},
+        "frame": {"$ref": "#/definitions/frame"},
+        "mark": {"$ref": "#/definitions/mark"}
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "filterWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [2, 3]},
+        "widgetType": {
+          "type": "string",
+          "enum": [
+            "filter-multi-select", "filter-single-select", 
+            "filter-date-range-picker", "range-slider"
+          ]
+        },
+        "encodings": {"$ref": "#/definitions/filterEncodings"},
+        "frame": {"$ref": "#/definitions/frame"}
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "tableWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [1]},
+        "widgetType": {"const": "table"},
+        "encodings": {"$ref": "#/definitions/tableEncodings"},
+        "invisibleColumns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/tableColumn"}
+        },
+        "allowHTMLByDefault": {"type": "boolean"},
+        "itemsPerPage": {"type": "integer"},
+        "paginationSize": {"type": "string"},
+        "condensed": {"type": "boolean"},
+        "withRowNumber": {"type": "boolean"},
+        "frame": {"$ref": "#/definitions/frame"}
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "mapWidget": {
+      "type": "object",
+      "properties": {
+        "version": {"type": "integer", "enum": [3]},
+        "widgetType": {
+          "type": "string",
+          "enum": ["choropleth-map", "symbol-map", "heatmap"]
+        },
+        "encodings": {"$ref": "#/definitions/mapEncodings"},
+        "frame": {"$ref": "#/definitions/frame"}
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "chartEncodings": {
+      "type": "object",
+      "properties": {
+        "x": {"$ref": "#/definitions/axisEncoding"},
+        "y": {"$ref": "#/definitions/axisEncoding"},
+        "color": {"$ref": "#/definitions/colorEncoding"},
+        "size": {"$ref": "#/definitions/sizeEncoding"},
+        "angle": {"$ref": "#/definitions/angleEncoding"},
+        "label": {"$ref": "#/definitions/labelEncoding"},
+        "value": {"$ref": "#/definitions/valueEncoding"},
+        "source": {"$ref": "#/definitions/valueEncoding"},
+        "target": {"$ref": "#/definitions/valueEncoding"},
+        "stage": {"$ref": "#/definitions/axisEncoding"},
+        "y2": {"$ref": "#/definitions/axisEncoding"},
+        "rows": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/pivotField"}
+        },
+        "columns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/pivotField"}
+        },
+        "values": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/pivotValue"}
+        }
+      }
+    },
+
+    "filterEncodings": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/filterField"}
+        }
+      },
+      "required": ["fields"]
+    },
+
+    "tableEncodings": {
+      "type": "object",
+      "properties": {
+        "columns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/tableColumn"}
+        }
+      },
+      "required": ["columns"]
+    },
+
+    "mapEncodings": {
+      "type": "object",
+      "properties": {
+        "x": {"$ref": "#/definitions/axisEncoding"},
+        "y": {"$ref": "#/definitions/axisEncoding"},
+        "color": {"$ref": "#/definitions/colorEncoding"},
+        "geo": {"$ref": "#/definitions/geoEncoding"},
+        "latitude": {"$ref": "#/definitions/valueEncoding"},
+        "longitude": {"$ref": "#/definitions/valueEncoding"},
+        "size": {"$ref": "#/definitions/sizeEncoding"}
+      }
+    },
+
+    "axisEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fieldName": {"type": "string"},
+              "displayName": {"type": "string"},
+              "chartType": {"type": "string", "enum": ["bar", "line"]}
+            },
+            "required": ["fieldName"]
+          }
+        },
+        "scale": {"$ref": "#/definitions/scale"},
+        "axis": {"$ref": "#/definitions/axis"},
+        "displayName": {"type": "string"}
+      }
+    },
+
+    "colorEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "scale": {"$ref": "#/definitions/colorScale"},
+        "legend": {"$ref": "#/definitions/legend"},
+        "displayName": {"type": "string"}
+      }
+    },
+
+    "sizeEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "scale": {"$ref": "#/definitions/scale"},
+        "displayName": {"type": "string"}
+      }
+    },
+
+    "angleEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "scale": {"$ref": "#/definitions/scale"},
+        "axis": {"$ref": "#/definitions/axis"},
+        "displayName": {"type": "string"}
+      }
+    },
+
+    "labelEncoding": {
+      "type": "object",
+      "properties": {
+        "show": {"type": "boolean"}
+      }
+    },
+
+    "valueEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "displayName": {"type": "string"}
+      },
+      "required": ["fieldName"]
+    },
+
+    "geoEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "geoType": {"type": "string", "enum": ["country", "state", "county", "zipcode"]},
+        "displayName": {"type": "string"}
+      },
+      "required": ["fieldName", "geoType"]
+    },
+
+    "filterField": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "displayName": {"type": "string"},
+        "queryName": {"type": "string"},
+        "dataType": {"type": "string"},
+        "min": {"type": ["number", "string"]},
+        "max": {"type": ["number", "string"]},
+        "step": {"type": "number"}
+      },
+      "required": ["fieldName", "displayName"]
+    },
+
+    "pivotField": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "displayName": {"type": "string"}
+      },
+      "required": ["fieldName"]
+    },
+
+    "pivotValue": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "displayName": {"type": "string"},
+        "aggregation": {"type": "string", "enum": ["sum", "count", "avg", "min", "max"]}
+      },
+      "required": ["fieldName", "aggregation"]
+    },
+
+    "tableColumn": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "name": {"type": "string"},
+        "booleanValues": {"type": "array", "items": {"type": "string"}},
+        "imageUrlTemplate": {"type": "string"},
+        "imageTitleTemplate": {"type": "string"},
+        "imageWidth": {"type": "string"},
+        "imageHeight": {"type": "string"},
+        "linkUrlTemplate": {"type": "string"},
+        "linkTextTemplate": {"type": "string"},
+        "linkTitleTemplate": {"type": "string"},
+        "linkOpenInNewTab": {"type": "boolean"},
+        "type": {"type": "string", "enum": ["string", "integer", "float", "date", "boolean"]},
+        "displayAs": {"type": "string", "enum": ["string", "number", "datetime", "link", "image"]},
+        "visible": {"type": "boolean"},
+        "order": {"type": "number"},
+        "title": {"type": "string"},
+        "allowSearch": {"type": "boolean"},
+        "alignContent": {"type": "string", "enum": ["left", "center", "right"]},
+        "allowHTML": {"type": "boolean"},
+        "highlightLinks": {"type": "boolean"},
+        "useMonospaceFont": {"type": "boolean"},
+        "preserveWhitespace": {"type": "boolean"},
+        "displayName": {"type": "string"},
+        "numberFormat": {"type": "string"},
+        "dateTimeFormat": {"type": "string"}
+      }
+    },
+
+    "scale": {
+      "type": "object",
+      "properties": {
+        "type": {"type": "string", "enum": ["quantitative", "categorical", "temporal", "ordinal"]},
+        "sort": {
+          "type": "object",
+          "properties": {
+            "by": {"type": "string", "enum": ["x", "y", "x-reversed", "y-reversed"]}
+          }
+        }
+      },
+      "required": ["type"]
+    },
+
+    "colorScale": {
+      "allOf": [
+        {"$ref": "#/definitions/scale"},
+        {
+          "type": "object",
+          "properties": {
+            "colorRamp": {
+              "type": "object",
+              "properties": {
+                "mode": {"type": "string", "enum": ["scheme", "custom"]},
+                "scheme": {"type": "string", "enum": ["redblue", "viridis", "plasma", "inferno", "magma"]}
+              }
+            },
+            "mappings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "value": {"type": "string"},
+                  "color": {"type": "string"}
+                },
+                "required": ["value", "color"]
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "axis": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string"},
+        "hideTitle": {"type": "boolean"}
+      }
+    },
+
+    "legend": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string"}
+      }
+    },
+
+    "frame": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string"},
+        "showTitle": {"type": "boolean"}
+      }
+    },
+
+    "mark": {
+      "type": "object",
+      "properties": {
+        "colors": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+
+    "multilineTextboxSpec": {
+      "type": "object",
+      "properties": {
+        "lines": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["lines"]
+    },
+
+    "position": {
+      "type": "object",
+      "properties": {
+        "x": {"type": "integer", "minimum": 0},
+        "y": {"type": "integer", "minimum": 0},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1}
+      },
+      "required": ["x", "y", "width", "height"]
+    }
+  }
+}

@@ -1,0 +1,415 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lakeview Dashboard Widget Schemas",
+  "description": "Comprehensive JSON schemas for all Lakeview dashboard widget types and their attribute combinations",
+  "definitions": {
+    "baseWidget": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique identifier for the widget"
+        },
+        "queries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/query"
+          }
+        },
+        "spec": {
+          "oneOf": [
+            {"$ref": "#/definitions/visualizationWidget"},
+            {"$ref": "#/definitions/filterWidget"},
+            {"$ref": "#/definitions/textWidget"}
+          ]
+        },
+        "multilineTextboxSpec": {
+          "$ref": "#/definitions/multilineTextboxSpec"
+        }
+      },
+      "oneOf": [
+        {"required": ["name", "queries", "spec"]},
+        {"required": ["name", "multilineTextboxSpec"]}
+      ]
+    },
+    
+    "query": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "datasetName": {"type": "string"},
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {"type": "string"},
+                  "expression": {"type": "string"}
+                },
+                "required": ["name", "expression"]
+              }
+            },
+            "disaggregated": {"type": "boolean"}
+          },
+          "required": ["datasetName"]
+        }
+      },
+      "required": ["name", "query"]
+    },
+
+    "multilineTextboxSpec": {
+      "type": "object",
+      "properties": {
+        "lines": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["lines"]
+    },
+
+    "visualizationWidget": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "integer",
+          "enum": [1, 2, 3]
+        },
+        "widgetType": {
+          "type": "string",
+          "enum": [
+            "line", "bar", "pie", "counter", "table", "heatmap", "scatter", 
+            "area", "box", "histogram", "funnel", "sankey", "combo", 
+            "choropleth-map", "symbol-map", "pivot", "range-slider"
+          ]
+        },
+        "encodings": {
+          "$ref": "#/definitions/encodings"
+        },
+        "frame": {
+          "$ref": "#/definitions/frame"
+        },
+        "mark": {
+          "$ref": "#/definitions/mark"
+        },
+        "invisibleColumns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/tableColumn"}
+        },
+        "allowHTMLByDefault": {"type": "boolean"},
+        "itemsPerPage": {"type": "integer"},
+        "paginationSize": {"type": "string"},
+        "condensed": {"type": "boolean"},
+        "withRowNumber": {"type": "boolean"}
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "filterWidget": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "integer",
+          "enum": [2, 3]
+        },
+        "widgetType": {
+          "type": "string",
+          "enum": [
+            "filter-multi-select", "filter-single-select", 
+            "filter-date-range-picker", "range-slider"
+          ]
+        },
+        "encodings": {
+          "$ref": "#/definitions/filterEncodings"
+        },
+        "frame": {
+          "$ref": "#/definitions/frame"
+        }
+      },
+      "required": ["version", "widgetType", "encodings"]
+    },
+
+    "textWidget": {
+      "type": "object",
+      "properties": {
+        "multilineTextboxSpec": {
+          "$ref": "#/definitions/multilineTextboxSpec"
+        }
+      },
+      "required": ["multilineTextboxSpec"]
+    },
+
+    "encodings": {
+      "type": "object",
+      "properties": {
+        "x": {"$ref": "#/definitions/axisEncoding"},
+        "y": {"$ref": "#/definitions/axisEncoding"},
+        "color": {"$ref": "#/definitions/colorEncoding"},
+        "size": {"$ref": "#/definitions/sizeEncoding"},
+        "angle": {"$ref": "#/definitions/angleEncoding"},
+        "label": {"$ref": "#/definitions/labelEncoding"},
+        "value": {"$ref": "#/definitions/valueEncoding"},
+        "columns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/tableColumn"}
+        },
+        "fields": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/filterField"}
+        }
+      }
+    },
+
+    "filterEncodings": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/filterField"}
+        }
+      },
+      "required": ["fields"]
+    },
+
+    "axisEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fieldName": {"type": "string"},
+              "displayName": {"type": "string"}
+            },
+            "required": ["fieldName"]
+          }
+        },
+        "scale": {"$ref": "#/definitions/scale"},
+        "axis": {"$ref": "#/definitions/axis"},
+        "displayName": {"type": "string"}
+      }
+    },
+
+    "colorEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "scale": {"$ref": "#/definitions/colorScale"},
+        "legend": {"$ref": "#/definitions/legend"},
+        "displayName": {"type": "string"}
+      }
+    },
+
+    "sizeEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "scale": {"$ref": "#/definitions/scale"},
+        "displayName": {"type": "string"}
+      }
+    },
+
+    "angleEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "scale": {"$ref": "#/definitions/scale"},
+        "axis": {"$ref": "#/definitions/axis"},
+        "displayName": {"type": "string"}
+      }
+    },
+
+    "labelEncoding": {
+      "type": "object",
+      "properties": {
+        "show": {"type": "boolean"}
+      }
+    },
+
+    "valueEncoding": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "displayName": {"type": "string"}
+      },
+      "required": ["fieldName"]
+    },
+
+    "filterField": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "displayName": {"type": "string"},
+        "queryName": {"type": "string"}
+      },
+      "required": ["fieldName", "displayName"]
+    },
+
+    "tableColumn": {
+      "type": "object",
+      "properties": {
+        "fieldName": {"type": "string"},
+        "name": {"type": "string"},
+        "booleanValues": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "imageUrlTemplate": {"type": "string"},
+        "imageTitleTemplate": {"type": "string"},
+        "imageWidth": {"type": "string"},
+        "imageHeight": {"type": "string"},
+        "linkUrlTemplate": {"type": "string"},
+        "linkTextTemplate": {"type": "string"},
+        "linkTitleTemplate": {"type": "string"},
+        "linkOpenInNewTab": {"type": "boolean"},
+        "type": {
+          "type": "string",
+          "enum": ["string", "integer", "float", "date", "boolean"]
+        },
+        "displayAs": {
+          "type": "string",
+          "enum": ["string", "number", "datetime", "link", "image"]
+        },
+        "visible": {"type": "boolean"},
+        "order": {"type": "number"},
+        "title": {"type": "string"},
+        "allowSearch": {"type": "boolean"},
+        "alignContent": {
+          "type": "string",
+          "enum": ["left", "center", "right"]
+        },
+        "allowHTML": {"type": "boolean"},
+        "highlightLinks": {"type": "boolean"},
+        "useMonospaceFont": {"type": "boolean"},
+        "preserveWhitespace": {"type": "boolean"},
+        "displayName": {"type": "string"},
+        "numberFormat": {"type": "string"},
+        "dateTimeFormat": {"type": "string"}
+      }
+    },
+
+    "scale": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["quantitative", "categorical", "temporal", "ordinal"]
+        },
+        "sort": {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string",
+              "enum": ["x", "y", "x-reversed", "y-reversed"]
+            }
+          }
+        }
+      },
+      "required": ["type"]
+    },
+
+    "colorScale": {
+      "allOf": [
+        {"$ref": "#/definitions/scale"},
+        {
+          "type": "object",
+          "properties": {
+            "colorRamp": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": ["scheme", "custom"]
+                },
+                "scheme": {
+                  "type": "string",
+                  "enum": ["redblue", "viridis", "plasma", "inferno", "magma"]
+                }
+              }
+            },
+            "mappings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "value": {"type": "string"},
+                  "color": {"type": "string"}
+                },
+                "required": ["value", "color"]
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "axis": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string"},
+        "hideTitle": {"type": "boolean"}
+      }
+    },
+
+    "legend": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string"}
+      }
+    },
+
+    "frame": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string"},
+        "showTitle": {"type": "boolean"}
+      }
+    },
+
+    "mark": {
+      "type": "object",
+      "properties": {
+        "colors": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+
+    "position": {
+      "type": "object",
+      "properties": {
+        "x": {"type": "integer"},
+        "y": {"type": "integer"},
+        "width": {"type": "integer"},
+        "height": {"type": "integer"}
+      },
+      "required": ["x", "y", "width", "height"]
+    },
+
+    "layoutWidget": {
+      "type": "object",
+      "properties": {
+        "widget": {"$ref": "#/definitions/baseWidget"},
+        "position": {"$ref": "#/definitions/position"}
+      },
+      "required": ["widget", "position"]
+    }
+  },
+
+  "type": "object",
+  "properties": {
+    "widget": {"$ref": "#/definitions/baseWidget"},
+    "layout": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/layoutWidget"}
+    }
+  }
+}

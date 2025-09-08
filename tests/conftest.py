@@ -1,8 +1,8 @@
-"""Minimal pytest configuration and fixtures."""
+"""Simple pytest configuration following CLAUDE.md guidelines."""
 
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -13,16 +13,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 @pytest.fixture
 def mock_env_vars(monkeypatch):
   """Set test environment variables."""
-  env_vars = {
-    'DATABRICKS_HOST': 'https://test.cloud.databricks.com',
-    'DATABRICKS_TOKEN': 'test-token-12345',
-    'DATABRICKS_SQL_WAREHOUSE_ID': 'test-warehouse',
-  }
-
-  for key, value in env_vars.items():
-    monkeypatch.setenv(key, value)
-
-  return env_vars
+  monkeypatch.setenv('DATABRICKS_HOST', 'https://test.cloud.databricks.com')
+  monkeypatch.setenv('DATABRICKS_TOKEN', 'test-token-12345')
+  monkeypatch.setenv('DATABRICKS_SQL_WAREHOUSE_ID', 'test-warehouse')
 
 
 @pytest.fixture
@@ -35,22 +28,15 @@ def mcp_server():
 
 @pytest.fixture
 def mock_workspace_client():
-  """Mock Databricks WorkspaceClient."""
-  with (
-    patch('server.tools.unity_catalog.WorkspaceClient') as mock_uc,
-    patch('server.tools.sql_operations.WorkspaceClient') as mock_sql,
-    patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_jobs,
-    patch('server.tools.dashboards.WorkspaceClient') as mock_dash,
-    patch('server.tools.data_management.WorkspaceClient') as mock_data,
-    patch('server.tools.governance.WorkspaceClient') as mock_gov,
-  ):
-    # Return a single mock that all patches will use
-    mock_client = Mock()
-    mock_uc.return_value = mock_client
-    mock_sql.return_value = mock_client
-    mock_jobs.return_value = mock_client
-    mock_dash.return_value = mock_client
-    mock_data.return_value = mock_client
-    mock_gov.return_value = mock_client
+  """Simple mock Databricks WorkspaceClient."""
+  mock_client = Mock()
 
-    yield mock_client
+  # Basic mock setup for common operations
+  mock_client.catalogs.list.return_value = []
+  mock_client.schemas.list.return_value = []
+  mock_client.tables.list.return_value = []
+  mock_client.sql_warehouses.list.return_value = []
+  mock_client.jobs.list.return_value = []
+  mock_client.pipelines.list_pipelines.return_value = []
+
+  return mock_client

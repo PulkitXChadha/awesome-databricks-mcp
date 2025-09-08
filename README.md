@@ -13,6 +13,7 @@ This template lets you create an MCP server that runs on Databricks Apps. You ca
 - 🧪 **Comprehensive Testing** with automated MCP validation tools
 - 🔄 **CI/CD Pipeline** with automated testing, security scanning, and deployment
 - 📊 **Advanced Dashboard Tools** for building comprehensive Lakeview dashboards
+- 🛡️ **Security Features** with comprehensive injection attack prevention and input validation
 
 Think of it as a bridge between Claude and your Databricks workspace - you define what Claude can see and do, and this server handles the rest.
 
@@ -111,10 +112,11 @@ graph TB
    - Built with TailwindCSS, Radix UI, and modern React patterns
    - Uses Vite for fast development and building
 
-3. **Prompts** (`prompts/`): Simple markdown files where:
-   - Filename = prompt name (e.g., `build_lakeview_dashboard.md` → `build_lakeview_dashboard` prompt)
-   - First line with `#` = description
-   - File content = what gets returned to Claude
+3. **Prompts** (`prompts/`): MCP-compliant markdown files with YAML frontmatter:
+   - **YAML frontmatter**: Required metadata defining prompt name, description, and arguments
+   - **Argument validation**: Built-in validation for required arguments and data types
+   - **Placeholder substitution**: Automatic replacement of `${argument}` placeholders
+   - **Security**: Input sanitization and validation to prevent injection attacks
 
 4. **Modular Tools System** (`server/tools/`): Organized tool modules that:
    - Break down functionality into logical, manageable components
@@ -132,6 +134,13 @@ graph TB
    - MCP protocol compliance validation
    - OAuth authentication flow testing
    - Web-based MCP Inspector for interactive testing
+
+7. **Security Features** (`server/tools/security.py`): Comprehensive security validation:
+   - SQL injection prevention with pattern detection
+   - HTML/script injection prevention and sanitization
+   - Dataset and field name validation
+   - Widget configuration security validation
+   - Input sanitization and escaping
 
 ## 🎬 Demo
 
@@ -415,6 +424,50 @@ echo "What MCP prompts are available from databricks-mcp-local?" | claude
 
 All changes automatically reload thanks to the file watchers in `./watch.sh`.
 
+#### Creating New MCP Prompts
+
+All prompts require YAML frontmatter for MCP compliance. Create a new markdown file in `prompts/`:
+
+```markdown
+---
+name: your_prompt_name
+description: Brief description of what the prompt does
+arguments:
+  - name: warehouse_id
+    description: SQL Warehouse ID for query execution
+    required: true
+    schema:
+      type: string
+      pattern: "^[a-f0-9]{16}$"
+  
+  - name: catalog
+    description: Unity Catalog name
+    required: false
+    schema:
+      type: string
+      
+mutually_exclusive:
+  - [option1, option2]  # Optional: Define mutually exclusive arguments
+---
+
+# Your Prompt Title
+
+## Configuration
+- **Warehouse ID**: ${warehouse_id}
+- **Catalog**: ${catalog}
+
+Your prompt content here. Use ${argument_name} for placeholder substitution.
+```
+
+The YAML frontmatter provides:
+- **Structured documentation**: Clear definition of expected arguments
+- **Future MCP compliance**: Prepared for when FastMCP adds full argument support
+- **Schema definitions**: JSON Schema ready for validation
+- **Argument metadata**: Required/optional flags and descriptions
+
+Note: FastMCP's current version doesn't support runtime argument validation in prompts,
+but the YAML metadata documents the expected interface for future compatibility.
+
 #### Testing Changes
 
 ```bash
@@ -523,7 +576,8 @@ Human: What prompts are available?
 
 Claude: I can see the following prompts from your Databricks MCP server:
 - build_lakeview_dashboard: Build comprehensive Lakeview dashboards with data validation
-- build_ldp_pipeline: Build a Declarative Pipelines pipeline for data processing
+- build_ldp_pipeline: Build Lakehouse Data Pipelines for data processing
+- performance_optimization: Performance optimization guidance for Databricks workloads
 ```
 
 ### Sample Tool Usage
@@ -543,18 +597,16 @@ Claude: I'll execute that SQL query for you using the execute_dbsql tool.
 │   ├── app.py                # Main application + MCP server setup
 │   ├── tools/                # Modular MCP tools implementation
 │   │   ├── __init__.py       # Tool registration and loading
-│   │   ├── core.py           # Core and health tools
-│   │   ├── sql_operations.py # SQL and warehouse tools
-│   │   ├── unity_catalog.py  # Unity Catalog tools
-│   │   ├── data_management.py # Data and DBFS tools
-│   │   ├── jobs_pipelines.py # Jobs and DLT pipeline tools
-│   │   ├── dashboards.py     # Dashboard tools
-│   │   ├── widgets.py        # Widget creation and management
-│   │   ├── governance.py     # Governance and compliance tools
+│   │   ├── core.py           # Core and health tools (✅ Active)
+│   │   ├── sql_operations.py # SQL and warehouse tools (✅ Active)
+│   │   ├── unity_catalog.py  # Unity Catalog tools (✅ Active)
+│   │   ├── jobs_pipelines.py # Jobs and DLT pipeline tools (✅ Active)
+│   │   ├── lakeview_dashboard.py # Lakeview dashboard tools (✅ Active)
+│   │   ├── data_management.py # Data and DBFS tools (🚧 Available)
+│   │   ├── governance.py     # Governance and compliance tools (🚧 Available)
+│   │   ├── widget_specs.py   # Widget specifications and utilities
+│   │   ├── layout_optimization.py # Dashboard layout optimization
 │   │   └── utils.py          # Shared utility functions
-│   ├── models/               # Data models and type definitions
-│   │   ├── __init__.py       # Model exports
-│   │   └── widget_types.py   # Widget type definitions and constants
 │   └── routers/              # API endpoints
 ├── client/                   # React TypeScript frontend
 │   ├── src/                  # Source code
@@ -565,20 +617,18 @@ Claude: I'll execute that SQL query for you using the execute_dbsql tool.
 │   └── tailwind.config.js    # TailwindCSS configuration
 ├── prompts/                  # MCP prompts (markdown files)
 │   ├── build_lakeview_dashboard.md # Comprehensive dashboard building prompt
-│   └── build_dlt_pipeline.md # DLT pipeline building prompt
+│   ├── build_ldp_pipeline.md # Lakehouse Data Pipelines building prompt
+│   └── performance_optimization.md # Performance optimization guidance
 ├── dba_mcp_proxy/           # MCP proxy for Claude CLI
 │   └── mcp_client.py        # OAuth + proxy implementation
 ├── claude_scripts/          # Comprehensive testing tools
-│   ├── test_local_mcp_*.sh  # Local MCP testing scripts
-│   ├── test_remote_mcp_*.sh # Remote MCP testing scripts
-│   ├── test_dashboard_tools.py # Dashboard tools testing
+│   ├── test_local_mcp_*.sh  # Local MCP testing scripts (curl & proxy)
+│   ├── test_remote_mcp_*.sh # Remote MCP testing scripts (curl & proxy)
+│   ├── test_mcp_tools.py    # MCP tools testing
 │   ├── test_uc_tools.py     # Unity Catalog tools testing
-│   └── inspect_*.sh         # Web-based MCP Inspector
-├── examples/                 # End-to-end dashboard examples
-│   ├── create_sales_dashboard.py # Sales analytics dashboard
-│   ├── create_monitoring_dashboard.py # System monitoring dashboard
-│   ├── update_existing_dashboard.py # Dashboard update workflow
-│   └── README.md            # Examples documentation
+│   ├── inspect_local_mcp.sh # Local web-based MCP Inspector
+│   ├── inspect_remote_mcp.sh # Remote web-based MCP Inspector
+│   └── README.md            # Testing documentation
 ├── docs/                     # Documentation
 │   ├── databricks_apis/      # Databricks API documentation
 │   ├── architecture.md       # System architecture overview
@@ -589,27 +639,39 @@ Claude: I'll execute that SQL query for you using the execute_dbsql tool.
 ├── .github/workflows/        # CI/CD automation
 │   ├── ci.yml               # Continuous integration
 │   ├── deploy.yml           # Automated deployment
-│   └── security.yml         # Security scanning
+│   ├── security.yml         # Security scanning
+│   └── test.yml             # Automated testing
 └── pyproject.toml          # Python package configuration
 ```
 
 ## Modular Tools System
 
-The MCP server now features a **modular tools architecture** that organizes 100+ tools into logical, maintainable modules:
+The MCP server features a **modular tools architecture** that organizes tools into logical, maintainable modules. Currently **5 active modules** are loaded with **88+ tools** available:
 
-### Tool Distribution
+### Active Tool Modules
 
 ```mermaid
-pie title MCP Tools by Module
+pie title Active MCP Tools by Module
     "Core Tools" : 1
     "SQL Operations" : 15
-    "Unity Catalog" : 20
-    "Data Management" : 10
-    "Jobs & Pipelines" : 20
-    "Dashboards" : 4
-    "Widgets" : 15
-    "Governance" : 15
+    "Unity Catalog" : 21
+    "Jobs & Pipelines" : 19
+    "Lakeview Dashboard" : 3
 ```
+
+### Module Status Overview
+
+| Module | Status | Tools | Description |
+|--------|--------|-------|-------------|
+| **core.py** | ✅ Active | 1 | Basic health checks and core functionality |
+| **sql_operations.py** | ✅ Active | ~15 | SQL warehouse management, query execution, and monitoring |
+| **unity_catalog.py** | ✅ Active | ~21 | Catalog, schema, table, and metadata operations |
+| **jobs_pipelines.py** | ✅ Active | ~19 | Job and DLT pipeline management |
+| **lakeview_dashboard.py** | ✅ Active | ~3 | Comprehensive Lakeview dashboard creation and management |
+| **data_management.py** | 🚧 Available | ~10 | DBFS operations, external locations, storage credentials |
+| **governance.py** | 🚧 Available | ~15 | Audit logs, governance rules, and data lineage |
+
+**Total: 88+ tools** with 59+ currently active across 5 modules
 
 ### Benefits of Modularization
 
@@ -620,33 +682,89 @@ pie title MCP Tools by Module
 5. **Scalability**: New tools can be added to appropriate modules without cluttering
 6. **Documentation**: Each module has clear purpose and can be documented independently
 
-### Module Overview
-
-| Module | Tools | Description |
-|--------|-------|-------------|
-| **core.py** | 1 | Basic health checks and core functionality |
-| **sql_operations.py** | 15 | SQL warehouse management, query execution, and monitoring |
-| **unity_catalog.py** | 20 | Catalog, schema, table, and metadata operations |
-| **data_management.py** | 10 | DBFS operations, external locations, storage credentials |
-| **jobs_pipelines.py** | 20 | Job and DLT pipeline management |
-| **dashboards.py** | 8 | Lakeview and legacy dashboard management |
-| **widgets.py** | 15 | Widget creation, management, and configuration |
-| **governance.py** | 15 | Audit logs, governance rules, and data lineage |
-
 ## Building Dashboards with MCP
+
+### Dashboard Tool Architecture
+
+The dashboard system provides comprehensive Lakeview dashboard creation through focused tools:
+
+| Tool | Purpose | Key Features |
+|------|---------|-------------|
+| **create_dashboard_file** | Complete dashboard creation | Creates .lvdash.json files with full widget support |
+| **validate_widget_fields** | Widget validation | Ensures widget configurations match dataset schemas |
+| **get_aggregation_expression** | SQL optimization | Generates optimized aggregation expressions |
+
+**Key Capabilities:**
+- **16+ Widget Types**: Full support for charts, displays, filters, and interactive elements
+- **SQL Validation**: Pre-deployment query testing and schema validation
+- **Grid Layout System**: 12-column responsive design with auto-positioning
+- **Dataset Optimization**: Smart query design for multiple widget support
+- **Production Ready**: Generates deployment-ready .lvdash.json files
 
 ### Dashboard Building Quickstart
 
 The MCP server provides comprehensive tools for building Lakeview and legacy dashboards programmatically. You can create, manage, and share dashboards using simple commands in Claude.
+
+#### Tool Usage Examples
+
+**Creating a Complete Dashboard:**
+```python
+# Using create_dashboard_file tool
+create_dashboard_file(
+    name="Sales Dashboard",
+    warehouse_id="abc123",
+    datasets=[{
+        "name": "Sales Data",
+        "query": "SELECT product_category, revenue, order_date FROM sales_transactions WHERE revenue > 100"
+    }],
+    widgets=[
+        {
+            "type": "bar",
+            "dataset": "Sales Data",
+            "config": {
+                "x_field": "product_category",
+                "y_field": "revenue",
+                "title": "Revenue by Category"
+            },
+            "position": {"x": 0, "y": 0, "width": 6, "height": 4}
+        },
+        {
+            "type": "counter",
+            "dataset": "Sales Data",
+            "config": {
+                "value_field": "revenue",
+                "title": "Total Revenue"
+            },
+            "position": {"x": 6, "y": 0, "width": 3, "height": 2}
+        }
+    ],
+    file_path="sales_dashboard.lvdash.json",
+    validate_sql=True
+)
+```
+
+**Dashboard Creation Result:**
+```json
+{
+    "success": true,
+    "file_path": "sales_dashboard.lvdash.json",
+    "file_size": 2048,
+    "message": "Dashboard file successfully created",
+    "validation_results": {
+        "queries_validated": [...],
+        "widget_validations": [...]
+    }
+}
+```
 
 #### Basic Dashboard Creation
 
 ```
 Human: Create a sales dashboard with revenue metrics and customer analysis
 
-Claude: I'll create a Lakeview dashboard with revenue and customer metrics using the create_lakeview_dashboard tool.
+Claude: I'll create a Lakeview dashboard with revenue and customer metrics using the simplified tool architecture.
 
-[Creates dashboard with multiple visualizations, layouts, and data connections]
+[Creates dashboard using manage_dashboard, then adds widgets with create_chart_widget and create_display_widget]
 ```
 
 #### Widget Types Available
@@ -882,7 +1000,7 @@ echo "Use the build_lakeview_dashboard prompt from databricks-mcp" | claude
 
 ### Testing Scripts
 
-The `claude_scripts/` directory contains comprehensive testing tools:
+The `claude_scripts/` directory contains **9 comprehensive testing tools**:
 
 #### Command Line Tests
 ```bash
@@ -893,6 +1011,10 @@ The `claude_scripts/` directory contains comprehensive testing tools:
 # Test remote MCP server (requires Databricks auth and deployment)
 ./claude_scripts/test_remote_mcp_curl.sh     # OAuth + HTTP tests
 ./claude_scripts/test_remote_mcp_proxy.sh    # Full end-to-end MCP proxy tests
+
+# Specialized tool testing
+./claude_scripts/test_mcp_tools.py           # MCP tools validation
+./claude_scripts/test_uc_tools.py            # Unity Catalog tools testing
 ```
 
 #### Interactive Web UI Tests

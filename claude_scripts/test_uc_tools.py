@@ -30,20 +30,17 @@ def test_uc_tools():
     user = w.current_user.me()
     print(f'✅ Connected as: {user.user_name}')
 
-    # Test listing catalogs
-    print('\n📁 Testing list_uc_catalogs...')
-    catalogs = list(w.catalogs.list())
-    print(f'✅ Found {len(catalogs)} catalog(s)')
+    # Test describing a common catalog
+    print('\n📁 Testing describe_uc_catalog with common catalog...')
+    catalog_names = ['hive_metastore', 'main', 'samples']
+    catalog_found = False
 
-    if catalogs:
-      catalog_name = catalogs[0].name
-      print(f'📁 First catalog: {catalog_name}')
-
-      # Test describing catalog
-      print(f"\n📋 Testing describe_uc_catalog for '{catalog_name}'...")
+    for catalog_name in catalog_names:
       try:
+        print(f'  Trying catalog: {catalog_name}')
         catalog_details = w.catalogs.get(catalog_name)
-        print(f'✅ Got catalog details: {catalog_details.name}')
+        print(f'✅ Found catalog: {catalog_details.name}')
+        catalog_found = True
 
         # List schemas
         schemas = list(w.schemas.list(catalog_name))
@@ -147,10 +144,12 @@ def test_uc_tools():
             print(f"⚠️  Could not describe schema '{full_schema}': {e}")
         else:
           print('ℹ️  No schemas found in catalog')
+        break  # Found a working catalog, exit loop
       except Exception as e:
         print(f"⚠️  Could not describe catalog '{catalog_name}': {e}")
-    else:
-      print('ℹ️  No catalogs found')
+
+    if not catalog_found:
+      print('ℹ️  No accessible catalogs found')
 
     # Test external locations
     print('\n🌐 Testing list_external_locations...')

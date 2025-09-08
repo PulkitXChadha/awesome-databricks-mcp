@@ -584,5 +584,3 @@ When in doubt, choose the **simpler** solution. Your future self (and your teamm
 6. **When in doubt, ask "Is this the simplest way?" before implementing**
 
 This project is intentionally simplified. **Respect that simplicity.**
-
-- /clear

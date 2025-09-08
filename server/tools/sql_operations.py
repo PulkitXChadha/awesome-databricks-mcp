@@ -97,7 +97,7 @@ def load_sql_tools(mcp_server):
       )
 
       # List all warehouses
-      warehouses = w.sql_warehouses.list()
+      warehouses = w.warehouses.list()
 
       warehouse_list = []
       for warehouse in warehouses:
@@ -105,14 +105,14 @@ def load_sql_tools(mcp_server):
           {
             'id': warehouse.id,
             'name': warehouse.name,
-            'state': warehouse.state,
-            'cluster_size': warehouse.cluster_size,
-            'min_num_clusters': warehouse.min_num_clusters,
-            'max_num_clusters': warehouse.max_num_clusters,
-            'auto_stop_mins': warehouse.auto_stop_mins,
-            'enable_serverless_compute': warehouse.enable_serverless_compute,
-            'created_time': warehouse.created_time,
-            'updated_time': warehouse.updated_time,
+            'state': getattr(warehouse, 'state', None),
+            'cluster_size': getattr(warehouse, 'cluster_size', None),
+            'min_num_clusters': getattr(warehouse, 'min_num_clusters', None),
+            'max_num_clusters': getattr(warehouse, 'max_num_clusters', None),
+            'auto_stop_mins': getattr(warehouse, 'auto_stop_mins', None),
+            'enable_serverless_compute': getattr(warehouse, 'enable_serverless_compute', False),
+            'created_time': getattr(warehouse, 'created_time', None),
+            'updated_time': getattr(warehouse, 'updated_time', None),
           }
         )
 
@@ -144,7 +144,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Get warehouse details
-      warehouse = w.sql_warehouses.get(warehouse_id)
+      warehouse = w.warehouses.get(warehouse_id)
 
       return {
         'success': True,
@@ -187,7 +187,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Create warehouse
-      warehouse = w.sql_warehouses.create(
+      warehouse = w.warehouses.create(
         name=warehouse_config.get('name'),
         cluster_size=warehouse_config.get('cluster_size', 'Small'),
         min_num_clusters=warehouse_config.get('min_num_clusters', 1),
@@ -224,7 +224,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Start warehouse
-      w.sql_warehouses.start(warehouse_id)
+      w.warehouses.start(warehouse_id)
 
       return {
         'success': True,
@@ -253,7 +253,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Stop warehouse
-      w.sql_warehouses.stop(warehouse_id)
+      w.warehouses.stop(warehouse_id)
 
       return {
         'success': True,
@@ -282,7 +282,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Delete warehouse
-      w.sql_warehouses.delete(warehouse_id)
+      w.warehouses.delete(warehouse_id)
 
       return {
         'success': True,

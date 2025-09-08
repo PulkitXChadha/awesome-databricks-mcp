@@ -1,78 +1,124 @@
 # Backend Development Guidelines
 
-## 🚨 SIMPLIFIED DEVELOPMENT APPROACH 🚨
+## FastAPI + MCP Architecture
 
-**CRITICAL: Follow SIMPLE, MAINTAINABLE patterns. NO over-engineering!**
+### Core Principles
+- **SIMPLE over CLEVER**: Write obvious code that any developer can understand
+- **Direct Functions**: Write clear, single-purpose functions over complex classes
+- **Type Safety**: Use Pydantic models and type hints throughout
+- **Simple Error Handling**: Return structured error responses, avoid complex exception hierarchies
+- **Direct SDK Calls**: Call Databricks SDK directly, no wrapper layers
 
-### Development Philosophy
-- **Direct implementations** over abstractions
-- **Simple functions** over complex class hierarchies
-- **Environment variables** over configuration objects
-- **Standard library first** over custom utilities
-
-## FastAPI MCP Server Architecture
-
-### Core Structure
-- **Entry Point**: [app.py](mdc:server/app.py) - Main FastAPI application with MCP integration
-- **MCP Server**: Uses FastMCP for Model Context Protocol implementation
-- **Dynamic Loading**: Tools and prompts are automatically loaded at startup
-
-### File Organization
-- `server/app.py` - Main application and MCP server setup
-- `server/tools/` - Modular tool modules with specialized functions
-- `server/prompts.py` - Dynamic loading of markdown prompts from `prompts/` directory
-- `server/routers/` - API endpoints for frontend communication
-- `server/services/` - Business logic and external service integration
+### Project Structure
+- [server/app.py](mdc:server/app.py) - Main FastAPI application with integrated MCP server
+- [server/tools/](mdc:server/tools/) - MCP tools organized by functionality
+- [server/routers/](mdc:server/routers/) - API endpoints for frontend
+- [server/services/](mdc:server/services/) - Business logic and external integrations
+- [server/models/](mdc:server/models/) - Pydantic models and data structures
 
 ### MCP Tool Development
-```python
-# Good: Simple, direct tool implementation
-def load_module_tools(mcp_server):
-    """Register tools from this module."""
-    
-    @mcp_server.tool
-    def my_tool(param1: str, param2: int) -> dict:
-        """Tool description for Claude."""
-        # Direct Databricks SDK call
-        client = get_workspace_client()
-        result = client.some_api.method(param1, param2)
-        return {"result": result}
 
-# Bad: Over-engineered with abstractions
-class ToolFactory:
-    def __init__(self, config: ToolConfig):
-        self.config = config
+#### Simple Tool Function Pattern
+```python
+from typing import Dict, Any
+from databricks.sdk import WorkspaceClient
+
+def tool_name(param1: str, param2: int = 10) -> Dict[str, Any]:
+    """
+    Brief description of what this tool does.
     
-    def create_tool(self, tool_type: str) -> BaseTool:
-        # Complex factory logic
-        pass
+    Args:
+        param1: Description of parameter
+        param2: Description with default value
+        
+    Returns:
+        Dictionary with result or error information
+    """
+    try:
+        # Direct Databricks SDK call
+        client = WorkspaceClient()
+        
+        # Perform operation
+        result = client.some_operation(param1, param2)
+        
+        return {
+            "success": True,
+            "data": result,
+            "message": "Operation completed successfully"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Operation failed"
+        }
 ```
 
-### Configuration Management
-- Load from [config.yaml](mdc:config.yaml) for server settings
-- Environment variables from `.env.local` for local development
-- Use simple `load_config()` function for centralized configuration
-- **NO complex configuration classes or nested structures**
+#### Required Imports
+```python
+# Always include these imports for MCP tools
+from typing import Dict, Any, Optional, List
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.errors import DatabricksError
+```
 
-### Dependencies
-- Core: FastAPI, FastMCP, Databricks SDK
-- Development: ruff, pytest, watchdog
-- See [pyproject.toml](mdc:pyproject.toml) for complete dependency list
-- **Principle**: Only add dependencies if absolutely critical
+### FastAPI Best Practices
 
-### Code Style
-- Use single quotes for strings
-- Use tabs for indentation (CLAUDE.md standard)
-- Line length: 80 characters (CLAUDE.md standard)
-- Follow ruff linting rules defined in [pyproject.toml](mdc:pyproject.toml)
+#### Simple Route Definition
+```python
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
-### Python Best Practices
-- Use Python 3.11+ features and type hints
-- Use simple, clear docstrings
-- Use Pydantic sparingly (only when needed)
-- Implement basic error handling with try-catch blocks
-- **Avoid async/await unless absolutely necessary**
-- **NO complex error handling systems or custom exceptions**
+router = APIRouter(prefix="/api/v1")
+
+class RequestModel(BaseModel):
+    field1: str
+    field2: Optional[int] = None
+
+@router.post("/endpoint")
+async def endpoint(request: RequestModel) -> Dict[str, Any]:
+    try:
+        # Direct business logic here
+        return {"success": True, "data": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+```
+
+#### Simple Error Handling
+- Use structured error responses with consistent format
+- Include meaningful error messages
+- Log errors for debugging but don't expose internal details
+- Keep error handling simple - no complex exception hierarchies
+
+### Databricks SDK Integration
+
+#### Direct Client Initialization
+```python
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.errors import DatabricksError
+
+def get_workspace_client() -> WorkspaceClient:
+    """Get authenticated Databricks workspace client."""
+    try:
+        return WorkspaceClient()
+    except DatabricksError as e:
+        raise Exception(f"Failed to initialize Databricks client: {e}")
+```
+
+#### Direct SDK Operations
+```python
+# SQL Operations - direct SDK calls
+def execute_sql_query(query: str, warehouse_id: str) -> Dict[str, Any]:
+    client = WorkspaceClient()
+    result = client.sql.execute_query(query, warehouse_id=warehouse_id)
+    return {"success": True, "data": result}
+
+# Unity Catalog Operations - direct SDK calls
+def list_catalogs() -> Dict[str, Any]:
+    client = WorkspaceClient()
+    catalogs = client.unity_catalog.list_catalogs()
+    return {"success": True, "data": [cat.name for cat in catalogs]}
+```
 
 ### Tool System Architecture
 
@@ -81,9 +127,11 @@ The modular tools system (`server/tools/`) is organized into specialized modules
 - `sql_operations.py` - SQL warehouse and query tools
 - `unity_catalog.py` - Unity Catalog operations (catalogs, schemas, tables)
 - `jobs_pipelines.py` - Job and DLT pipeline management
-- `dashboards.py` - Dashboard management tools
-- `data_management.py` - DBFS and data operations
-- `governance.py` - Governance tools
+- `workspace_files.py` - Workspace file operations
+- `dashboards.py` - **Comprehensive dashboard management tools** (only support Lakeview Dasbaords no support for legacy dashbaord)
+- `repositories.py` - Git repository integration
+- `data_management.py` - DBFS and data operations (commented out)
+- `governance.py` - Governance tools (commented out)
 
 ### Adding New Tools
 Tools are automatically registered when added to modules. Follow existing patterns:
@@ -94,7 +142,7 @@ def load_module_tools(mcp_server):
     @mcp_server.tool
     def your_new_tool(param: str) -> dict:
         """Tool description for Claude."""
-        # Implementation using Databricks SDK
+        # Direct Databricks SDK implementation
         return {"result": "data"}
 ```
 
@@ -104,7 +152,43 @@ def load_module_tools(mcp_server):
 - Return dictionaries with consistent structure
 - No decorators, no abstractions, no magic
 
-### Forbidden Patterns
+### Testing Guidelines
+
+#### Simple Unit Test Pattern
+```python
+import pytest
+from unittest.mock import Mock, patch
+from server.tools.core import health_check
+
+def test_health_check_success():
+    with patch('server.tools.core.WorkspaceClient') as mock_client:
+        mock_client.return_value.current_user.me.return_value = Mock(user_name="test")
+        result = health_check()
+        assert result["success"] is True
+        assert "status" in result["data"]
+```
+
+### Code Quality Standards
+
+#### Formatting
+- Use `ruff` for formatting and linting
+- Line length: 80 characters (CLAUDE.md standard)
+- Use single quotes for strings
+- Include type hints for all function parameters and return values
+
+#### Documentation
+- Include docstrings for all public functions
+- Use simple, clear descriptions
+- Document what the function does, not how it works
+
+#### Error Handling
+- Always use try-catch blocks for external API calls
+- Return structured error responses
+- Log errors appropriately
+- Don't expose sensitive information in error messages
+- Keep error handling simple - no complex exception hierarchies
+
+### Forbidden Patterns (DO NOT ADD THESE)
 ❌ **Abstract base classes** or complex inheritance hierarchies
 ❌ **Factory patterns** or dependency injection containers
 ❌ **Decorators for cross-cutting concerns** (logging, caching, performance monitoring)
@@ -112,8 +196,11 @@ def load_module_tools(mcp_server):
 ❌ **Async/await patterns** unless absolutely necessary
 ❌ **Connection pooling** or caching layers
 ❌ **Generic "framework" code** or reusable utilities
+❌ **Complex error handling systems** or custom exceptions
+❌ **Performance optimization** patterns (premature optimization)
+❌ **Enterprise patterns** like singleton, observer, strategy, etc.
 
-### Required Patterns
+### Required Patterns (ALWAYS USE THESE)
 ✅ **Direct function calls** - no indirection or abstraction layers
 ✅ **Simple classes** with clear, single responsibilities
 ✅ **Environment variables** for configuration (no complex config objects)
@@ -122,7 +209,59 @@ def load_module_tools(mcp_server):
 ✅ **Straightforward control flow** - avoid complex conditional logic
 ✅ **Standard library first** - only add dependencies when absolutely necessary
 
-description: Backend development guidelines emphasizing simple, maintainable patterns over complex abstractions
-globs:
-alwaysApply: false
----
+### Code Review Questions
+Before adding any backend code, ask yourself:
+- "Is this the simplest way to solve this problem?"
+- "Would a new developer understand this immediately?"
+- "Am I adding abstraction for a real need or hypothetical flexibility?"
+- "Can I solve this with standard library or existing dependencies?"
+- "Does this follow the existing patterns in the codebase?"
+
+### Examples of Good vs Bad Code
+
+**❌ BAD (Over-engineered):**
+```python
+class AbstractDatabricksClientFactory(ABC):
+    @abstractmethod
+    def create_client(self) -> WorkspaceClient: ...
+
+class ConfigurableDatabricksClientFactory(AbstractDatabricksClientFactory):
+    def __init__(self, config: DatabricksConfig): ...
+```
+
+**✅ GOOD (Simple):**
+```python
+def get_workspace_client() -> WorkspaceClient:
+    host = os.getenv('DATABRICKS_HOST')
+    token = os.getenv('DATABRICKS_TOKEN')
+    return WorkspaceClient(host=host, token=token)
+```
+
+**❌ BAD (Complex configuration):**
+```python
+class DatabaseConfig(BaseModel):
+    host: str = Field(..., description="Database host")
+
+class AppConfig(BaseSettings):
+    database: DatabaseConfig
+    security: SecurityConfig
+    monitoring: MonitoringConfig
+```
+
+**✅ GOOD (Direct environment variables):**
+```python
+class Config:
+    def __init__(self):
+        self.host = os.getenv('DATABRICKS_HOST')
+        self.token = os.getenv('DATABRICKS_TOKEN')
+```
+
+## Summary: Backend Development Principles
+
+✅ **Readable**: Any developer can understand the code immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each module has a single, clear responsibility
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Solves the specific problem without over-engineering
+
+When in doubt, choose the **simpler** solution. Your future self (and your teammates) will thank you.

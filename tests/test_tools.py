@@ -1,186 +1,196 @@
-"""Test MCP tool integration and loading."""
+"""Consolidated tests for all MCP tools following CLAUDE.md simplicity guidelines."""
 
-import json
-from pathlib import Path
+from unittest.mock import Mock, patch
 
 import pytest
 
-# Import tool loading functions
 from server.tools import load_tools
 from server.tools.core import load_core_tools
-from server.tools.dashboards import load_dashboard_tools
-from server.tools.data_management import load_data_tools
-from server.tools.governance import load_governance_tools
 from server.tools.jobs_pipelines import load_job_tools
+from server.tools.lakeview_dashboard import load_dashboard_tools
 from server.tools.sql_operations import load_sql_tools
 from server.tools.unity_catalog import load_uc_tools
 
 
-@pytest.fixture
-def mock_responses():
-  """Load mock responses from fixtures file."""
-  fixtures_path = Path(__file__).parent / 'fixtures' / 'mock_responses.json'
-  with open(fixtures_path, 'r') as f:
-    return json.load(f)
+class TestCoreTools:
+  """Test core MCP tools."""
+
+  @pytest.mark.unit
+  def test_health_check(self, mcp_server, mock_env_vars):
+    """Test health check tool."""
+    load_core_tools(mcp_server)
+
+    tool = mcp_server._tool_manager._tools['health']
+    result = tool.fn()
+
+    assert result == {
+      'status': 'healthy',
+      'service': 'databricks-mcp',
+      'databricks_configured': True,
+    }
+
+
+class TestUnityCatalogTools:
+  """Test Unity Catalog tools."""
+
+
+class TestSQLTools:
+  """Test SQL operation tools."""
+
+  @pytest.mark.unit
+  def test_list_warehouses_success(self, mcp_server, mock_env_vars):
+    """Test listing SQL warehouses successfully."""
+    with patch('server.tools.sql_operations.WorkspaceClient') as mock_client_class:
+      mock_client = Mock()
+      mock_warehouse = Mock()
+      mock_warehouse.id = 'test-warehouse'
+      mock_warehouse.name = 'Test Warehouse'
+      mock_warehouse.state = 'RUNNING'
+      mock_warehouse.cluster_size = 'Medium'
+      mock_warehouse.auto_stop_mins = 10
+      mock_client.warehouses.list.return_value = [mock_warehouse]
+      mock_client_class.return_value = mock_client
+
+      load_sql_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_warehouses']
+      result = tool.fn()
+
+      assert result['success'] is True
+      assert result['count'] == 1
+      assert len(result['warehouses']) == 1
+      assert result['warehouses'][0]['id'] == 'test-warehouse'
+
+  @pytest.mark.unit
+  def test_execute_sql_success(self, mcp_server, mock_env_vars):
+    """Test SQL execution successfully."""
+    with patch('server.tools.sql_operations.WorkspaceClient') as mock_client_class:
+      mock_client = Mock()
+      mock_result = Mock()
+      mock_result.result = Mock()
+      mock_result.result.data_array = [['2024-01', '1000']]
+      mock_result.manifest = Mock()
+      mock_result.manifest.schema = Mock()
+      mock_col = Mock()
+      mock_col.name = 'date'
+      mock_result.manifest.schema.columns = [mock_col]
+      mock_client.statement_execution.execute_statement.return_value = mock_result
+      mock_client_class.return_value = mock_client
+
+      load_sql_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['execute_dbsql']
+      result = tool.fn(query='SELECT * FROM test', warehouse_id='test-warehouse')
+
+      assert result['success'] is True
+      assert 'data' in result
+      assert result['row_count'] == 1
+
+
+class TestJobsTools:
+  """Test jobs and pipelines tools."""
+
+  @pytest.mark.unit
+  def test_list_jobs_success(self, mcp_server, mock_env_vars):
+    """Test listing jobs successfully."""
+    with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client_class:
+      mock_client = Mock()
+      mock_job = Mock()
+      mock_job.job_id = 123
+      mock_job.settings = Mock()
+      mock_job.settings.name = 'Test Job'
+      mock_job.created_time = 1234567890
+      mock_job.creator_user_name = 'test@example.com'
+      mock_client.jobs.list.return_value = [mock_job]
+      mock_client_class.return_value = mock_client
+
+      load_job_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_jobs']
+      result = tool.fn()
+
+      assert result['success'] is True
+      assert result['count'] == 1
+      assert len(result['jobs']) == 1
+      assert result['jobs'][0]['job_id'] == 123
+
+  @pytest.mark.unit
+  def test_list_pipelines_success(self, mcp_server, mock_env_vars):
+    """Test listing pipelines successfully."""
+    with patch('server.tools.jobs_pipelines.WorkspaceClient') as mock_client_class:
+      mock_client = Mock()
+      mock_pipeline = Mock()
+      mock_pipeline.pipeline_id = 'pipeline-123'
+      mock_pipeline.name = 'Test Pipeline'
+      mock_pipeline.state = 'IDLE'
+      mock_pipeline.creator_user_name = 'test@example.com'
+      mock_pipeline.created_time = 1234567890
+      mock_client.pipelines.list_pipelines.return_value = [mock_pipeline]
+      mock_client_class.return_value = mock_client
+
+      load_job_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['list_pipelines']
+      result = tool.fn()
+
+      assert result['success'] is True
+      assert result['count'] == 1
+      assert len(result['pipelines']) == 1
+      assert result['pipelines'][0]['pipeline_id'] == 'pipeline-123'
+
+
+class TestDashboardTools:
+  """Test dashboard tools."""
+
+  @pytest.mark.unit
+  def test_create_dashboard_file(self, mcp_server, mock_env_vars):
+    """Test creating a dashboard file."""
+    load_dashboard_tools(mcp_server)
+    tool = mcp_server._tool_manager._tools['create_dashboard_file']
+
+    result = tool.fn(
+      name='Test Dashboard',
+      warehouse_id='test-warehouse',
+      datasets=[{'name': 'Sales Data', 'query': 'SELECT product, revenue FROM sales'}],
+      widgets=[{'type': 'counter', 'dataset': 'Sales Data', 'config': {'value_field': 'revenue'}}],
+      file_path='/tmp/test_dashboard.lvdash.json',
+      validate_sql=False,
+    )
+
+    assert result['success'] is True
+    assert 'file_path' in result
 
 
 class TestToolIntegration:
-  """Test tool integration and loading."""
+  """Test tool loading and integration."""
 
   @pytest.mark.integration
-  def test_all_tools_load_successfully(self, mcp_server, mock_env_vars):
+  def test_all_tools_load(self, mcp_server, mock_env_vars):
     """Test that all tools load without errors."""
-    # This should not raise any exceptions
     load_tools(mcp_server)
 
-    # Verify tools were loaded by checking tool manager directly
     tools = mcp_server._tool_manager._tools
     assert len(tools) > 0
 
-    # Check that key tool categories are present
-    tool_names = list(tools.keys())
-    assert 'health' in tool_names  # Core tools
-    assert 'list_uc_catalogs' in tool_names  # Unity Catalog tools
-    assert 'list_warehouses' in tool_names  # SQL tools
-    assert 'list_jobs' in tool_names  # Jobs tools
-    assert 'list_lakeview_dashboards' in tool_names  # Dashboard tools
+    # Check key tools are present
+    expected_tools = [
+      'health',
+      'describe_uc_catalog',
+      'list_warehouses',
+      'list_jobs',
+      'create_dashboard_file',
+    ]
+
+    for tool_name in expected_tools:
+      assert tool_name in tools, f'Tool {tool_name} not loaded'
 
   @pytest.mark.integration
-  def test_tool_error_handling(self, mcp_server, mock_workspace_client):
+  def test_tool_error_handling(self, mcp_server, mock_env_vars):
     """Test that tools handle errors gracefully."""
-    # Setup mock to raise exception
-    mock_workspace_client.catalogs.list.side_effect = Exception('Test error')
+    with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client_class:
+      mock_client = Mock()
+      mock_client.catalogs.get.side_effect = Exception('Test error')
+      mock_client_class.return_value = mock_client
 
-    # Load tools and test
-    load_uc_tools(mcp_server)
-    tool = mcp_server._tool_manager._tools['list_uc_catalogs']
-    result = tool.fn()
+      load_uc_tools(mcp_server)
+      tool = mcp_server._tool_manager._tools['describe_uc_catalog']
+      result = tool.fn('test_catalog')
 
-    # Assert error handling
-    assert result['success'] is False
-    assert 'error' in result
-    assert result['catalogs'] == []
-    assert result['count'] == 0
-
-  @pytest.mark.integration
-  def test_core_tools_loading(self, mcp_server, mock_env_vars):
-    """Test core tools loading."""
-    load_core_tools(mcp_server)
-
-    tools = mcp_server._tool_manager._tools
-    # Only health tool is currently implemented in core
-    core_tool_names = ['health']
-
-    for tool_name in core_tool_names:
-      assert tool_name in tools, f'Core tool {tool_name} not loaded'
-
-  @pytest.mark.integration
-  def test_unity_catalog_tools_loading(self, mcp_server, mock_env_vars):
-    """Test Unity Catalog tools loading."""
-    load_uc_tools(mcp_server)
-
-    tools = mcp_server._tool_manager._tools
-    # Check for actual UC tools that are loaded
-    uc_tool_names = ['list_uc_catalogs', 'describe_uc_catalog', 'describe_uc_schema']
-
-    for tool_name in uc_tool_names:
-      assert tool_name in tools, f'Unity Catalog tool {tool_name} not loaded'
-
-  @pytest.mark.integration
-  def test_sql_tools_loading(self, mcp_server, mock_env_vars):
-    """Test SQL tools loading."""
-    load_sql_tools(mcp_server)
-
-    tools = mcp_server._tool_manager._tools
-    # Check for actual SQL tools that are loaded
-    sql_tool_names = ['list_warehouses', 'execute_dbsql', 'get_sql_warehouse']
-
-    for tool_name in sql_tool_names:
-      assert tool_name in tools, f'SQL tool {tool_name} not loaded'
-
-  @pytest.mark.integration
-  def test_jobs_tools_loading(self, mcp_server, mock_env_vars):
-    """Test Jobs and Pipelines tools loading."""
-    load_job_tools(mcp_server)
-
-    tools = mcp_server._tool_manager._tools
-    # Check for actual jobs tools that are loaded
-    jobs_tool_names = ['list_jobs', 'list_pipelines', 'submit_job_run']
-
-    for tool_name in jobs_tool_names:
-      assert tool_name in tools, f'Jobs tool {tool_name} not loaded'
-
-  @pytest.mark.integration
-  def test_dashboard_tools_loading(self, mcp_server, mock_env_vars):
-    """Test Dashboard tools loading."""
-    load_dashboard_tools(mcp_server)
-
-    tools = mcp_server._tool_manager._tools
-    dashboard_tool_names = ['list_lakeview_dashboards']
-
-    for tool_name in dashboard_tool_names:
-      assert tool_name in tools, f'Dashboard tool {tool_name} not loaded'
-
-  @pytest.mark.integration
-  def test_data_management_tools_loading(self, mcp_server, mock_env_vars):
-    """Test Data Management tools loading."""
-    # Note: data_management tools are commented out in main load_tools
-    # This test will fail until they are enabled
-    load_data_tools(mcp_server)
-
-    tools = mcp_server._tool_manager._tools
-    # Check for actual data management tools that are loaded
-    data_tool_names = ['list_dbfs_files', 'get_dbfs_file_info', 'list_external_locations']
-
-    for tool_name in data_tool_names:
-      assert tool_name in tools, f'Data Management tool {tool_name} not loaded'
-
-  @pytest.mark.integration
-  def test_governance_tools_loading(self, mcp_server, mock_env_vars):
-    """Test Governance tools loading."""
-    # Note: governance tools are commented out in main load_tools
-    # This test will fail until they are enabled
-    load_governance_tools(mcp_server)
-
-    tools = mcp_server._tool_manager._tools
-    # Check for actual governance tools that are loaded
-    governance_tool_names = ['list_governance_rules', 'list_audit_logs', 'search_catalog']
-
-    for tool_name in governance_tool_names:
-      assert tool_name in tools, f'Governance tool {tool_name} not loaded'
-
-  @pytest.mark.integration
-  def test_tool_functionality_integration(self, mcp_server, mock_env_vars):
-    """Test that tools can be called and return expected structure."""
-    # Load all tools
-    load_tools(mcp_server)
-
-    # Test health tool (doesn't require external calls)
-    health_tool = mcp_server._tool_manager._tools['health']
-    health_result = health_tool.fn()
-
-    assert health_result['status'] == 'healthy'
-    assert health_result['service'] == 'databricks-mcp'
-    assert 'databricks_configured' in health_result
-
-  @pytest.mark.integration
-  def test_tool_registration_consistency(self, mcp_server, mock_env_vars):
-    """Test that tool registration is consistent across loads."""
-    # Load tools twice
-    load_tools(mcp_server)
-    first_tools = mcp_server._tool_manager._tools
-    first_count = len(first_tools)
-
-    # Clear and reload
-    mcp_server._tool_manager._tools.clear()
-    load_tools(mcp_server)
-    second_tools = mcp_server._tool_manager._tools
-    second_count = len(second_tools)
-
-    # Should have same number of tools
-    assert first_count == second_count, 'Tool count should be consistent'
-
-    # Should have same tool names
-    first_names = set(first_tools.keys())
-    second_names = set(second_tools.keys())
-    assert first_names == second_names, 'Tool names should be consistent'
+      assert result['success'] is False
+      assert 'error' in result

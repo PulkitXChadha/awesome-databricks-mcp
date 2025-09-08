@@ -10,7 +10,7 @@ from pathlib import Path
 def run_tests(test_type=None, verbose=False, coverage=False):
   """Run tests with specified options."""
   # Base pytest command
-  cmd = ['python', '-m', 'pytest']
+  cmd = ['python3', '-m', 'pytest']
 
   # Add test type filtering
   if test_type:
