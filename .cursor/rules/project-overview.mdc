@@ -1,113 +1,47 @@
-# Project Overview
+# Awesome Databricks MCP Project Overview
 
-## 🚨 SIMPLIFIED DATABRICKS MCP SERVER 🚨
+This is a **simplified** Databricks MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with Databricks workspaces. The project has been deliberately simplified to prioritize maintainability and clarity.
 
-**CRITICAL: This project has been deliberately simplified to prioritize maintainability and clarity.**
+## Project Structure
 
-## Project Philosophy
+### Core Components
+- **MCP Server**: FastAPI backend with integrated MCP server using FastMCP
+- **Web Interface**: React TypeScript frontend for MCP discovery and testing
+- **Modular Tools**: 100+ tools organized across 8 specialized modules for Databricks operations
+- **OAuth Integration**: Secure authentication via Databricks Apps deployment
 
-This is a **simplified** Databricks MCP (Model Context Protocol) server that enables AI assistants like Claude to interact with Databricks workspaces. The project follows a **SIMPLE, MAINTAINABLE** approach:
+### Key Files
+- [pyproject.toml](mdc:pyproject.toml) - Python project configuration and dependencies
+- [client/package.json](mdc:client/package.json) - Frontend dependencies and scripts
+- [server/app.py](mdc:server/app.py) - FastAPI application entry point with integrated MCP server
+- [server/tools/](mdc:server/tools/) - Modular tools system with specialized modules
+- [README.md](mdc:README.md) - Comprehensive project documentation
+- [CLAUDE.md](mdc:CLAUDE.md) - **CRITICAL**: Senior developer guidelines and simplified patterns
 
-- **Simple over Clever**: Write obvious code that any developer can understand
-- **Explicit over Implicit**: Prefer clear, direct implementations over abstractions
-- **Flat over Nested**: Avoid deep inheritance, complex factories, or excessive abstraction layers
-- **Focused over Generic**: Write code for the specific use case, not hypothetical future needs
+### Simplified Architecture Pattern
+The project follows a **deliberately simplified** architecture:
+1. **MCP Layer**: Direct protocol handling via FastMCP integration
+2. **Tools Layer**: Simple, focused modules for Databricks operations
+3. **Presentation Layer**: React frontend for MCP discovery and management
+4. **Authentication Layer**: OAuth flow through Databricks Apps
 
-## Architecture
+### Development Philosophy
+- **SIMPLE over CLEVER**: Write obvious code that any developer can understand
+- **EXPLICIT over IMPLICIT**: Prefer clear, direct implementations over abstractions
+- **FLAT over NESTED**: Avoid deep inheritance, complex factories, or excessive abstraction layers
+- **FOCUSED over GENERIC**: Write code for the specific use case, not hypothetical future needs
+- **Type Safety**: Use TypeScript for frontend, type hints for Python
+- **Security**: OAuth authentication, input validation, and injection prevention
+- **Testing**: Simple, focused test coverage with basic validation
+- **Documentation**: Clear, maintainable documentation for all components
 
-The simplified MCP server architecture consists of:
-- **FastAPI backend** (`server/app.py`) with integrated MCP server via FastMCP
-- **Modular tools system** (`server/tools/`) with specialized modules for different Databricks operations  
-- **React frontend** (`client/`) for web-based MCP discovery and testing
-- **MCP proxy** (`dba_mcp_proxy/`) for Claude CLI integration with OAuth handling
-- **Prompts system** (`prompts/`) where markdown files become MCP prompts
+### Key Technologies
+- **Backend**: FastAPI, Databricks SDK, FastMCP, Python 3.11+
+- **Frontend**: React 18, TypeScript, TailwindCSS, Vite
+- **Testing**: Pytest, simple unit tests with basic mocking
+- **Deployment**: Databricks Apps, simplified CI/CD
 
-## Core Components
-
-### Backend (FastAPI + MCP)
-- **Main App**: `server/app.py` - FastAPI application with integrated MCP server
-- **Tools**: `server/tools/` - 100+ tools organized across 8 specialized modules
-- **Routers**: `server/routers/` - API endpoints for frontend communication
-- **Services**: `server/services/` - Business logic and external service integration
-
-### Frontend (React + TypeScript)
-- **Main App**: `client/src/App.tsx` - React application with routing
-- **Pages**: `client/src/pages/` - Page-level components
-- **Components**: `client/src/components/ui/` - Reusable UI components
-- **API Client**: `client/src/fastapi_client/` - Auto-generated TypeScript client
-
-### MCP Integration
-- **MCP Server**: Integrated FastMCP server for Model Context Protocol
-- **Proxy**: `dba_mcp_proxy/` for Claude CLI integration with OAuth
-- **Testing**: `claude_scripts/` for comprehensive MCP testing
-
-## Tool System Architecture
-
-The modular tools system (`server/tools/`) is organized into specialized modules:
-- `core.py` - Health checks and basic operations
-- `sql_operations.py` - SQL warehouse and query tools
-- `unity_catalog.py` - Unity Catalog operations (catalogs, schemas, tables)
-- `jobs_pipelines.py` - Job and DLT pipeline management
-- `dashboards.py` - Dashboard management tools
-- `data_management.py` - DBFS and data operations
-- `governance.py` - Governance tools
-
-## Key Features
-
-### Simplified Design
-- **Direct implementations** over abstractions
-- **Simple functions** over complex class hierarchies
-- **Environment variables** over configuration objects
-- **Standard library first** over custom utilities
-
-### MCP Capabilities
-- **100+ Databricks tools** for comprehensive workspace management
-- **Dynamic prompt loading** from markdown files
-- **OAuth integration** via Databricks Apps
-- **Claude CLI integration** through MCP proxy
-
-### Development Experience
-- **Auto-reload development** with file watchers
-- **Simple testing** with basic pytest setup
-- **Immediate feedback** through development servers
-- **Clear documentation** and examples
-
-## What Makes This Project "Senior Developer Approved"
-
-✅ **Readable**: Any developer can understand the code immediately
-✅ **Maintainable**: Simple patterns that are easy to modify
-✅ **Focused**: Each module has a single, clear responsibility
-✅ **Direct**: No unnecessary abstractions or indirection
-✅ **Practical**: Solves the specific problem without over-engineering
-
-## Forbidden Patterns
-
-This project explicitly avoids:
-❌ **Abstract base classes** or complex inheritance hierarchies
-❌ **Factory patterns** or dependency injection containers
-❌ **Decorators for cross-cutting concerns** (logging, caching, performance monitoring)
-❌ **Complex configuration classes** with nested structures
-❌ **Async/await patterns** unless absolutely necessary
-❌ **Connection pooling** or caching layers
-❌ **Generic "framework" code** or reusable utilities
-❌ **Complex error handling systems** or custom exceptions
-❌ **Performance optimization** patterns (premature optimization)
-❌ **Enterprise patterns** like singleton, observer, strategy, etc.
-
-## Required Patterns
-
-This project always uses:
-✅ **Direct function calls** - no indirection or abstraction layers
-✅ **Simple classes** with clear, single responsibilities
-✅ **Environment variables** for configuration (no complex config objects)
-✅ **Explicit imports** - import exactly what you need
-✅ **Basic error handling** with try/catch and simple return dictionaries
-✅ **Straightforward control flow** - avoid complex conditional logic
-✅ **Standard library first** - only add dependencies when absolutely necessary
-
-## Development Commands
-
-### Essential Commands
+### Critical Development Commands
 - `./setup.sh` - Interactive setup for environment, authentication, and dependencies
 - `./watch.sh` - Start development servers (backend + frontend + file watching)
 - `./fix.sh` - Format code (ruff for Python, prettier for TypeScript)
@@ -135,12 +69,3 @@ source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databr
 # ❌ WRONG - Direct CLI usage
 databricks current-user me
 ```
-
-## Summary
-
-This project demonstrates that **simple, maintainable code** is the hallmark of senior development. When in doubt, choose the **simpler** solution. Your future self (and your teammates) will thank you.
-
-description: Project overview emphasizing simplified, maintainable architecture over complex abstractions
-globs:
-alwaysApply: false
----

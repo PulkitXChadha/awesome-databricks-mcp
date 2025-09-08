@@ -12,7 +12,7 @@ def load_governance_tools(mcp_server):
       mcp_server: The FastMCP server instance to register tools with
   """
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_audit_logs(start_time: str = None, end_time: str = None, user_id: str = None) -> dict:
     """List audit logs for the workspace.
 
@@ -26,7 +26,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -38,7 +38,9 @@ def load_governance_tools(mcp_server):
         'end_time': end_time,
         'user_id': user_id,
         'message': 'Audit log listing initiated',
-        'note': 'Audit logs require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Audit logs require specific permissions and may not be directly accessible via SDK'
+        ),
         'logs': [],
         'count': 0,
       }
@@ -47,7 +49,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error listing audit logs: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'logs': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_audit_log(event_id: str) -> dict:
     """Get details of a specific audit log event.
 
@@ -59,7 +61,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -69,7 +71,10 @@ def load_governance_tools(mcp_server):
         'success': True,
         'event_id': event_id,
         'message': f'Audit log {event_id} details retrieval initiated',
-        'note': 'Audit log details require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Audit log details require specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
         'event': {},
       }
 
@@ -77,7 +82,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error getting audit log details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def export_audit_logs(start_time: str, end_time: str, format: str = 'json') -> dict:
     """Export audit logs for a specific time range.
 
@@ -91,7 +96,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -103,14 +108,17 @@ def load_governance_tools(mcp_server):
         'end_time': end_time,
         'format': format,
         'message': f'Audit log export initiated for {start_time} to {end_time}',
-        'note': 'Audit log export requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Audit log export requires specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
       print(f'❌ Error exporting audit logs: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_governance_rules() -> dict:
     """List governance rules configured in the workspace.
 
@@ -119,7 +127,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -128,7 +136,9 @@ def load_governance_tools(mcp_server):
       return {
         'success': True,
         'message': 'Governance rule listing initiated',
-        'note': 'Governance rules require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Governance rules require specific permissions and may not be directly accessible via SDK'
+        ),
         'rules': [],
         'count': 0,
       }
@@ -137,7 +147,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error listing governance rules: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'rules': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_governance_rule(rule_id: str) -> dict:
     """Get details of a specific governance rule.
 
@@ -149,7 +159,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -159,7 +169,10 @@ def load_governance_tools(mcp_server):
         'success': True,
         'rule_id': rule_id,
         'message': f'Governance rule {rule_id} details retrieval initiated',
-        'note': 'Governance rule details require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Governance rule details require specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
         'rule': {},
       }
 
@@ -167,7 +180,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error getting governance rule details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_governance_rule(rule_config: dict) -> dict:
     """Create a new governance rule.
 
@@ -179,7 +192,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -189,14 +202,17 @@ def load_governance_tools(mcp_server):
         'success': True,
         'rule_config': rule_config,
         'message': 'Governance rule creation initiated',
-        'note': 'Governance rule creation requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Governance rule creation requires specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
       print(f'❌ Error creating governance rule: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def update_governance_rule(rule_id: str, updates: dict) -> dict:
     """Update an existing governance rule.
 
@@ -209,7 +225,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -220,14 +236,17 @@ def load_governance_tools(mcp_server):
         'rule_id': rule_id,
         'updates': updates,
         'message': f'Governance rule {rule_id} update initiated',
-        'note': 'Governance rule updates require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Governance rule updates require specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
       print(f'❌ Error updating governance rule: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def delete_governance_rule(rule_id: str) -> dict:
     """Delete a governance rule.
 
@@ -239,7 +258,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -249,14 +268,17 @@ def load_governance_tools(mcp_server):
         'success': True,
         'rule_id': rule_id,
         'message': f'Governance rule {rule_id} deletion initiated',
-        'note': 'Governance rule deletion requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Governance rule deletion requires specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
       print(f'❌ Error deleting governance rule: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_table_lineage(table_name: str, depth: int = 1) -> dict:
     """Get data lineage information for a table.
 
@@ -269,7 +291,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -280,7 +302,9 @@ def load_governance_tools(mcp_server):
         'table_name': table_name,
         'depth': depth,
         'message': f'Table lineage retrieval initiated for {table_name}',
-        'note': 'Table lineage requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Table lineage requires specific permissions and may not be directly accessible via SDK'
+        ),
         'lineage': {},
       }
 
@@ -288,7 +312,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error getting table lineage: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_column_lineage(table_name: str, column_name: str) -> dict:
     """Get column-level lineage information.
 
@@ -301,7 +325,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -312,7 +336,9 @@ def load_governance_tools(mcp_server):
         'table_name': table_name,
         'column_name': column_name,
         'message': f'Column lineage retrieval initiated for {table_name}.{column_name}',
-        'note': 'Column lineage requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Column lineage requires specific permissions and may not be directly accessible via SDK'
+        ),
         'lineage': {},
       }
 
@@ -320,7 +346,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error getting column lineage: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def search_lineage(query: str, object_type: str = None) -> dict:
     """Search for lineage information.
 
@@ -333,7 +359,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -344,7 +370,9 @@ def load_governance_tools(mcp_server):
         'query': query,
         'object_type': object_type,
         'message': 'Lineage search initiated',
-        'note': 'Lineage search requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Lineage search requires specific permissions and may not be directly accessible via SDK'
+        ),
         'results': [],
         'count': 0,
       }
@@ -353,7 +381,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error searching lineage: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def search_catalog(query: str, object_type: str = None) -> dict:
     """Search for catalog objects.
 
@@ -366,7 +394,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -377,7 +405,10 @@ def load_governance_tools(mcp_server):
         'query': query,
         'object_type': object_type,
         'message': 'Catalog search initiated',
-        'note': 'Catalog search requires Unity Catalog and specific permissions, may not be directly accessible via SDK',
+        'note': (
+          'Catalog search requires Unity Catalog and specific permissions, '
+          'may not be directly accessible via SDK'
+        ),
         'results': [],
         'count': 0,
       }
@@ -386,7 +417,7 @@ def load_governance_tools(mcp_server):
       print(f'❌ Error searching catalog: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_object_usage_stats(object_name: str, time_range: str = '30d') -> dict:
     """Get usage statistics.
 
@@ -399,7 +430,7 @@ def load_governance_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -410,7 +441,9 @@ def load_governance_tools(mcp_server):
         'object_name': object_name,
         'time_range': time_range,
         'message': f'Usage statistics retrieval initiated for {object_name}',
-        'note': 'Usage statistics require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Usage statistics require specific permissions and may not be directly accessible via SDK'
+        ),
         'statistics': {},
       }
 

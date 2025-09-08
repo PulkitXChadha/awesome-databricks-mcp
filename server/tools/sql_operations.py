@@ -12,7 +12,7 @@ def load_sql_tools(mcp_server):
       mcp_server: The FastMCP server instance to register tools with
   """
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def execute_dbsql(
     query: str,
     warehouse_id: str = None,
@@ -83,7 +83,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error executing SQL: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_warehouses() -> dict:
     """List all SQL warehouses in the Databricks workspace.
 
@@ -97,7 +97,7 @@ def load_sql_tools(mcp_server):
       )
 
       # List all warehouses
-      warehouses = w.sql_warehouses.list()
+      warehouses = w.warehouses.list()
 
       warehouse_list = []
       for warehouse in warehouses:
@@ -105,14 +105,14 @@ def load_sql_tools(mcp_server):
           {
             'id': warehouse.id,
             'name': warehouse.name,
-            'state': warehouse.state,
-            'cluster_size': warehouse.cluster_size,
-            'min_num_clusters': warehouse.min_num_clusters,
-            'max_num_clusters': warehouse.max_num_clusters,
-            'auto_stop_mins': warehouse.auto_stop_mins,
-            'enable_serverless_compute': warehouse.enable_serverless_compute,
-            'created_time': warehouse.created_time,
-            'updated_time': warehouse.updated_time,
+            'state': getattr(warehouse, 'state', None),
+            'cluster_size': getattr(warehouse, 'cluster_size', None),
+            'min_num_clusters': getattr(warehouse, 'min_num_clusters', None),
+            'max_num_clusters': getattr(warehouse, 'max_num_clusters', None),
+            'auto_stop_mins': getattr(warehouse, 'auto_stop_mins', None),
+            'enable_serverless_compute': getattr(warehouse, 'enable_serverless_compute', False),
+            'created_time': getattr(warehouse, 'created_time', None),
+            'updated_time': getattr(warehouse, 'updated_time', None),
           }
         )
 
@@ -127,7 +127,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error listing warehouses: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'warehouses': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_sql_warehouse(warehouse_id: str) -> dict:
     """Get details of a specific SQL warehouse.
 
@@ -144,7 +144,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Get warehouse details
-      warehouse = w.sql_warehouses.get(warehouse_id)
+      warehouse = w.warehouses.get(warehouse_id)
 
       return {
         'success': True,
@@ -170,7 +170,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error getting warehouse details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_sql_warehouse(warehouse_config: dict) -> dict:
     """Create a new SQL warehouse.
 
@@ -187,7 +187,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Create warehouse
-      warehouse = w.sql_warehouses.create(
+      warehouse = w.warehouses.create(
         name=warehouse_config.get('name'),
         cluster_size=warehouse_config.get('cluster_size', 'Small'),
         min_num_clusters=warehouse_config.get('min_num_clusters', 1),
@@ -207,7 +207,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error creating warehouse: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def start_sql_warehouse(warehouse_id: str) -> dict:
     """Start a SQL warehouse.
 
@@ -224,7 +224,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Start warehouse
-      w.sql_warehouses.start(warehouse_id)
+      w.warehouses.start(warehouse_id)
 
       return {
         'success': True,
@@ -236,7 +236,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error starting warehouse: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def stop_sql_warehouse(warehouse_id: str) -> dict:
     """Stop a SQL warehouse.
 
@@ -253,7 +253,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Stop warehouse
-      w.sql_warehouses.stop(warehouse_id)
+      w.warehouses.stop(warehouse_id)
 
       return {
         'success': True,
@@ -265,7 +265,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error stopping warehouse: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def delete_sql_warehouse(warehouse_id: str) -> dict:
     """Delete a SQL warehouse.
 
@@ -282,7 +282,7 @@ def load_sql_tools(mcp_server):
       )
 
       # Delete warehouse
-      w.sql_warehouses.delete(warehouse_id)
+      w.warehouses.delete(warehouse_id)
 
       return {
         'success': True,
@@ -294,7 +294,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error deleting warehouse: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_queries(warehouse_id: str = None) -> dict:
     """List queries (all or for specific warehouse).
 
@@ -345,7 +345,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error listing queries: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'queries': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_query(query_id: str) -> dict:
     """Get details of a specific query.
 
@@ -388,7 +388,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error getting query details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_query_results(query_id: str) -> dict:
     """Get results of a completed query.
 
@@ -437,7 +437,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error getting query results: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def cancel_query(query_id: str) -> dict:
     """Cancel a running query.
 
@@ -466,7 +466,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error cancelling query: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_statement_status(statement_id: str) -> dict:
     """Get statement execution status.
 
@@ -499,7 +499,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error getting statement status: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_statement_results(statement_id: str) -> dict:
     """Get statement results.
 
@@ -548,7 +548,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error getting statement results: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def cancel_statement(statement_id: str) -> dict:
     """Cancel statement execution.
 
@@ -577,7 +577,7 @@ def load_sql_tools(mcp_server):
       print(f'❌ Error cancelling statement: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_recent_queries(limit: int = 100) -> dict:
     """List recent queries.
 

@@ -12,7 +12,7 @@ def load_job_tools(mcp_server):
       mcp_server: The FastMCP server instance to register tools with
   """
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_jobs() -> dict:
     """List all jobs in the Databricks workspace.
 
@@ -57,7 +57,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error listing jobs: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'jobs': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_job(job_id: str) -> dict:
     """Get detailed information about a specific job.
 
@@ -99,7 +99,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error getting job details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_job(job_config: dict) -> dict:
     """Create a new job in the Databricks workspace.
 
@@ -135,7 +135,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error creating job: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def update_job(job_id: str, updates: dict) -> dict:
     """Update an existing job in the Databricks workspace.
 
@@ -168,7 +168,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error updating job: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def delete_job(job_id: str) -> dict:
     """Delete a job from the Databricks workspace.
 
@@ -197,7 +197,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error deleting job: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_job_runs(job_id: str = None) -> dict:
     """List job runs, either all runs or runs for a specific job.
 
@@ -245,7 +245,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error listing job runs: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'runs': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_job_run(run_id: str) -> dict:
     """Get detailed information about a specific job run.
 
@@ -284,7 +284,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error getting job run details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def submit_job_run(job_id: str, parameters: dict = None) -> dict:
     """Submit a new job run.
 
@@ -318,7 +318,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error submitting job run: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def cancel_job_run(run_id: str) -> dict:
     """Cancel a running job run.
 
@@ -347,7 +347,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error cancelling job run: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_job_run_logs(run_id: str) -> dict:
     """Get logs from a job run.
 
@@ -382,7 +382,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error getting job run logs: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_pipelines() -> dict:
     """List all DLT pipelines in the workspace.
 
@@ -422,7 +422,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error listing pipelines: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'pipelines': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_pipeline(pipeline_id: str) -> dict:
     """Get details of a specific DLT pipeline.
 
@@ -459,7 +459,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error getting pipeline details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_pipeline(pipeline_config: dict) -> dict:
     """Create a new DLT pipeline.
 
@@ -492,7 +492,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error creating pipeline: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def update_pipeline(pipeline_id: str, updates: dict) -> dict:
     """Update an existing DLT pipeline.
 
@@ -525,7 +525,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error updating pipeline: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def delete_pipeline(pipeline_id: str) -> dict:
     """Delete a DLT pipeline.
 
@@ -554,7 +554,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error deleting pipeline: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_pipeline_runs(pipeline_id: str = None) -> dict:
     """List DLT pipeline runs.
 
@@ -602,7 +602,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error listing pipeline runs: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'runs': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_pipeline_run(run_id: str) -> dict:
     """Get details of a specific DLT pipeline run.
 
@@ -639,7 +639,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error getting pipeline run details: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def start_pipeline_update(pipeline_id: str, parameters: dict = None) -> dict:
     """Start a DLT pipeline update.
 
@@ -673,7 +673,7 @@ def load_job_tools(mcp_server):
       print(f'❌ Error starting pipeline update: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def stop_pipeline_update(pipeline_id: str) -> dict:
     """Stop a running DLT pipeline update.
 

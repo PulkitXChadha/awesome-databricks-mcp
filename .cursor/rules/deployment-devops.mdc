@@ -14,9 +14,6 @@
 ./setup.sh
 
 # Start local development
-./run_app_local.sh
-
-# Watch mode for auto-reload
 ./watch.sh
 
 # Check application status
@@ -31,12 +28,12 @@
 
 ## Databricks Apps Deployment
 
-### Deployment Configuration
+### Simple Deployment Configuration
 - **App Config**: [app.yaml](mdc:app.yaml) defines Databricks App settings
 - **Requirements**: [requirements.txt](mdc:requirements.txt) for Python dependencies
 - **Build Script**: [deploy.sh](mdc:deploy.sh) automates deployment process
 
-### Deployment Process
+### Simple Deployment Process
 ```bash
 # Deploy to Databricks Apps
 ./deploy.sh
@@ -48,7 +45,7 @@
 databricks apps logs --app-id <app-id>
 ```
 
-### Environment Configuration
+### Simple Environment Configuration
 ```yaml
 # app.yaml configuration
 name: databricks-mcp-app
@@ -64,21 +61,20 @@ env:
     secret: "databricks-token"
 ```
 
-## CI/CD Pipeline
+## Simple CI/CD Pipeline
 
-### Automated Testing
+### Basic Testing
 - **Pre-deployment Tests**: Run test suite before deployment
 - **Code Quality Checks**: Lint and format code automatically
-- **Security Scanning**: Scan dependencies for vulnerabilities
-- **Integration Tests**: Test MCP tools and API endpoints
+- **Basic Security Scanning**: Scan dependencies for vulnerabilities
+- **Simple Integration Tests**: Test MCP tools and API endpoints
 
-### Deployment Stages
+### Simple Deployment Stages
 1. **Development**: Local development and testing
-2. **Staging**: Deploy to staging environment for validation
-3. **Production**: Deploy to production Databricks workspace
-4. **Rollback**: Automated rollback on deployment failures
+2. **Production**: Deploy to production Databricks workspace
+3. **Rollback**: Simple rollback on deployment failures
 
-### GitHub Actions Example
+### Simple GitHub Actions Example
 ```yaml
 name: Deploy to Databricks
 on:
@@ -113,17 +109,17 @@ jobs:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 ```
 
-## Monitoring and Observability
+## Simple Monitoring and Observability
 
-### Application Monitoring
+### Basic Application Monitoring
 - **Health Checks**: Implement health check endpoints
-- **Metrics Collection**: Collect performance and business metrics
-- **Log Aggregation**: Centralize logs for analysis
-- **Alerting**: Set up alerts for critical issues
+- **Simple Metrics**: Collect basic performance metrics
+- **Basic Logging**: Centralize logs for analysis
+- **Simple Alerting**: Set up basic alerts for critical issues
 
-### Databricks Monitoring
+### Simple Databricks Monitoring
 ```python
-# Health check endpoint
+# Simple health check endpoint
 @app.get("/health")
 async def health_check():
   """Health check endpoint for monitoring."""
@@ -145,22 +141,19 @@ async def health_check():
     }
 ```
 
-### Logging Configuration
+### Simple Logging Configuration
 ```python
 import logging
-from rich.logging import RichHandler
 
-# Configure logging
+# Simple logging configuration
 logging.basicConfig(
   level=logging.INFO,
-  format="%(message)s",
-  datefmt="[%X]",
-  handlers=[RichHandler(rich_tracebacks=True)]
+  format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger("databricks-mcp")
 
-# Use structured logging
+# Simple structured logging
 logger.info("MCP tool called", extra={
   "tool": "list_jobs",
   "user": user_id,
@@ -168,21 +161,20 @@ logger.info("MCP tool called", extra={
 })
 ```
 
-## Security and Compliance
+## Simple Security and Compliance
 
-### Secrets Management
+### Basic Secrets Management
 - **Environment Variables**: Use Databricks Apps secrets for sensitive data
-- **Token Rotation**: Implement automatic token rotation
+- **Token Management**: Use Databricks OAuth for authentication
 - **Access Control**: Limit access to deployment scripts and configurations
-- **Audit Logging**: Log all deployment and configuration changes
+- **Basic Audit Logging**: Log deployment and configuration changes
 
-### Network Security
+### Simple Network Security
 - **HTTPS Only**: Enforce HTTPS in production
-- **CORS Configuration**: Configure CORS for frontend-backend communication
-- **Rate Limiting**: Implement rate limiting for API endpoints
-- **IP Whitelisting**: Restrict access to trusted IP ranges
+- **Basic CORS**: Configure CORS for frontend-backend communication
+- **Simple Rate Limiting**: Implement basic rate limiting for API endpoints
 
-## Troubleshooting
+## Simple Troubleshooting
 
 ### Common Deployment Issues
 - **Authentication Errors**: Verify Databricks token and permissions
@@ -190,7 +182,7 @@ logger.info("MCP tool called", extra={
 - **Dependency Issues**: Ensure all dependencies are in requirements.txt
 - **Build Failures**: Check build logs and fix compilation errors
 
-### Debug Commands
+### Simple Debug Commands
 ```bash
 # Check application logs
 databricks apps logs --app-id <app-id> --follow
@@ -205,7 +197,7 @@ python -c "from server.app import app; print('Config valid')"
 cd client && bun run build
 ```
 
-### Performance Monitoring
+### Simple Performance Monitoring
 - **Response Times**: Monitor API response times
 - **Resource Usage**: Track memory and CPU usage
 - **Error Rates**: Monitor error rates and types
@@ -213,7 +205,7 @@ cd client && bun run build
 
 ## Best Practices
 
-### Deployment Checklist
+### Simple Deployment Checklist
 - [ ] Run full test suite before deployment
 - [ ] Validate configuration files
 - [ ] Check environment variables
@@ -222,11 +214,130 @@ cd client && bun run build
 - [ ] Verify application health after deployment
 - [ ] Test rollback procedures
 
-### Maintenance
+### Simple Maintenance
 - **Regular Updates**: Keep dependencies updated
 - **Security Patches**: Apply security patches promptly
 - **Performance Monitoring**: Monitor and optimize performance
 - **Backup Procedures**: Implement backup and recovery procedures
+
+### Critical Development Rules
+
+#### Python Execution Rules
+**CRITICAL: Always use `uv run` instead of direct `python`:**
+```bash
+# ✅ CORRECT
+uv run python script.py
+uv run uvicorn server.app:app
+
+# ❌ WRONG  
+python script.py
+uvicorn server.app:app
+```
+
+#### Databricks CLI Rules
+**CRITICAL: Always source environment before Databricks CLI:**
+```bash
+# ✅ CORRECT - Load environment first
+source .env.local && export DATABRICKS_HOST && export DATABRICKS_TOKEN && databricks current-user me
+
+# ❌ WRONG - Direct CLI usage
+databricks current-user me
+```
+
+#### Package Management
+- **Python**: Use `uv add/remove` for dependencies, never edit pyproject.toml manually
+- **Frontend**: Use `bun add/remove` for dependencies, never edit package.json manually
+- Always check if dependencies already exist before adding new ones
+- **Principle**: Only add dependencies if absolutely critical
+
+### Forbidden DevOps Patterns (DO NOT ADD THESE)
+❌ **Complex CI/CD frameworks** or custom deployment systems
+❌ **Custom monitoring platforms** - use standard tools
+❌ **Complex infrastructure as code** - keep infrastructure simple
+❌ **Custom security scanning** - use standard security tools
+❌ **Complex deployment strategies** - use simple deployment
+❌ **Custom logging frameworks** - use standard logging
+
+### Required DevOps Patterns (ALWAYS USE THESE)
+✅ **Simple deployment scripts** - use deploy.sh and app_status.sh
+✅ **Basic CI/CD** - use GitHub Actions with simple workflows
+✅ **Standard monitoring** - use basic health checks and logging
+✅ **Simple secrets management** - use environment variables and Databricks secrets
+✅ **Basic testing** - use pytest and simple integration tests
+✅ **Standard logging** - use Python logging module
+
+### Code Review Questions
+Before adding any DevOps or deployment features, ask yourself:
+- "Is this the simplest way to achieve this deployment goal?"
+- "Would a new developer understand this immediately?"
+- "Am I adding complexity for a real need or hypothetical flexibility?"
+- "Can I solve this with standard tools and scripts?"
+- "Does this follow the existing deployment patterns in the codebase?"
+
+### Examples of Good vs Bad DevOps
+
+**❌ BAD (Over-engineered deployment):**
+```yaml
+# Complex multi-stage deployment with custom scripts
+deployment:
+  stages:
+    - name: "pre-deployment"
+      steps:
+        - run: "./complex-pre-deployment.sh"
+        - run: "./validate-infrastructure.sh"
+        - run: "./security-scan.sh"
+    - name: "deployment"
+      steps:
+        - run: "./deploy-with-rollback.sh"
+        - run: "./health-check.sh"
+        - run: "./performance-test.sh"
+```
+
+**✅ GOOD (Simple deployment):**
+```yaml
+# Simple deployment with standard tools
+deployment:
+  steps:
+    - run: "./deploy.sh"
+    - run: "./app_status.sh"
+```
+
+**❌ BAD (Over-engineered monitoring):**
+```python
+class ComplexMonitoringSystem:
+    def __init__(self, metrics_collector, alert_manager, performance_analyzer):
+        self.metrics = metrics_collector
+        self.alerts = alert_manager
+        self.analyzer = performance_analyzer
+    
+    def monitor_application(self):
+        # Complex monitoring logic
+        pass
+```
+
+**✅ GOOD (Simple monitoring):**
+```python
+@app.get("/health")
+async def health_check():
+    """Simple health check."""
+    try:
+        client = WorkspaceClient()
+        client.workspace.list()
+        return {"status": "healthy"}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
+```
+
+## Summary: Deployment and DevOps Principles
+
+✅ **Readable**: Any developer can understand the deployment process immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each deployment step has a single, clear purpose
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Deploys the application without over-engineering
+
+When in doubt, choose the **simpler** deployment approach. Your future self (and your teammates) will thank you.
+
 description:
 globs:
 alwaysApply: false

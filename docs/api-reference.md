@@ -6,11 +6,6 @@ Complete reference for all MCP tools available in the Databricks MCP Server.
 
 ### Catalog Management
 
-#### `list_uc_catalogs()`
-Lists all available Unity Catalog catalogs.
-
-**Returns**: `{"success": bool, "catalogs": list, "count": int}`
-
 #### `describe_uc_catalog(catalog_name: str)`
 Provides detailed catalog information and schemas.
 

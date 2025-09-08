@@ -31,6 +31,22 @@
 ✅ **Straightforward control flow** - avoid complex conditional logic
 ✅ **Standard library first** - only add dependencies when absolutely necessary
 
+### Implementation Rules
+1. **One concept per file**: Each module should have a single, clear purpose
+2. **Functions over classes**: Prefer functions unless you need state management
+3. **Direct SDK calls**: Call Databricks SDK directly, no wrapper layers
+4. **Simple data structures**: Use dicts and lists, avoid custom data classes
+5. **Basic testing**: Simple unit tests with basic mocking, no complex test frameworks
+6. **Minimal dependencies**: Only add new dependencies if critically needed
+
+### Code Review Questions
+Before adding any code, ask yourself:
+- "Is this the simplest way to solve this problem?"
+- "Would a new developer understand this immediately?"
+- "Am I adding abstraction for a real need or hypothetical flexibility?"
+- "Can I solve this with standard library or existing dependencies?"
+- "Does this follow the existing patterns in the codebase?"
+
 ## Python Code Quality
 
 ### Linting and Formatting
@@ -42,13 +58,13 @@
 
 ### Code Style Rules
 ```python
-# Good: Simple, direct implementation
+# ✅ GOOD: Simple, direct implementation
 def get_workspace_client() -> WorkspaceClient:
     host = os.getenv('DATABRICKS_HOST')
     token = os.getenv('DATABRICKS_TOKEN')
     return WorkspaceClient(host=host, token=token)
 
-# Bad: Over-engineered with abstractions
+# ❌ BAD: Over-engineered with abstractions
 class AbstractDatabricksClientFactory(ABC):
     @abstractmethod
     def create_client(self) -> WorkspaceClient: ...
@@ -69,6 +85,37 @@ class ConfigurableDatabricksClientFactory(AbstractDatabricksClientFactory):
 - **Class Docs**: Document class purpose only
 - **Module Docs**: Document module purpose and exports
 
+### Tool System Architecture
+The modular tools system (`server/tools/`) is organized into specialized modules:
+- `core.py` - Health checks and basic operations
+- `sql_operations.py` - SQL warehouse and query tools
+- `unity_catalog.py` - Unity Catalog operations (catalogs, schemas, tables)
+- `jobs_pipelines.py` - Job and DLT pipeline management
+- `workspace_files.py` - Workspace file operations
+- `dashboards.py` - **Comprehensive dashboard management tools** (only Lakeview)
+- `repositories.py` - Git repository integration
+- `data_management.py` - DBFS and data operations (commented out)
+- `governance.py` - Governance tools (commented out)
+
+### Adding New Tools
+Tools are automatically registered when added to modules. Follow existing patterns:
+```python
+def load_module_tools(mcp_server):
+    """Register tools from this module."""
+    
+    @mcp_server.tool
+    def your_new_tool(param: str) -> dict:
+        """Tool description for Claude."""
+        # Implementation using Databricks SDK
+        return {"result": "data"}
+```
+
+**Key principles:**
+- Direct Databricks SDK calls (no wrappers)
+- Simple error handling with try/catch
+- Return dictionaries with consistent structure
+- No decorators, no abstractions, no magic
+
 ## TypeScript Code Quality
 
 ### Linting and Formatting
@@ -78,7 +125,7 @@ class ConfigurableDatabricksClientFactory(AbstractDatabricksClientFactory):
 
 ### Code Style Rules
 ```tsx
-// Good: Simple, focused component
+// ✅ GOOD: Simple, focused component
 interface UserProfile {
   id: string
   name: string
@@ -89,7 +136,7 @@ const handleUserUpdate = (user: UserProfile): void => {
   // Direct implementation
 }
 
-// Bad: Over-engineered with unnecessary abstractions
+// ❌ BAD: Over-engineered with unnecessary abstractions
 interface AbstractUserProfile<T extends string> {
   id: T
   name: string
@@ -128,21 +175,54 @@ class UserProfileManager<T extends string> {
 - **Logging**: Log errors with appropriate log levels
 - **User Experience**: Provide meaningful error messages
 
-### Implementation Rules
-1. **One concept per file**: Each module should have a single, clear purpose
-2. **Functions over classes**: Prefer functions unless you need state management
-3. **Direct SDK calls**: Call Databricks SDK directly, no wrapper layers
-4. **Simple data structures**: Use dicts and lists, avoid custom data classes
-5. **Basic testing**: Simple unit tests with basic mocking, no complex test frameworks
-6. **Minimal dependencies**: Only add new dependencies if critically needed
+### Examples of Good vs Bad Code
 
-### Code Review Questions
-Before adding any code, ask yourself:
-- "Is this the simplest way to solve this problem?"
-- "Would a new developer understand this immediately?"
-- "Am I adding abstraction for a real need or hypothetical flexibility?"
-- "Can I solve this with standard library or existing dependencies?"
-- "Does this follow the existing patterns in the codebase?"
+**❌ BAD (Over-engineered):**
+```python
+class AbstractDatabricksClientFactory(ABC):
+    @abstractmethod
+    def create_client(self) -> WorkspaceClient: ...
+
+class ConfigurableDatabricksClientFactory(AbstractDatabricksClientFactory):
+    def __init__(self, config: DatabricksConfig): ...
+```
+
+**✅ GOOD (Simple):**
+```python
+def get_workspace_client() -> WorkspaceClient:
+    host = os.getenv('DATABRICKS_HOST')
+    token = os.getenv('DATABRICKS_TOKEN')
+    return WorkspaceClient(host=host, token=token)
+```
+
+**❌ BAD (Complex configuration):**
+```python
+class DatabaseConfig(BaseModel):
+    host: str = Field(..., description="Database host")
+
+class AppConfig(BaseSettings):
+    database: DatabaseConfig
+    security: SecurityConfig
+    monitoring: MonitoringConfig
+```
+
+**✅ GOOD (Direct environment variables):**
+```python
+class Config:
+    def __init__(self):
+        self.host = os.getenv('DATABRICKS_HOST')
+        self.token = os.getenv('DATABRICKS_TOKEN')
+```
+
+## Summary: What Makes This Project "Senior Developer Approved"
+
+✅ **Readable**: Any developer can understand the code immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each module has a single, clear responsibility
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Solves the specific problem without over-engineering
+
+When in doubt, choose the **simpler** solution. Your future self (and your teammates) will thank you.
 
 description: Code quality standards emphasizing simple, maintainable patterns over complex abstractions
 globs:

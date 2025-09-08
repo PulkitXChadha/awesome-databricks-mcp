@@ -68,41 +68,38 @@ def test_mcp_tools():
   print(f'✅ Loaded {len(tools)} tools: {list(tools.keys())}')
 
   try:
-    # Test 1: list_uc_catalogs
-    print('\n📁 Testing list_uc_catalogs...')
-    result = tools['list_uc_catalogs']()
-    if result['success']:
-      count = result.get('count', 0)
-      print(f'✅ Found {count} catalog(s)')
+    # Test 1: describe_uc_catalog (testing with common catalog names)
+    print('\n📁 Testing describe_uc_catalog...')
+    # Try common catalog names
+    catalog_names = ['hive_metastore', 'main', 'samples']
+    catalog_found = False
 
-      if count > 0 and 'catalogs' in result:
-        first_catalog = result['catalogs'][0]['name']
-        print(f'📁 First catalog: {first_catalog}')
-
-        # Test 2: describe_uc_catalog
-        print(f"\n📋 Testing describe_uc_catalog for '{first_catalog}'...")
-        result = tools['describe_uc_catalog'](first_catalog)
+    for catalog_name in catalog_names:
+      print(f'  Trying catalog: {catalog_name}')
+      try:
+        result = tools['describe_uc_catalog'](catalog_name)
         if result['success']:
           schema_count = result.get('schema_count', 0)
-          print(f'✅ Catalog has {schema_count} schema(s)')
+          print(f'✅ Catalog "{catalog_name}" has {schema_count} schema(s)')
+          catalog_found = True
 
           if schema_count > 0 and 'schemas' in result:
             first_schema = result['schemas'][0]['name']
             print(f'📁 First schema: {first_schema}')
 
-            # Test 3: describe_uc_schema
-            print(f"\n📋 Testing describe_uc_schema for '{first_catalog}.{first_schema}'...")
-            result = tools['describe_uc_schema'](first_catalog, first_schema)
+            # Test 2: describe_uc_schema
+            print(f"\n📋 Testing describe_uc_schema for '{catalog_name}.{first_schema}'...")
+            result = tools['describe_uc_schema'](catalog_name, first_schema)
             if result['success']:
               table_count = result.get('table_count', 0)
               print(f'✅ Schema has {table_count} table(s)')
 
               if table_count > 0 and 'tables' in result:
                 first_table = result['tables'][0]['name']
-                full_table = f'{first_catalog}.{first_schema}.{first_table}'
+                full_table = f'{catalog_name}.{first_schema}.{first_table}'
                 print(f'📁 First table: {full_table}')
 
-                # Test 4: describe_uc_table
+                # Test 3: describe_uc_table
                 print(f"\n📋 Testing describe_uc_table for '{full_table}'...")
                 result = tools['describe_uc_table'](full_table)
                 if result['success']:
@@ -125,12 +122,16 @@ def test_mcp_tools():
               print(f'⚠️  describe_uc_schema failed: {result.get("error", "Unknown error")}')
           else:
             print('ℹ️  No schemas found in catalog')
+          break  # Found a working catalog, exit loop
         else:
-          print(f'⚠️  describe_uc_catalog failed: {result.get("error", "Unknown error")}')
-      else:
-        print('ℹ️  No catalogs found')
-    else:
-      print(f'⚠️  list_uc_catalogs failed: {result.get("error", "Unknown error")}')
+          print(
+            f'⚠️  Catalog "{catalog_name}" not accessible: {result.get("error", "Unknown error")}'
+          )
+      except Exception as e:
+        print(f'⚠️  Error testing catalog "{catalog_name}": {e}')
+
+    if not catalog_found:
+      print('⚠️  No accessible catalogs found')
 
     print('\n✅ MCP Unity Catalog tools test completed!')
     return True

@@ -10,20 +10,6 @@ The Unity Catalog tools provide comprehensive access to Databricks Unity Catalog
 
 ### 1. Catalog Management
 
-#### `list_uc_catalogs()`
-Lists all available Unity Catalog catalogs in the workspace.
-
-**Returns:**
-- List of catalogs with metadata (name, type, comment, owner, etc.)
-- Count of catalogs found
-
-**Example:**
-```python
-# List all catalogs
-result = list_uc_catalogs()
-# Returns: {"success": true, "catalogs": [...], "count": 5}
-```
-
 #### `describe_uc_catalog(catalog_name: str)`
 Provides detailed information about a specific catalog and its schemas.
 
@@ -478,10 +464,7 @@ result = create_data_quality_monitor("hive_metastore.default.users", ["not_null"
 
 #### 1. Data Discovery
 ```python
-# 1. List catalogs
-catalogs = list_uc_catalogs()
-
-# 2. Explore a specific catalog
+# 1. Explore a specific catalog (start with common catalogs like hive_metastore)
 catalog_details = describe_uc_catalog("hive_metastore")
 
 # 3. Explore schemas in the catalog

@@ -3,7 +3,6 @@
 import os
 
 from databricks.sdk import WorkspaceClient
-from .utils import sanitize_error_message
 
 
 def load_uc_tools(mcp_server):
@@ -13,52 +12,7 @@ def load_uc_tools(mcp_server):
       mcp_server: The FastMCP server instance to register tools with
   """
 
-  @mcp_server.tool
-  def list_uc_catalogs() -> dict:
-    """List all available Unity Catalogs.
-
-    Shows catalog names, descriptions, and types.
-    Starting point for data discovery.
-
-    Returns:
-        Dictionary containing list of catalogs with their details
-    """
-    try:
-      # Initialize Databricks SDK
-      w = WorkspaceClient(
-        host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
-      )
-
-      # List all catalogs
-      catalogs = w.catalogs.list()
-
-      catalog_list = []
-      for catalog in catalogs:
-        catalog_list.append(
-          {
-            'name': catalog.name,
-            'type': catalog.catalog_type,
-            'comment': catalog.comment,
-            'owner': catalog.owner,
-            'created_at': catalog.created_at,
-            'updated_at': catalog.updated_at,
-            'properties': catalog.properties,
-          }
-        )
-
-      return {
-        'success': True,
-        'catalogs': catalog_list,
-        'count': len(catalog_list),
-        'message': f'Found {len(catalog_list)} catalog(s)',
-      }
-
-    except Exception as e:
-      sanitized_error = sanitize_error_message(str(e))
-      print(f'❌ Error listing catalogs: {sanitized_error}')
-      return {'success': False, 'error': f'Error: {sanitized_error}', 'catalogs': [], 'count': 0}
-
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_catalog(catalog_name: str) -> dict:
     """Provide detailed information about a specific catalog.
 
@@ -109,14 +63,16 @@ def load_uc_tools(mcp_server):
         },
         'schemas': schema_list,
         'schema_count': len(schema_list),
-        'message': f'Catalog {catalog_name} details retrieved successfully with {len(schema_list)} schema(s)',
+        'message': (
+          f'Catalog {catalog_name} details retrieved successfully with {len(schema_list)} schema(s)'
+        ),
       }
 
     except Exception as e:
       print(f'❌ Error describing catalog: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_schemas(catalog_name: str) -> dict:
     """List all schemas within a specific catalog.
 
@@ -160,7 +116,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing schemas: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'schemas': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_schema(
     catalog_name: str, schema_name: str, include_columns: bool = False
   ) -> dict:
@@ -173,7 +129,8 @@ def load_uc_tools(mcp_server):
     Args:
         catalog_name: Name of the catalog
         schema_name: Name of the schema
-        include_columns: Whether to include detailed column information for each table (default: False)
+        include_columns: Whether to include detailed column information for each table
+            (default: False)
 
     Returns:
         Dictionary with schema details and its tables
@@ -230,14 +187,17 @@ def load_uc_tools(mcp_server):
         'tables': table_list,
         'table_count': len(table_list),
         'include_columns': include_columns,
-        'message': f'Schema {catalog_name}.{schema_name} details retrieved successfully with {len(table_list)} table(s)',
+        'message': (
+          f'Schema {catalog_name}.{schema_name} details retrieved successfully with '
+          f'{len(table_list)} table(s)'
+        ),
       }
 
     except Exception as e:
       print(f'❌ Error describing schema: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_tables(catalog_name: str, schema_name: str) -> dict:
     """List all tables within a specific schema.
 
@@ -284,7 +244,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing tables: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'tables': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_table(table_name: str, include_lineage: bool = False) -> dict:
     """Provide detailed table structure and metadata.
 
@@ -358,21 +318,24 @@ def load_uc_tools(mcp_server):
       if include_lineage:
         # Note: Lineage information may require additional permissions
         table_info['lineage_note'] = (
-          'Lineage information requires specific permissions and may not be directly accessible via SDK'
+          'Lineage information requires specific permissions and may not be '
+          'directly accessible via SDK'
         )
 
       return {
         'success': True,
         'table': table_info,
         'include_lineage': include_lineage,
-        'message': f'Table {table_name} details retrieved successfully with {len(columns)} column(s)',
+        'message': (
+          f'Table {table_name} details retrieved successfully with {len(columns)} column(s)'
+        ),
       }
 
     except Exception as e:
       print(f'❌ Error describing table: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_volumes(catalog_name: str, schema_name: str) -> dict:
     """List all volumes in a Unity Catalog schema.
 
@@ -420,7 +383,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing volumes: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'volumes': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_volume(volume_name: str) -> dict:
     """Get detailed volume information including storage location and permissions.
 
@@ -468,7 +431,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing volume: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_functions(catalog_name: str, schema_name: str) -> dict:
     """List all functions in a Unity Catalog schema.
 
@@ -516,7 +479,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing functions: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'functions': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_function(function_name: str) -> dict:
     """Get detailed function information including parameters and return type.
 
@@ -566,7 +529,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing function: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_models(catalog_name: str, schema_name: str) -> dict:
     """List all models in a Unity Catalog schema.
 
@@ -612,7 +575,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing models: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'models': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_uc_model(model_name: str) -> dict:
     """Get detailed model information including version history and lineage.
 
@@ -657,7 +620,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing model: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_tags(catalog_name: str = None) -> dict:
     """List available tags in Unity Catalog.
 
@@ -669,7 +632,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -681,7 +644,9 @@ def load_uc_tools(mcp_server):
         'message': f'Tag listing initiated for catalog {catalog_name}'
         if catalog_name
         else 'Tag listing initiated for all catalogs',
-        'note': 'Tag listing requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Tag listing requires specific permissions and may not be directly accessible via SDK'
+        ),
         'tags': [],
         'count': 0,
       }
@@ -690,7 +655,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing tags: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'tags': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def apply_uc_tags(object_name: str, tags: dict) -> dict:
     """Apply tags to Unity Catalog objects.
 
@@ -703,7 +668,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -714,14 +679,16 @@ def load_uc_tools(mcp_server):
         'object_name': object_name,
         'tags': tags,
         'message': f'Tag application initiated for {object_name}',
-        'note': 'Tag application requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Tag application requires specific permissions and may not be directly accessible via SDK'
+        ),
       }
 
     except Exception as e:
       print(f'❌ Error applying tags: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def search_uc_objects(query: str, object_types: list = None) -> dict:
     """Search for Unity Catalog objects by name, description, or tags.
 
@@ -734,7 +701,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -745,7 +712,10 @@ def load_uc_tools(mcp_server):
         'query': query,
         'object_types': object_types,
         'message': 'Unity Catalog object search initiated',
-        'note': 'Object search requires Unity Catalog and specific permissions, may not be directly accessible via SDK',
+        'note': (
+          'Object search requires Unity Catalog and specific permissions, '
+          'may not be directly accessible via SDK'
+        ),
         'results': [],
         'count': 0,
       }
@@ -754,7 +724,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error searching Unity Catalog objects: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_table_statistics(table_name: str) -> dict:
     """Get table statistics including row count, size, and column statistics.
 
@@ -773,7 +743,7 @@ def load_uc_tools(mcp_server):
       catalog_name, schema_name, table_name_only = parts
 
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -783,7 +753,9 @@ def load_uc_tools(mcp_server):
         'success': True,
         'table_name': table_name,
         'message': f'Table statistics retrieval initiated for {table_name}',
-        'note': 'Table statistics require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Table statistics require specific permissions and may not be directly accessible via SDK'
+        ),
         'statistics': {},
       }
 
@@ -791,7 +763,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error getting table statistics: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_metastores() -> dict:
     """List all metastores in the workspace.
 
@@ -832,7 +804,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing metastores: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'metastores': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_metastore(metastore_name: str) -> dict:
     """Get detailed metastore information.
 
@@ -863,7 +835,9 @@ def load_uc_tools(mcp_server):
           'global_metastore_id': metastore.global_metastore_id,
           'storage_root': metastore.storage_root,
           'delta_sharing_scope': metastore.delta_sharing_scope,
-          'delta_sharing_recipient_token_lifetime_in_seconds': metastore.delta_sharing_recipient_token_lifetime_in_seconds,
+          'delta_sharing_recipient_token_lifetime_in_seconds': (
+            metastore.delta_sharing_recipient_token_lifetime_in_seconds
+          ),
           'delta_sharing_organization_name': metastore.delta_sharing_organization_name,
         },
         'message': f'Metastore {metastore_name} details retrieved successfully',
@@ -873,7 +847,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error describing metastore: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_data_quality_monitors(catalog_name: str = None) -> dict:
     """List data quality monitors configured in Unity Catalog.
 
@@ -885,7 +859,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -897,7 +871,10 @@ def load_uc_tools(mcp_server):
         'message': f'Data quality monitor listing initiated for catalog {catalog_name}'
         if catalog_name
         else 'Data quality monitor listing initiated for all catalogs',
-        'note': 'Data quality monitors require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Data quality monitors require specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
         'monitors': [],
         'count': 0,
       }
@@ -906,7 +883,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error listing data quality monitors: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'monitors': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_data_quality_results(monitor_name: str, date_range: str = '7d') -> dict:
     """Get data quality monitoring results.
 
@@ -919,7 +896,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -930,7 +907,10 @@ def load_uc_tools(mcp_server):
         'monitor_name': monitor_name,
         'date_range': date_range,
         'message': f'Data quality results retrieval initiated for {monitor_name}',
-        'note': 'Data quality results require specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Data quality results require specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
         'results': {},
       }
 
@@ -938,7 +918,7 @@ def load_uc_tools(mcp_server):
       print(f'❌ Error getting data quality results: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_data_quality_monitor(table_name: str, rules: list) -> dict:
     """Create a new data quality monitor for a table.
 
@@ -951,7 +931,7 @@ def load_uc_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -962,7 +942,10 @@ def load_uc_tools(mcp_server):
         'table_name': table_name,
         'rules': rules,
         'message': f'Data quality monitor creation initiated for {table_name}',
-        'note': 'Data quality monitor creation requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Data quality monitor creation requires specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
       }
 
     except Exception as e:

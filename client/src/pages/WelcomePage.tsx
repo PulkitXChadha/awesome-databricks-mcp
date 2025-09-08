@@ -270,7 +270,8 @@ export function WelcomePage() {
                 MCP (Model Context Protocol) Server
               </CardTitle>
               <CardDescription>
-                This app includes an MCP server that exposes prompts and tools to Claude Code
+                This app includes an MCP server that exposes prompts and tools
+                to Claude Code
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -280,14 +281,17 @@ export function WelcomePage() {
                   {mcpInfo.mcp_url}
                 </code>
               </div>
-              
+
               <div>
-                <h4 className="font-semibold mb-2">Claude Code Configuration</h4>
+                <h4 className="font-semibold mb-2">
+                  Claude Code Configuration
+                </h4>
                 <p className="text-sm text-muted-foreground mb-2">
                   To use this MCP server with Claude Code, run:
                 </p>
                 <code className="bg-muted px-3 py-2 rounded block text-sm font-mono">
-                  claude mcp add {mcpInfo.server_name || 'mcp-commands'} {mcpInfo.client_path || 'python mcp_databricks_client.py'}
+                  claude mcp add {mcpInfo.server_name || "mcp-commands"}{" "}
+                  {mcpInfo.client_path || "python mcp_databricks_client.py"}
                 </code>
               </div>
 
@@ -297,14 +301,13 @@ export function WelcomePage() {
                   To use this MCP server with Cursor, run:
                 </p>
                 <code className="bg-muted px-3 py-2 rounded block text-sm font-mono">
-                  claude mcp add {mcpInfo.server_name || 'mcp-commands'} {mcpInfo.client_path || 'python mcp_databricks_client.py'}
+                  claude mcp add {mcpInfo.server_name || "mcp-commands"}{" "}
+                  {mcpInfo.client_path || "python mcp_databricks_client.py"}
                 </code>
               </div>
 
               <div className="flex items-center gap-4">
-                <Badge variant="outline">
-                  Transport: {mcpInfo.transport}
-                </Badge>
+                <Badge variant="outline">Transport: {mcpInfo.transport}</Badge>
                 {mcpInfo.capabilities?.prompts && (
                   <Badge variant="outline">Prompts ✓</Badge>
                 )}

@@ -30,7 +30,6 @@ client = WorkspaceClient()
 ## 📊 Unity Catalog Tools
 
 ### Catalog Management
-- **`list_uc_catalogs()`** - List all available catalogs
 - **`describe_uc_catalog(catalog_name)`** - Get detailed catalog information
 - **`search_uc_objects(query, object_types)`** - Search for catalog objects
 
@@ -298,10 +297,7 @@ client = WorkspaceClient()
 
 #### 1. Data Discovery
 ```python
-# 1. List catalogs
-catalogs = list_uc_catalogs()
-
-# 2. Explore specific catalog
+# 1. Explore specific catalog (start with common ones like hive_metastore)
 catalog_details = describe_uc_catalog("hive_metastore")
 
 # 3. Explore schemas

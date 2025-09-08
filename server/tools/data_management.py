@@ -12,7 +12,7 @@ def load_data_tools(mcp_server):
       mcp_server: The FastMCP server instance to register tools with
   """
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_dbfs_files(path: str = '/') -> dict:
     """List files and directories in DBFS (Databricks File System).
 
@@ -54,7 +54,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error listing DBFS files: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'files': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def get_dbfs_file_info(path: str) -> dict:
     """Get file/directory information from DBFS.
 
@@ -89,7 +89,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error getting DBFS file info: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def read_dbfs_file(path: str, offset: int = 0, length: int = None) -> dict:
     """Read file content from DBFS.
 
@@ -136,7 +136,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error reading DBFS file: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def write_dbfs_file(path: str, content: str, overwrite: bool = False) -> dict:
     """Write content to a file in DBFS.
 
@@ -172,7 +172,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error writing DBFS file: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def delete_dbfs_path(path: str, recursive: bool = False) -> dict:
     """Delete a file or directory from DBFS.
 
@@ -203,7 +203,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error deleting DBFS path: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_dbfs_directory(path: str) -> dict:
     """Create a directory in DBFS.
 
@@ -232,7 +232,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error creating DBFS directory: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def move_dbfs_path(source: str, destination: str) -> dict:
     """Move/rename a file or directory in DBFS.
 
@@ -263,7 +263,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error moving DBFS path: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def copy_dbfs_file(source_path: str, destination_path: str) -> dict:
     """Copy a file in DBFS from source to destination.
 
@@ -299,7 +299,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error copying DBFS file: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_external_locations() -> dict:
     """List all external locations configured in the workspace.
 
@@ -340,7 +340,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error listing external locations: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'locations': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_volumes(catalog_name: str, schema_name: str) -> dict:
     """List all volumes within a specific schema.
 
@@ -388,7 +388,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error listing volumes: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'volumes': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def create_volume(
     catalog_name: str,
     schema_name: str,
@@ -427,7 +427,7 @@ def load_data_tools(mcp_server):
         volume_config['storage_location'] = storage_location
 
       # Create the volume
-      volume = w.volumes.create(catalog_name=catalog_name, schema_name=schema_name, **volume_config)
+      w.volumes.create(catalog_name=catalog_name, schema_name=schema_name, **volume_config)
 
       return {
         'success': True,
@@ -443,7 +443,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error creating volume: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_external_location(location_name: str) -> dict:
     """Get detailed external location information.
 
@@ -482,7 +482,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error describing external location: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_storage_credentials() -> dict:
     """List all storage credentials configured in the workspace.
 
@@ -521,7 +521,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error listing storage credentials: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}', 'credentials': [], 'count': 0}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def describe_storage_credential(credential_name: str) -> dict:
     """Get detailed storage credential information.
 
@@ -557,7 +557,7 @@ def load_data_tools(mcp_server):
       print(f'❌ Error describing storage credential: {str(e)}')
       return {'success': False, 'error': f'Error: {str(e)}'}
 
-  @mcp_server.tool
+  @mcp_server.tool()
   def list_uc_permissions(
     catalog_name: str = None, schema_name: str = None, table_name: str = None
   ) -> dict:
@@ -573,7 +573,7 @@ def load_data_tools(mcp_server):
     """
     try:
       # Initialize Databricks SDK
-      w = WorkspaceClient(
+      WorkspaceClient(
         host=os.environ.get('DATABRICKS_HOST'), token=os.environ.get('DATABRICKS_TOKEN')
       )
 
@@ -585,7 +585,10 @@ def load_data_tools(mcp_server):
         'schema': schema_name,
         'table': table_name,
         'message': 'Permission listing initiated',
-        'note': 'Permission listing requires specific permissions and may not be directly accessible via SDK',
+        'note': (
+          'Permission listing requires specific permissions and may not be '
+          'directly accessible via SDK'
+        ),
         'permissions': [],
         'count': 0,
       }

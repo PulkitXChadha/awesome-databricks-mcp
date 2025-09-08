@@ -323,9 +323,9 @@ curl http://localhost:8000/api/v1/user/me
 ```bash
 # Test Unity Catalog tools
 python -c "
-from server.tools.unity_catalog import list_uc_catalogs
-result = list_uc_catalogs()
-print(f'Catalogs found: {result.get(\"count\", 0)}')
+from server.tools.unity_catalog import describe_uc_catalog
+result = describe_uc_catalog('hive_metastore')
+print(f'Schemas found: {result.get(\"schema_count\", 0)}')
 "
 ```
 

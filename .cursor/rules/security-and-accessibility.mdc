@@ -3,147 +3,430 @@
 ## Security Best Practices
 
 ### Authentication and Authorization
-- **OAuth Flow**: Use Databricks OAuth for secure authentication
-- **Token Management**: Never hardcode authentication tokens
-- **Environment Variables**: Store sensitive data in `.env.local` (not committed)
-- **API Security**: Validate all input parameters and sanitize data
 
-### Data Security
-- **Input Validation**: Validate all user inputs on both client and server
-- **SQL Injection**: Use parameterized queries and avoid string concatenation
-- **XSS Prevention**: Sanitize HTML content and use proper Content-Type headers
-- **CSRF Protection**: Implement CSRF tokens for state-changing operations
+#### OAuth Flow Security
+- **Databricks Apps OAuth**: Use secure OAuth flow through Databricks Apps
+- **Token Management**: Never store tokens in code or version control
+- **Environment Variables**: Store sensitive configuration in `.env.local`
+- **Token Rotation**: Implement proper token refresh mechanisms
 
-### API Security
+#### Simple Input Validation
 ```python
-# Good: Input validation and sanitization
-from pydantic import BaseModel, validator
+from typing import Dict, Any
+import re
 
-class UserInput(BaseModel):
-  name: str
-  email: str
-  
-  @validator('email')
-  def validate_email(cls, v):
-    if '@' not in v:
-      raise ValueError('Invalid email format')
-    return v.lower()
+def validate_sql_query(query: str) -> Dict[str, Any]:
+    """Validate SQL query for security."""
+    # Check for dangerous patterns
+    dangerous_patterns = [
+        r'DROP\s+TABLE',
+        r'DELETE\s+FROM',
+        r'TRUNCATE\s+TABLE',
+        r'ALTER\s+TABLE',
+        r'CREATE\s+TABLE'
+    ]
+    
+    for pattern in dangerous_patterns:
+        if re.search(pattern, query, re.IGNORECASE):
+            return {
+                "valid": False,
+                "error": f"Dangerous SQL operation detected: {pattern}"
+            }
+    
+    return {"valid": True}
 
-# Bad: No validation
-def process_user_data(name, email):
-  # Direct use without validation
-  return {"name": name, "email": email}
+def sanitize_input(input_string: str) -> str:
+    """Sanitize user input to prevent injection attacks."""
+    # Remove potentially dangerous characters
+    dangerous_chars = ['<', '>', '"', "'", '&']
+    sanitized = input_string
+    for char in dangerous_chars:
+        sanitized = sanitized.replace(char, '')
+    
+    return sanitized.strip()
 ```
 
-### Environment Security
-- **Local Development**: Use `.env.local` for sensitive configuration
-- **Production**: Set environment variables through Databricks Apps
-- **Secrets**: Never commit secrets or API keys to version control
-- **Network Security**: Use HTTPS in production, validate SSL certificates
-
-## Accessibility (a11y) Guidelines
-
-### HTML Semantics
-- **Semantic Elements**: Use proper HTML5 semantic elements
-- **Heading Hierarchy**: Maintain logical heading structure (h1 → h2 → h3)
-- **Landmarks**: Use ARIA landmarks for navigation and content areas
-- **Lists**: Use proper list elements (ul, ol, dl) for list content
-
-### ARIA Attributes
-```tsx
-// Good: Proper ARIA labels and roles
-<button
-  aria-label="Close dialog"
-  aria-expanded={isOpen}
-  onClick={handleClose}
->
-  <XIcon aria-hidden="true" />
-</button>
-
-// Bad: Missing accessibility attributes
-<button onClick={handleClose}>
-  <XIcon />
-</button>
+#### Simple Error Handling Security
+```python
+def secure_error_response(error: Exception, operation: str) -> Dict[str, Any]:
+    """Return secure error response without exposing sensitive information."""
+    # Log the full error for debugging
+    logger.error(f"Error in {operation}: {str(error)}")
+    
+    # Return sanitized error message
+    return {
+        "success": False,
+        "error": "Operation failed",
+        "message": f"Failed to {operation}"
+    }
 ```
 
-### Keyboard Navigation
-- **Tab Order**: Ensure logical tab order through the interface
-- **Focus Management**: Manage focus when opening/closing modals
-- **Keyboard Shortcuts**: Provide keyboard alternatives for mouse actions
-- **Skip Links**: Implement skip links for main content navigation
+### Data Protection
 
-### Screen Reader Support
-- **Alt Text**: Provide descriptive alt text for images
-- **Form Labels**: Associate form controls with proper labels
-- **Error Messages**: Use ARIA-live regions for dynamic content
-- **Status Updates**: Announce status changes to screen readers
+#### Sensitive Data Handling
+```python
+import os
+from typing import Dict, Any
 
-### Color and Contrast
-- **Color Contrast**: Ensure sufficient contrast ratios (WCAG AA: 4.5:1)
-- **Color Independence**: Don't rely solely on color to convey information
-- **Dark Mode**: Support both light and dark themes
-- **Focus Indicators**: Provide visible focus indicators for all interactive elements
+def get_secure_config() -> Dict[str, Any]:
+    """Get configuration with sensitive data protection."""
+    return {
+        "databricks_host": os.getenv("DATABRICKS_HOST"),
+        "workspace_id": os.getenv("WORKSPACE_ID"),
+        # Never include tokens or secrets in response
+    }
 
-## React Component Accessibility
+def mask_sensitive_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Mask sensitive data in responses."""
+    sensitive_keys = ['token', 'password', 'secret', 'key']
+    masked_data = data.copy()
+    
+    for key in sensitive_keys:
+        if key in masked_data:
+            masked_data[key] = "***MASKED***"
+    
+    return masked_data
+```
 
-### Component Patterns
-```tsx
-// Good: Accessible component with proper ARIA
-interface AccessibleButtonProps {
-  label: string
-  onClick: () => void
-  disabled?: boolean
+#### Simple API Security
+```python
+from fastapi import HTTPException, Depends
+from fastapi.security import HTTPBearer
+
+security = HTTPBearer()
+
+def verify_authentication(token: str = Depends(security)):
+    """Verify authentication token."""
+    if not is_valid_token(token.credentials):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token"
+        )
+    return token.credentials
+
+@app.get("/secure-endpoint")
+async def secure_endpoint(token: str = Depends(verify_authentication)):
+    """Secure endpoint requiring authentication."""
+    return {"message": "Access granted"}
+```
+
+## Frontend Security
+
+### Simple Input Validation
+```typescript
+interface ValidationResult {
+  isValid: boolean
+  error?: string
 }
 
-export function AccessibleButton({ label, onClick, disabled }: AccessibleButtonProps) {
+const validateUserInput = (input: string): ValidationResult => {
+  // Check for XSS patterns
+  const xssPatterns = /<script|javascript:|on\w+\s*=|data:text\/html/i
+  
+  if (xssPatterns.test(input)) {
+    return {
+      isValid: false,
+      error: 'Potentially dangerous input detected'
+    }
+  }
+  
+  return { isValid: true }
+}
+
+const sanitizeInput = (input: string): string => {
+  // Remove potentially dangerous characters
+  return input
+    .replace(/[<>"']/g, '')
+    .trim()
+}
+```
+
+### Simple API Security
+```typescript
+const secureApiCall = async (endpoint: string, data: any) => {
+  try {
+    // Validate input before sending
+    if (!validateUserInput(JSON.stringify(data))) {
+      throw new Error('Invalid input detected')
+    }
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getAuthToken()}`
+      },
+      body: JSON.stringify(data)
+    })
+    
+    if (!response.ok) {
+      throw new Error('API request failed')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    // Don't expose internal error details
+    console.error('API Error:', error)
+    throw new Error('Request failed')
+  }
+}
+```
+
+## Accessibility Guidelines
+
+### Simple Semantic HTML
+```typescript
+const AccessibleComponent: React.FC<ComponentProps> = ({
+  title,
+  description,
+  onAction
+}) => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onAction?.()
+    }
+  }
+
+  return (
+    <section aria-labelledby="component-title">
+      <h2 id="component-title" className="text-lg font-semibold">
+        {title}
+      </h2>
+      {description && (
+        <p className="text-sm text-gray-600 mt-2">{description}</p>
+      )}
+      <button
+        onClick={onAction}
+        onKeyDown={handleKeyDown}
+        aria-label={`Action for ${title}`}
+        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        Action
+      </button>
+    </section>
+  )
+}
+```
+
+### Simple Form Accessibility
+```typescript
+const AccessibleForm: React.FC<FormProps> = ({ onSubmit }) => {
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  return (
+    <form onSubmit={onSubmit} noValidate>
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium">
+          Email Address
+        </label>
+        <input
+          id="email"
+          type="email"
+          name="email"
+          aria-describedby={errors.email ? 'email-error' : undefined}
+          aria-invalid={!!errors.email}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+        {errors.email && (
+          <p id="email-error" className="mt-1 text-sm text-red-600" role="alert">
+            {errors.email}
+          </p>
+        )}
+      </div>
+      
+      <button
+        type="submit"
+        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        Submit
+      </button>
+    </form>
+  )
+}
+```
+
+### Simple Keyboard Navigation
+```typescript
+const useKeyboardNavigation = () => {
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    switch (event.key) {
+      case 'Escape':
+        // Close modal or cancel operation
+        break
+      case 'Tab':
+        // Handle tab navigation
+        break
+      case 'Enter':
+        // Activate current element
+        break
+    }
+  }, [])
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
+}
+```
+
+### Simple Color and Contrast
+```typescript
+// Use semantic color tokens for proper contrast
+const colorTokens = {
+  primary: {
+    background: 'bg-blue-500',
+    text: 'text-white',
+    hover: 'hover:bg-blue-600',
+    focus: 'focus:ring-blue-500'
+  },
+  secondary: {
+    background: 'bg-gray-200',
+    text: 'text-gray-900',
+    hover: 'hover:bg-gray-300',
+    focus: 'focus:ring-gray-500'
+  },
+  error: {
+    background: 'bg-red-500',
+    text: 'text-white',
+    hover: 'hover:bg-red-600',
+    focus: 'focus:ring-red-500'
+  }
+}
+
+// Ensure sufficient color contrast
+const Button: React.FC<ButtonProps> = ({ variant = 'primary', ...props }) => {
+  const colors = colorTokens[variant]
+  
   return (
     <button
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
-    >
-      {label}
-    </button>
-  )
-}
-
-// Bad: Missing accessibility attributes
-export function Button({ label, onClick, disabled }: AccessibleButtonProps) {
-  return (
-    <button onClick={onClick} disabled={disabled}>
-      {label}
-    </button>
+      className={`
+        ${colors.background}
+        ${colors.text}
+        ${colors.hover}
+        focus:outline-none focus:ring-2 ${colors.focus} focus:ring-offset-2
+        px-4 py-2 rounded font-medium transition-colors
+      `}
+      {...props}
+    />
   )
 }
 ```
 
-### Form Accessibility
-- **Label Association**: Use htmlFor to associate labels with form controls
-- **Error Handling**: Display errors with proper ARIA attributes
-- **Required Fields**: Indicate required fields clearly
-- **Validation**: Provide real-time validation feedback
+## Best Practices
 
-### Testing Accessibility
-- **Automated Testing**: Use axe-core or similar tools for automated testing
-- **Manual Testing**: Test with keyboard navigation and screen readers
-- **Browser Tools**: Use browser developer tools for accessibility testing
-- **User Testing**: Include users with disabilities in testing processes
+### Security Checklist
+- [ ] Validate all user inputs
+- [ ] Sanitize data before processing
+- [ ] Use HTTPS for all communications
+- [ ] Implement proper authentication
+- [ ] Log security events
+- [ ] Regular security audits
+- [ ] Keep dependencies updated
 
-## Security Testing
+### Accessibility Checklist
+- [ ] Use semantic HTML elements
+- [ ] Provide proper ARIA labels
+- [ ] Ensure keyboard navigation
+- [ ] Maintain color contrast ratios
+- [ ] Test with screen readers
+- [ ] Provide alternative text for images
+- [ ] Use proper heading hierarchy
 
-### Vulnerability Scanning
-- **Dependency Scanning**: Regularly scan for vulnerable dependencies
-- **Code Analysis**: Use static analysis tools for security issues
-- **Penetration Testing**: Conduct regular security assessments
-- **Security Headers**: Implement proper security headers (CSP, HSTS, etc.)
+### Forbidden Security Patterns (DO NOT ADD THESE)
+❌ **Complex security frameworks** or custom security implementations
+❌ **Custom authentication systems** - use Databricks OAuth only
+❌ **Complex encryption layers** - use standard encryption libraries
+❌ **Custom input validation frameworks** - keep validation simple
+❌ **Complex access control systems** - use simple permission checks
+❌ **Custom security logging systems** - use standard logging
 
-### Monitoring and Logging
-- **Security Events**: Log all security-related events
-- **Access Logs**: Monitor access patterns and suspicious activity
-- **Error Logging**: Log errors without exposing sensitive information
-- **Audit Trails**: Maintain audit trails for sensitive operations
-description:
-globs:
-alwaysApply: false
----
+### Required Security Patterns (ALWAYS USE THESE)
+✅ **Simple input validation** - basic pattern matching and sanitization
+✅ **Standard authentication** - use Databricks OAuth flow
+✅ **Basic error handling** - don't expose sensitive information
+✅ **Environment variables** - store secrets in .env.local
+✅ **HTTPS everywhere** - use secure connections
+✅ **Simple logging** - log security events for debugging
+
+### Forbidden Accessibility Patterns (DO NOT ADD THESE)
+❌ **Complex accessibility frameworks** or custom accessibility libraries
+❌ **Custom screen reader implementations** - use standard ARIA
+❌ **Complex keyboard navigation systems** - keep navigation simple
+❌ **Custom color contrast calculators** - use standard tools
+❌ **Complex focus management** - use simple focus patterns
+
+### Required Accessibility Patterns (ALWAYS USE THESE)
+✅ **Semantic HTML** - use proper HTML elements
+✅ **ARIA labels** - provide clear descriptions
+✅ **Keyboard navigation** - ensure tab order and keyboard access
+✅ **Color contrast** - maintain sufficient contrast ratios
+✅ **Focus management** - use simple focus indicators
+✅ **Alternative text** - provide text alternatives for images
+
+### Code Review Questions
+Before adding any security or accessibility features, ask yourself:
+- "Is this the simplest way to implement this security/accessibility feature?"
+- "Would a new developer understand this immediately?"
+- "Am I adding complexity for a real need or hypothetical flexibility?"
+- "Can I solve this with standard libraries and patterns?"
+- "Does this follow the existing security/accessibility patterns in the codebase?"
+
+### Examples of Good vs Bad Security/Accessibility
+
+**❌ BAD (Over-engineered security):**
+```python
+class ComplexSecurityFramework:
+    def __init__(self, encryption_engine, validation_framework, audit_system):
+        self.encryption = encryption_engine
+        self.validation = validation_framework
+        self.audit = audit_system
+    
+    def secure_operation(self, data):
+        # Complex security implementation
+        pass
+```
+
+**✅ GOOD (Simple security):**
+```python
+def validate_input(input_string: str) -> bool:
+    """Simple input validation."""
+    dangerous_chars = ['<', '>', '"', "'"]
+    return not any(char in input_string for char in dangerous_chars)
+```
+
+**❌ BAD (Over-engineered accessibility):**
+```typescript
+class ComplexAccessibilityManager {
+  private focusManager: FocusManager
+  private screenReaderAdapter: ScreenReaderAdapter
+  
+  constructor() {
+    this.focusManager = new FocusManager()
+    this.screenReaderAdapter = new ScreenReaderAdapter()
+  }
+}
+```
+
+**✅ GOOD (Simple accessibility):**
+```typescript
+const AccessibleButton: React.FC<ButtonProps> = ({ children, ...props }) => (
+  <button
+    aria-label={props['aria-label']}
+    className="focus:outline-none focus:ring-2 focus:ring-blue-500"
+    {...props}
+  >
+    {children}
+  </button>
+)
+```
+
+## Summary: Security and Accessibility Principles
+
+✅ **Readable**: Any developer can understand the security/accessibility implementation immediately
+✅ **Maintainable**: Simple patterns that are easy to modify
+✅ **Focused**: Each security/accessibility feature has a single, clear purpose
+✅ **Direct**: No unnecessary abstractions or indirection
+✅ **Practical**: Implements security and accessibility without over-engineering
+
+When in doubt, choose the **simpler** security or accessibility approach. Your future self (and your teammates) will thank you.

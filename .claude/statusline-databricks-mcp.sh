@@ -87,6 +87,9 @@ current_time=$(date "+%H:%M")
 # Calculate session duration (if session_start is available)
 session_duration=""
 if [ -n "$session_start" ] && [ "$session_start" != "null" ]; then
+    # Debug session start parsing
+    # echo "DEBUG: session_start = '$session_start'" >&2
+    
     # Try different date parsing approaches for cross-platform compatibility
     start_epoch=""
     current_epoch=$(date -u +%s)
@@ -94,22 +97,33 @@ if [ -n "$session_start" ] && [ "$session_start" != "null" ]; then
     # Try GNU date first (gdate on macOS)
     if command -v gdate >/dev/null 2>&1; then
         start_epoch=$(gdate -d "$session_start" +%s 2>/dev/null)
+        # echo "DEBUG: gdate result = '$start_epoch'" >&2
     fi
     
     # Try BSD date (macOS native) - force UTC interpretation
     if [ -z "$start_epoch" ]; then
-        start_epoch=$(TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%SZ" "$session_start" +%s 2>/dev/null)
+        # Handle both with and without Z suffix
+        if [[ "$session_start" == *"Z" ]]; then
+            start_epoch=$(TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%SZ" "$session_start" +%s 2>/dev/null)
+        else
+            start_epoch=$(TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%S" "$session_start" +%s 2>/dev/null)
+        fi
+        # echo "DEBUG: BSD date result = '$start_epoch'" >&2
     fi
     
     # Try standard date (Linux)
     if [ -z "$start_epoch" ]; then
         start_epoch=$(date -d "$session_start" +%s 2>/dev/null)
+        # echo "DEBUG: standard date result = '$start_epoch'" >&2
     fi
     
     # Calculate duration if we got a valid start time
-    if [ -n "$start_epoch" ] && [ "$start_epoch" != "0" ]; then
+    if [ -n "$start_epoch" ] && [ "$start_epoch" != "0" ] && [ "$start_epoch" -gt 0 ]; then
         duration_seconds=$((current_epoch - start_epoch))
-        if [ $duration_seconds -ge 0 ]; then
+        # echo "DEBUG: current_epoch=$current_epoch, start_epoch=$start_epoch, duration_seconds=$duration_seconds" >&2
+        
+        # Only show duration if it's reasonable (less than 24 hours)
+        if [ $duration_seconds -ge 0 ] && [ $duration_seconds -lt 86400 ]; then
             if [ $duration_seconds -lt 60 ]; then
                 session_duration="${duration_seconds}s"
             elif [ $duration_seconds -lt 3600 ]; then
@@ -270,3 +284,6 @@ if [ -n "$last_prompt_text" ] && [ "$last_prompt_text" != "null" ] && [ ${#last_
         printf "..."
     fi
 fi
+
+# Always end with a newline
+printf "\n"
