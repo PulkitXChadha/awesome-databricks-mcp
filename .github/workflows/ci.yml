@@ -40,7 +40,7 @@ jobs:
           DATABRICKS_TOKEN: "test-token-123"
           DATABRICKS_APP_NAME: "test-app"
         run: |
-          uv run pytest tests/ -m "not slow" -v --tb=short
+          uv run pytest tests/ -m "not slow" -v --tb=short -n auto
       
       - name: Install Bun
         run: |
