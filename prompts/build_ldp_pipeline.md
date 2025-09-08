@@ -2,48 +2,52 @@
 name: build_ldp_pipeline
 description: Build Lakeflow Declarative Pipeline with medallion architecture
 arguments:
-  - name: pipeline_name
-    description: Name for your pipeline
-    required: true
-    schema:
-      type: string
-      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
-  
   - name: catalog
-    description: Unity Catalog name (will create if specified)
+    description: Unity Catalog name (will create if specified and does not exist)
     required: true
     schema:
       type: string
       pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
   
   - name: schema
-    description: Schema for Lakeflow tables (will create if specified)  
+    description: Schema for Lakeflow tables (will create if specified and does not exist)  
     required: true
     schema:
       type: string
       pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
   
   - name: source_tables
-    description: List of source tables to process
+    description: List of source tables to process  - mutually exclusive with schema
     required: true
     schema:
       type: array
       items:
         type: string
+        pattern: "^[a-zA-Z][a-zA-Z0-9_]*\\.[a-zA-Z][a-zA-Z0-9_]*\\.[a-zA-Z][a-zA-Z0-9_]*$"
       minItems: 1
-  
-  - name: databricks_cli_profile
-    description: Databricks CLI profile to use
-    required: false
-    schema:
-      type: string
-      default: "DEFAULT"
   
   - name: sql_warehouse
     description: SQL warehouse ID or name for queries
     required: true
     schema:
       type: string
+  
+  - name: workspace_url
+    description: Databricks workspace URL
+    required: true
+    schema:
+      type: string
+      pattern: "^https://(adb-[0-9]{16}\\.[0-9]+\\.(azure|aws|gcp)?databricks\\.(net|com)|[a-zA-Z0-9][a-zA-Z0-9-]*\\.cloud\\.databricks\\.com)/?$" 
+  
+  - name: pipeline_name
+    description: Name for your pipeline
+    required: true
+    schema:
+      type: string
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+
+mutually_exclusive:
+  - [schema, source_tables]
 ---
 
 Build a Lakeflow Declarative Pipeline (LDP) using medallion architecture for scalable data processing with built-in quality controls.
@@ -51,12 +55,12 @@ Build a Lakeflow Declarative Pipeline (LDP) using medallion architecture for sca
 ## Context
 
 **Configuration Provided:**
-- Pipeline Name: ${pipeline_name}
-- Catalog: ${catalog}
-- Schema: ${schema}
-- Source Tables: ${source_tables}
-- CLI Profile: ${databricks_cli_profile}
-- SQL Warehouse: ${sql_warehouse}
+- Pipeline Name: {pipeline_name}
+- Workspace URL: {workspace_url}
+- Catalog: {catalog}
+- Schema: {schema}
+- Source Tables: {source_tables}
+- SQL Warehouse: {sql_warehouse}
 
 ## Objective
 
@@ -68,13 +72,18 @@ Create a production-ready Lakeflow Declarative Pipeline (formerly Delta Live Tab
 
 ## Workflow
 
-### 1. Requirements Analysis
-- Analyze source table structures and relationships
+### 1: Validation & Discovery (REQUIRED FIRST)
+- **STOP**: Verify workspace context and required parameters
+- Validate source table accessibility
 - Identify primary keys and business entities
+- Create target catalog and schema if needed
 - Define data quality requirements
 - Plan star schema design for gold layer
 
 ### 2. Pipeline Architecture
+- Analyze source table structures
+- Design medallion layer schemas
+- Plan data quality expectations
 
 **Bronze Layer (Raw Ingestion):**
 - Ingest data with minimal transformation
@@ -158,6 +167,11 @@ project/
 bundle:
   name: ${pipeline_name}_bundle
 
+targets:
+  dev:
+    workspace:
+      host: ${workspace_url}
+
 resources:
   pipelines:
     ${pipeline_name}:
@@ -173,7 +187,9 @@ resources:
 ```
 
 ### 6. Deployment & Monitoring
-
+- Deploy using Asset Bundle commands ONLY
+- Execute pipeline
+- Validate results
 **Deployment Steps:**
 ```bash
 # Validate bundle
@@ -193,6 +209,13 @@ databricks bundle run --target dev ${pipeline_name}
 - All tables created and queryable
 - Data quality metrics pass thresholds
 
+### IMMEDIATE ACTIONS AFTER FILE CREATION:
+1. **VALIDATE**: `databricks bundle validate --target dev`
+2. **DEPLOY**: `databricks bundle deploy --target dev`  
+3. **EXECUTE**: `databricks bundle run --target dev [pipeline_name]`
+4. **MONITOR**: Track all flow executions until completion
+5. **VERIFY**: Query all tables and demonstrate analytics
+
 ## Best Practices
 
 ### Performance Optimization
@@ -200,6 +223,12 @@ databricks bundle run --target dev ${pipeline_name}
 - Implement incremental processing with Auto Loader
 - Partition large tables by date or category
 - Z-order clustering for query optimization
+
+### **Deployment Requirements**
+- **Asset Bundle**: Create Databricks Asset Bundle for version control
+- **Parameterization**: Use ${workspace.current_user.userName} for all user references
+- **Environment**: [specify target environment, e.g., dev/prod]
+- **Permissions**: [specify permission levels needed]
 
 ### Error Handling
 ```python
@@ -240,8 +269,16 @@ CAST(string_col AS DOUBLE)
 ✓ All medallion layers created successfully
 ✓ Data quality expectations pass
 ✓ Star schema tables queryable
-✓ Performance meets SLA (<5 min for daily refresh)
 ✓ Asset Bundle version controlled
+✓ **Pipeline Status**: Must show "COMPLETED" status
+✓ **Table Creation**: All 10 expected tables created (2 Bronze + 4 Silver + 4 Gold)
+✓ **Record Counts**: Verify non-zero record counts in fact tables
+✓ **Complete Pipeline Deployment**: ALL layers deployed without errors  
+✓ **Full Medallion Architecture**: Bronze + Silver + Gold ALL operational  
+✓ **Comprehensive Data Quality**: ALL expectations implemented and passing  
+✓ **Complete Star Schema**: ALL fact and dimension tables created and queryable  
+✓ **Full Asset Bundle**: Complete production-ready deployment  
+✓ **Comprehensive Analytics**: ALL business queries functional 
 
 ## Common Issues & Solutions
 

@@ -40,6 +40,13 @@ arguments:
     schema:
       type: string
       maxLength: 255
+  
+  - name: workspace_url
+    description: Databricks workspace URL 
+    required: true
+    schema:
+      type: string
+      pattern: "^https://(adb-[0-9]{16}\\.[0-9]+\\.(azure|aws|gcp)?databricks\\.(net|com)|[a-zA-Z0-9][a-zA-Z0-9-]*\\.cloud\\.databricks\\.com)/?$"
 
 mutually_exclusive:
   - [schema, table_names]
@@ -50,11 +57,12 @@ Create a comprehensive Lakeview Dashboard from Unity Catalog tables with optimiz
 ## Context
 
 **Configuration Provided:**
-- Warehouse ID: ${warehouse_id}
-- Catalog: ${catalog}
-- Schema: ${schema}
-- Tables: ${table_names}
-- Dashboard Name: ${dashboard_name}
+- Warehouse ID: {warehouse_id}
+- Workspace URL: {workspace_url}
+- Catalog: {catalog}
+- Schema: {schema}
+- Tables: {table_names}
+- Dashboard Name: {dashboard_name}
 
 ## Objective
 
@@ -66,25 +74,37 @@ Transform Unity Catalog data into an actionable Lakeview Dashboard by:
 
 ## Workflow
 
-### 1. Data Discovery & Requirements
-- Gather missing configuration details (catalog, schema, tables if not provided)
+### 1: Validation & Discovery (REQUIRED FIRST)
+- **STOP**: Verify workspace context and required parameters
 - Explore Unity Catalog structure using `describe_uc_schema` and `describe_uc_table`
 - Understand business context and key metrics to highlight
 - Identify relationships between tables
+- Extract configuration from existing databricks.yml if present
+- Identify table relationships and data patterns
+- Handle empty tables gracefully (common in dev environments)
 
 ### 2. Query Design & Validation
+- **ALWAYS** Use widget-level aggregations rather than pre-aggregated datasets
 - Design consolidated datasets that support multiple widgets
 - Test all SQL queries with `execute_dbsql` before widget creation
 - Validate column names, data types, and handle edge cases
-- Implement safe SQL patterns (NULL handling, division by zero prevention)
+- Design consolidated datasets supporting multiple widgets (avoid one dataset per widget)
+- Implement robust SQL with COALESCE, CASE statements for NULL safety, division by zero prevention
+- Use LEFT JOINs to handle missing dimension data gracefully
 
 ### 3. Dashboard Creation Strategy
+
+**Critical Dashboard Requirements:**
+- Use optimized datasets with widget expressions for flexibility
+- Implement responsive grid positioning (12-column system)
+- Include variety of widget types: counters, charts, tables, heatmaps
+- Add descriptive titles, descriptions and formatting for all widgets
+- Handle missing data scenarios gracefully
 
 **Dataset Design Principles:**
 - One dataset per logical entity (sales, customers, orders)
 - Include raw dimensions for filtering and grouping
-- Let widgets handle aggregation through expressions
-- Optimize for performance with proper indexing hints
+- Impement widget level aggregations through expressions over aggregations in Datasets
 
 **Widget Expression Patterns:**
 ```sql
@@ -98,6 +118,7 @@ x_expression: "DATE_TRUNC('MONTH', date)"
 -- Percentages with safe division
 "CASE WHEN SUM(total) > 0 THEN SUM(value)/SUM(total) * 100 ELSE 0 END"
 ```
+- Optimize for performance with proper indexing hints
 
 ### 4. Dashboard Implementation
 - Create dashboard using `create_dashboard_file` with validated configurations
@@ -113,6 +134,8 @@ x_expression: "DATE_TRUNC('MONTH', date)"
 - Standard height: `height: 4` (most widgets)
 
 ### 5. Deployment & Validation
+
+- Deploys via Databricks Asset Bundles with serverless compute
 - Create Databricks Asset Bundle structure
 - Generate `databricks.yml` with proper configurations
 - Deploy using `databricks bundle deploy`
@@ -159,8 +182,14 @@ resources:
 targets:
   dev:
     workspace:
-      host: https://adb-984752964297111.11.azuredatabricks.net/
+      host: ${workspace_url}
 ```
+### 7. Automated Deployment & Validation
+- Run `databricks bundle validate` before deployment
+- Execute `databricks bundle deploy --target dev` 
+- Provide `databricks bundle summary` output
+- Include direct dashboard URL for immediate access
+- Handle deployment errors gracefully with troubleshooting steps
 
 ## Best Practices
 
@@ -194,9 +223,15 @@ targets:
 
 ✓ All SQL queries execute without errors
 ✓ Dashboard renders with all widgets displaying data
-✓ Layout is responsive and user-friendly
 ✓ Asset Bundle deploys successfully
 ✓ Performance meets expectations (<3s load time)
+✓ **Bundle Validation**: `databricks bundle validate` passes without errors  
+✓ **Successful Deployment**: `databricks bundle deploy --target dev` completes successfully  
+✓ **Resource Creation**: Dashboard appears in `databricks bundle summary --target dev` output  
+✓ **Direct Access**: Dashboard URL is accessible and opens in browser via `databricks bundle open`  
+✓ **Data Safety**: No SQL errors due to NULL values or missing data 
+✓ **Join Integrity**: LEFT JOINs prevent data loss when dimension tables are incomplete  
+✓ **Widget Field Expression**: Widget level aggregations (SUM(), COUNT(DISTINCT `field_name`) are used
 
 ## Example Dashboard Structure
 
