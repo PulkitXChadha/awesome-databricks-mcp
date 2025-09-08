@@ -21,7 +21,7 @@ class TestToolIntegration:
         # Check that key tool categories are present
         tool_names = list(tools.keys())
         assert 'health' in tool_names  # Core tools
-        assert 'list_uc_catalogs' in tool_names  # Unity Catalog tools
+        assert 'describe_uc_catalog' in tool_names  # Unity Catalog tools
         assert 'list_warehouses' in tool_names  # SQL tools
         assert 'list_jobs' in tool_names  # Jobs tools
         assert 'create_dashboard_file' in tool_names  # Dashboard tools

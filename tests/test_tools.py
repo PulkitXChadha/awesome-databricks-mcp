@@ -33,48 +33,6 @@ class TestCoreTools:
 class TestUnityCatalogTools:
     """Test Unity Catalog tools."""
 
-    @pytest.mark.unit
-    def test_list_catalogs_success(self, mcp_server, mock_env_vars):
-        """Test listing catalogs successfully."""
-        with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client_class:
-            # Setup mock
-            mock_client = Mock()
-            mock_catalog = Mock()
-            mock_catalog.name = 'test_catalog'
-            mock_catalog.catalog_type = 'UNITY_CATALOG'
-            mock_catalog.comment = 'Test catalog'
-            mock_catalog.owner = 'test@example.com'
-            mock_catalog.created_at = 1234567890
-            mock_catalog.updated_at = 1234567890
-            mock_catalog.properties = {}
-            mock_client.catalogs.list.return_value = [mock_catalog]
-            mock_client_class.return_value = mock_client
-
-            load_uc_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['list_uc_catalogs']
-            result = tool.fn()
-
-            assert result['success'] is True
-            assert result['count'] == 1
-            assert len(result['catalogs']) == 1
-            assert result['catalogs'][0]['name'] == 'test_catalog'
-
-    @pytest.mark.unit
-    def test_list_catalogs_error(self, mcp_server, mock_env_vars):
-        """Test catalog listing with error."""
-        with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client_class:
-            mock_client = Mock()
-            mock_client.catalogs.list.side_effect = Exception('Connection failed')
-            mock_client_class.return_value = mock_client
-
-            load_uc_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['list_uc_catalogs']
-            result = tool.fn()
-
-            assert result['success'] is False
-            assert 'error' in result
-            assert result['catalogs'] == []
-            assert result['count'] == 0
 
 
 class TestSQLTools:
@@ -224,7 +182,7 @@ class TestToolIntegration:
         # Check key tools are present
         expected_tools = [
             'health',
-            'list_uc_catalogs',
+            'describe_uc_catalog',
             'list_warehouses',
             'list_jobs',
             'create_dashboard_file'
@@ -238,13 +196,12 @@ class TestToolIntegration:
         """Test that tools handle errors gracefully."""
         with patch('server.tools.unity_catalog.WorkspaceClient') as mock_client_class:
             mock_client = Mock()
-            mock_client.catalogs.list.side_effect = Exception('Test error')
+            mock_client.catalogs.get.side_effect = Exception('Test error')
             mock_client_class.return_value = mock_client
 
             load_uc_tools(mcp_server)
-            tool = mcp_server._tool_manager._tools['list_uc_catalogs']
-            result = tool.fn()
+            tool = mcp_server._tool_manager._tools['describe_uc_catalog']
+            result = tool.fn('test_catalog')
 
             assert result['success'] is False
             assert 'error' in result
-            assert result['catalogs'] == []

@@ -251,12 +251,12 @@ def robust_tool_operation(params):
 
 ```python
 # Example test structure
-def test_list_uc_catalogs():
+def test_describe_uc_catalog():
     # Arrange
     mock_client = MockWorkspaceClient()
     
     # Act
-    result = list_uc_catalogs()
+    result = describe_uc_catalog("hive_metastore")
     
     # Assert
     assert result["success"] == True
