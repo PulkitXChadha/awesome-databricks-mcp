@@ -21,21 +21,17 @@ WIDGET_VERSIONS = {
   'box': 3,
   'funnel': 3,
   'combo': 3,
-  
   # Specialized widgets - version 1 for basic functionality
   'sankey': 1,
   'pivot': 1,
   'table': 1,
-  
   # Filter widgets - version 2 for parameter support
   'filter-single-select': 2,
   'filter-multi-select': 2,
   'filter-date-range-picker': 2,
-  
   # Advanced widgets
   'range-slider': 3,
   'counter': 2,
-  
   # Map widgets - version 3 for geographic features
   'choropleth-map': 3,
   'symbol-map': 3,
@@ -44,7 +40,7 @@ WIDGET_VERSIONS = {
 
 def generate_id() -> str:
   """Generate 8-character hex ID for Lakeview objects.
-  
+
   Lakeview requires unique identifiers for widgets, datasets, and other objects.
   This function creates short, readable IDs by truncating UUID4 strings.
   """
@@ -132,8 +128,12 @@ def validate_expression_basic(expression: str) -> Dict[str, Any]:
 
   Examples:
       validate_expression_basic("SUM(`revenue`)") -> {"valid": True, "error": None}
-      validate_expression_basic("DROP TABLE users") -> {"valid": False, "error": "Potentially dangerous pattern: DROP"}
-      validate_expression_basic("revenue") -> {"valid": False, "error": "Expression should reference fields with backticks"}
+      validate_expression_basic("DROP TABLE users") -> {
+          "valid": False, "error": "Potentially dangerous pattern: DROP"
+      }
+      validate_expression_basic("revenue") -> {
+          "valid": False, "error": "Expression should reference fields with backticks"
+      }
   """
   try:
     # Basic checks for SQL injection patterns - prevent dangerous operations
@@ -156,15 +156,15 @@ def validate_expression_basic(expression: str) -> Dict[str, Any]:
 
 def find_dataset_id(dataset_name: str, datasets: List[Dict[str, Any]]) -> str:
   """Find dataset ID by display name.
-  
+
   Searches through the datasets list to find a matching displayName and returns
   the corresponding dataset ID (name field). Falls back to first available dataset
   or generates a new ID if no match is found.
-  
+
   Args:
       dataset_name: Human-readable dataset name to search for
       datasets: List of dataset dictionaries with 'displayName' and 'name' fields
-      
+
   Returns:
       Dataset ID string for use in widget queries
   """
@@ -181,7 +181,7 @@ def create_standard_axis_encoding(
   field_name: str, scale_type: str, config: Dict, encoding_type: str = None
 ) -> Dict:
   """Create standardized axis encoding with required scale structure.
-  
+
   This function builds the encoding structure that Lakeview expects for chart axes.
   It handles scale types, display names, axis titles, and sorting configuration.
 
@@ -224,7 +224,7 @@ def create_standard_axis_encoding(
 
 def create_color_scale(scale_type: str, config: Dict) -> Dict[str, Any]:
   """Create color scale with ramp and mapping support.
-  
+
   Color scales control how data values map to colors in visualizations.
   Supports both quantitative (continuous) and categorical (discrete) color schemes.
 
@@ -255,7 +255,7 @@ def create_advanced_encoding(
   field_name: str, config: Dict[str, Any], encoding_type: str
 ) -> Dict[str, Any]:
   """Create advanced encoding with scale, axis, and display configuration.
-  
+
   This is the main encoding builder that handles all widget encoding types with
   intelligent defaults and advanced configuration options like custom scales,
   axis titles, legends, and sorting.
@@ -320,13 +320,13 @@ def create_advanced_encoding(
 
 def create_frame_config(config: Dict[str, Any]) -> Dict[str, Any]:
   """Create frame configuration for widget title and display.
-  
+
   The frame controls the widget's outer appearance including title display.
   This is separate from the chart content and appears at the top of each widget.
-  
+
   Args:
       config: Widget configuration dictionary
-      
+
   Returns:
       Frame configuration dict with title and display settings
   """
@@ -344,7 +344,7 @@ def create_widget_queries(
   widget_config: Dict[str, Any], datasets: List[Dict]
 ) -> List[Dict[str, Any]]:
   """Create widget queries with field expressions and aggregations.
-  
+
   This function generates the query structure that tells Lakeview how to fetch
   and transform data for each widget. It automatically creates field expressions
   for all referenced fields and supports custom SQL expressions.
@@ -352,11 +352,11 @@ def create_widget_queries(
   Based on analysis of actual Lakeview dashboard examples, widgets typically need
   a 'fields' array in the query to specify which fields to use and how to aggregate them.
   This function now generates fields arrays by default for all widgets with field references.
-  
+
   Args:
       widget_config: Complete widget configuration including dataset and field references
       datasets: List of available datasets for ID lookup
-      
+
   Returns:
       List containing a single query dict with dataset reference and field expressions
   """
@@ -373,17 +373,17 @@ def create_widget_queries(
   # Standard field keys that widgets commonly use
   # Each corresponds to a different encoding type (x-axis, y-axis, color, etc.)
   for field_key in [
-    'x_field',          # X-axis field for charts
-    'y_field',          # Y-axis field for charts  
-    'color_field',      # Color grouping field
-    'size_field',       # Size encoding field (for bubble charts, etc.)
-    'value_field',      # Value field for counters, pie charts
-    'category_field',   # Category field for pie charts, filters
-    'source_field',     # Source field for Sankey diagrams
-    'target_field',     # Target field for Sankey diagrams
-    'stage_field',      # Stage field for funnel charts
-    'location_field',   # Location field for maps
-    'latitude_field',   # Latitude field for symbol maps
+    'x_field',  # X-axis field for charts
+    'y_field',  # Y-axis field for charts
+    'color_field',  # Color grouping field
+    'size_field',  # Size encoding field (for bubble charts, etc.)
+    'value_field',  # Value field for counters, pie charts
+    'category_field',  # Category field for pie charts, filters
+    'source_field',  # Source field for Sankey diagrams
+    'target_field',  # Target field for Sankey diagrams
+    'stage_field',  # Stage field for funnel charts
+    'location_field',  # Location field for maps
+    'latitude_field',  # Latitude field for symbol maps
     'longitude_field',  # Longitude field for symbol maps
   ]:
     if field_key in config:
@@ -419,7 +419,7 @@ def create_widget_spec(
   widget_config: Dict[str, Any], datasets: List[Dict], dashboard_id: str = None
 ) -> Dict[str, Any]:
   """Create widget spec for any widget type with advanced Lakeview features.
-  
+
   This is the main widget factory function that routes widget creation to the
   appropriate specialized function based on widget type. It supports all 16+
   Lakeview widget types with backward compatibility for legacy names.
@@ -522,14 +522,14 @@ def create_widget_spec(
 
 def create_advanced_bar_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create advanced bar chart widget spec with scales, axes, and legends.
-  
+
   Bar charts are ideal for comparing categorical data. This function supports
   grouped bars (via color encoding), custom scales, axis titles, and sorting.
-  
+
   Args:
       config: Widget configuration containing field mappings and display options
       datasets: Available datasets for query generation
-      
+
   Returns:
       Complete bar widget specification with encodings and queries
   """
@@ -565,7 +565,7 @@ def create_advanced_bar_widget(config: Dict, datasets: List[Dict]) -> Dict[str, 
 # Legacy function for backward compatibility
 def create_bar_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Legacy bar widget creation - redirects to advanced version.
-  
+
   Maintained for backward compatibility with older code that uses the legacy function name.
   """
   return create_advanced_bar_widget(config, datasets)
@@ -573,14 +573,14 @@ def create_bar_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
 
 def create_advanced_line_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create advanced line chart widget spec with scales, axes, and legends.
-  
+
   Line charts are perfect for showing trends over time or continuous data.
   Supports multiple series via color encoding and temporal/quantitative scales.
-  
+
   Args:
       config: Widget configuration containing field mappings and display options
       datasets: Available datasets for query generation
-      
+
   Returns:
       Complete line widget specification with encodings and queries
   """
@@ -734,7 +734,7 @@ def create_pie_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
 
 def create_advanced_histogram_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create advanced histogram widget spec.
-  
+
   Histograms show the distribution of numeric data by grouping values into bins.
   This is one of the more complex widgets due to the binning requirements.
 
@@ -744,11 +744,11 @@ def create_advanced_histogram_widget(config: Dict, datasets: List[Dict]) -> Dict
 
   Critical: The query fields must match the encoding fieldNames exactly.
   For histograms, this means the query must provide binned fields with proper SQL expressions.
-  
+
   Args:
       config: Widget configuration with x_field (numeric field to bin) and optional bin_width
       datasets: Available datasets for query generation
-      
+
   Returns:
       Complete histogram widget specification with binned field expressions
   """
@@ -886,17 +886,17 @@ def create_heatmap_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
 
 def create_advanced_counter_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create advanced counter widget spec with proper encoding structure.
-  
+
   Counter widgets display a single numeric value prominently, often used for KPIs,
   totals, or summary statistics. They're perfect for dashboard headers or key metrics.
 
   Counter widgets have a simple value encoding without scale properties,
   according to the Lakeview schema and dashboard examples.
-  
+
   Args:
       config: Widget configuration with value_field and optional display settings
       datasets: Available datasets for query generation
-      
+
   Returns:
       Complete counter widget specification with value encoding
   """
@@ -1091,16 +1091,16 @@ def create_filter_single_select_widget(
   config: Dict, datasets: List[Dict], dashboard_id: str = None
 ) -> Dict[str, Any]:
   """Create standardized single-select filter widget.
-  
+
   Single-select filters allow users to choose one value from a dropdown list,
   which then filters other widgets on the dashboard. These are essential for
   dashboard interactivity and require proper parameter configuration.
-  
+
   Args:
       config: Widget configuration with field definitions and display options
       datasets: Available datasets for field validation
       dashboard_id: Dashboard ID for generating parameter query names
-      
+
   Returns:
       Complete filter widget specification with field encodings
   """
@@ -1299,15 +1299,15 @@ def create_filter_date_range_widget(
 
 def create_sankey_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create Sankey diagram widget.
-  
+
   Sankey diagrams show flows between different stages or categories, with the
   width of flows proportional to the quantity. Perfect for visualizing data
   movement, user journeys, or resource allocation between different states.
-  
+
   Args:
       config: Widget configuration with value_field, source_field, and target_field
       datasets: Available datasets for query generation
-      
+
   Returns:
       Complete Sankey widget specification with value and stages encodings
   """
@@ -1480,15 +1480,15 @@ def create_choropleth_widget(config: Dict, datasets: List[Dict]) -> Dict[str, An
 
 def create_advanced_table_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create table widget with full column specifications.
-  
+
   Table widgets display data in rows and columns with extensive formatting options.
   Supports column types, custom formatting, links, images, and search functionality.
   This is one of the most feature-rich widgets in Lakeview.
-  
+
   Args:
       config: Widget configuration with columns array and table options
       datasets: Available datasets for query generation
-      
+
   Returns:
       Complete table widget specification with column configurations
   """
@@ -1512,7 +1512,7 @@ def create_advanced_table_widget(config: Dict, datasets: List[Dict]) -> Dict[str
         column = {
           'fieldName': col_config['field'],
           'type': col_config.get('type', 'string'),  # Data type: string, number, boolean, date
-          'displayAs': col_config.get('display_as', 'string'),  # Display format: string, link, image
+          'displayAs': col_config.get('display_as', 'string'),  # Display format
           'visible': col_config.get('visible', True),  # Show/hide column
           'order': col_config.get('order', i),  # Column position
           'title': col_config.get('title', col_config['field']),  # Header text
@@ -1642,17 +1642,17 @@ def create_symbol_map_widget(config: Dict, datasets: List[Dict]) -> Dict[str, An
 
 def create_funnel_widget(config: Dict, datasets: List[Dict]) -> Dict[str, Any]:
   """Create funnel widget with x/y encodings matching working examples.
-  
+
   Funnel charts visualize conversion rates through sequential stages, perfect for
   sales pipelines, user journeys, or any process with drop-off between steps.
-  
+
   Funnel charts require both value_field (quantitative) and stage_field (categorical).
   If stage_field is missing, we'll attempt to infer it from available fields.
-  
+
   Args:
       config: Widget configuration with value_field and stage_field (or alternatives)
       datasets: Available datasets for query generation
-      
+
   Returns:
       Complete funnel widget specification with x/y encodings
   """

@@ -71,11 +71,11 @@ def test_mcp_tools():
     # Test 1: describe_uc_catalog (testing with common catalog names)
     print('\n📁 Testing describe_uc_catalog...')
     # Try common catalog names
-    catalog_names = ["hive_metastore", "main", "samples"]
+    catalog_names = ['hive_metastore', 'main', 'samples']
     catalog_found = False
-    
+
     for catalog_name in catalog_names:
-      print(f"  Trying catalog: {catalog_name}")
+      print(f'  Trying catalog: {catalog_name}')
       try:
         result = tools['describe_uc_catalog'](catalog_name)
         if result['success']:
@@ -124,10 +124,12 @@ def test_mcp_tools():
             print('ℹ️  No schemas found in catalog')
           break  # Found a working catalog, exit loop
         else:
-          print(f'⚠️  Catalog "{catalog_name}" not accessible: {result.get("error", "Unknown error")}')
+          print(
+            f'⚠️  Catalog "{catalog_name}" not accessible: {result.get("error", "Unknown error")}'
+          )
       except Exception as e:
         print(f'⚠️  Error testing catalog "{catalog_name}": {e}')
-    
+
     if not catalog_found:
       print('⚠️  No accessible catalogs found')
 

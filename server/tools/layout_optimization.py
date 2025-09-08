@@ -47,6 +47,7 @@ def store_cached_result(query_hash: str, result: dict):
 
 def analyze_widget_data(query: str, warehouse_id: str) -> dict:
   """Analyze query to get data characteristics for layout optimization.
+
   Returns row count, column count, data patterns, and complexity score.
   """
   try:
@@ -214,6 +215,7 @@ def determine_recommended_widget(
 
 def calculate_widget_dimensions(widget_type: str, data_analysis: dict) -> dict:
   """Calculate optimal widget dimensions based on type and data characteristics.
+
   Uses the 12-column grid system. Optimized for better visual layout.
   """
   row_count = data_analysis.get('row_count', 10)
@@ -307,6 +309,7 @@ def calculate_widget_dimensions(widget_type: str, data_analysis: dict) -> dict:
 
 def group_related_widgets(widgets: list) -> list:
   """Group related widgets together based on their data patterns and names.
+
   Returns widgets in optimized order.
   """
   # Simple grouping by widget type priority
@@ -371,6 +374,7 @@ def group_related_widgets(widgets: list) -> list:
 
 def position_widgets(widgets: list) -> list:
   """Intelligent widget positioning using a 12-column grid system.
+
   Places widgets optimally based on their dimensions and relationships.
   """
   # Group related widgets first
@@ -477,6 +481,7 @@ def position_widgets(widgets: list) -> list:
 
 def detect_and_fix_overlaps(widgets: list) -> list:
   """Detect and fix any overlapping widgets in the layout.
+
   More robust implementation that handles all edge cases.
   """
   if not widgets:
@@ -554,6 +559,7 @@ def detect_and_fix_overlaps(widgets: list) -> list:
 
 def optimize_dashboard_layout(widgets: list, warehouse_id: str, datasets: list = None) -> list:
   """Main function to optimize dashboard layout.
+
   Analyzes data, calculates dimensions, and positions widgets intelligently.
   """
   optimized_widgets = []
@@ -607,6 +613,7 @@ def optimize_dashboard_layout(widgets: list, warehouse_id: str, datasets: list =
 
 def validate_layout(widgets: list) -> dict:
   """Validate the layout for common issues.
+
   Returns validation results with any warnings or errors.
   """
   issues = []

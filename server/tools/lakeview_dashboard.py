@@ -1,4 +1,4 @@
-"""Lakeview Dashboard MCP Tools
+r"""Lakeview Dashboard MCP Tools.
 
 This module provides comprehensive MCP tools for Lakeview dashboard management
 with native Lakeview implementation. Provides parameter validation, widget creation,
@@ -28,10 +28,10 @@ except ImportError:
 
 def generate_id() -> str:
   """Generate 8-character hex ID for Lakeview objects.
-  
+
   Lakeview dashboards use short hex IDs for internal object identification.
   This function creates a unique 8-character identifier by truncating a UUID.
-  
+
   Returns:
       str: 8-character hexadecimal string (e.g., 'a1b2c3d4')
   """
@@ -40,7 +40,7 @@ def generate_id() -> str:
 
 
 def query_to_querylines(query: str) -> List[str]:
-  """Convert SQL query string to Lakeview queryLines format.
+  r"""Convert SQL query string to Lakeview queryLines format.
 
   Based on actual Lakeview dashboard JSON format analysis:
   - Always returns an array for the queryLines field
@@ -84,12 +84,12 @@ def query_to_querylines(query: str) -> List[str]:
     len(query) > 120  # Long queries benefit from multi-line formatting
     or query.upper().count(' FROM ') >= 1  # Has FROM clause
     and (
-      query.upper().count(' WHERE ') >= 1     # Plus WHERE
+      query.upper().count(' WHERE ') >= 1  # Plus WHERE
       or query.upper().count(' GROUP BY ') >= 1  # Or GROUP BY
       or query.upper().count(' ORDER BY ') >= 1  # Or ORDER BY
-      or query.upper().count(' HAVING ') >= 1    # Or HAVING
-      or query.upper().count(' JOIN ') >= 1      # Or JOIN
-      or query.upper().count(',') >= 3           # Or many columns
+      or query.upper().count(' HAVING ') >= 1  # Or HAVING
+      or query.upper().count(' JOIN ') >= 1  # Or JOIN
+      or query.upper().count(',') >= 3  # Or many columns
     )
   )
 
@@ -135,13 +135,13 @@ def query_to_querylines(query: str) -> List[str]:
 
 def _format_clause_content(clause: str) -> List[str]:
   """Format the content of a SQL clause into properly formatted lines.
-  
+
   This function handles special formatting for SELECT clauses with multiple columns,
   creating indented, comma-separated lines for better readability.
-  
+
   Args:
       clause: SQL clause string to format
-      
+
   Returns:
       List of formatted lines with proper indentation and line breaks
   """
@@ -177,21 +177,21 @@ def _format_clause_content(clause: str) -> List[str]:
 
 def _split_columns_safely(columns_text: str) -> List[str]:
   """Split column list while respecting parentheses, CASE statements, etc.
-  
+
   This function intelligently splits a comma-separated column list without
   breaking on commas that are inside function calls, CASE statements, or
   other nested expressions.
-  
+
   Args:
       columns_text: String containing comma-separated column expressions
-      
+
   Returns:
       List of individual column expressions as strings
   """
   columns = []
   current_col = ''
   paren_depth = 0  # Track nested parentheses
-  case_depth = 0   # Track nested CASE statements
+  case_depth = 0  # Track nested CASE statements
 
   i = 0
   while i < len(columns_text):
@@ -299,11 +299,11 @@ def create_dashboard_json(
 
   # Return complete Lakeview dashboard JSON structure
   return {
-    'dashboard_id': dashboard_id,        # Unique dashboard identifier
-    'displayName': name,                 # Dashboard title shown in UI
-    'warehouseId': warehouse_id,         # SQL warehouse for query execution
-    'datasets': lv_datasets,             # Data sources with queryLines format
-    'pages': [{'name': generate_id(), 'displayName': name, 'layout': layout}],  # Single page with widgets
+    'dashboard_id': dashboard_id,  # Unique dashboard identifier
+    'displayName': name,  # Dashboard title shown in UI
+    'warehouseId': warehouse_id,  # SQL warehouse for query execution
+    'datasets': lv_datasets,  # Data sources with queryLines format
+    'pages': [{'name': generate_id(), 'displayName': name, 'layout': layout}],  # Single page
   }
 
 
@@ -413,14 +413,14 @@ def prepare_dashboard_for_client(dashboard_json: Dict[str, Any], file_path: str)
 
 def find_dataset_id(dataset_name: str, datasets: List[Dict[str, Any]]) -> str:
   """Find dataset ID by display name.
-  
+
   This helper function maps user-friendly dataset names to internal Lakeview IDs.
   Widgets reference datasets by display name, but Lakeview uses internal IDs.
-  
+
   Args:
       dataset_name: User-provided dataset display name
       datasets: List of dataset objects with 'name' (ID) and 'displayName' fields
-      
+
   Returns:
       str: Internal dataset ID for use in widget specifications
   """
@@ -497,7 +497,10 @@ def validate_sql_query(
       'valid': True,
       'error': None,
       'columns': columns,
-      'message': f'Query validated successfully. Found {len(columns)} columns: {", ".join(columns[:5])}{"..." if len(columns) > 5 else ""}',
+      'message': (
+        f'Query validated successfully. Found {len(columns)} columns: '
+        f'{", ".join(columns[:5])}{"..." if len(columns) > 5 else ""}'
+      ),
     }
 
   except Exception as e:
@@ -509,7 +512,10 @@ def validate_sql_query(
     if 'TABLE_OR_VIEW_NOT_FOUND' in error_msg:
       return {
         'valid': False,
-        'error': f'Table or view not found. Please check table names and ensure they exist in the specified catalog/schema. Error: {error_msg}',
+        'error': (
+          f'Table or view not found. Please check table names and ensure '
+          f'they exist in the specified catalog/schema. Error: {error_msg}'
+        ),
         'columns': [],
       }
     elif 'PARSE_SYNTAX_ERROR' in error_msg:
@@ -521,7 +527,10 @@ def validate_sql_query(
     elif 'PERMISSION_DENIED' in error_msg:
       return {
         'valid': False,
-        'error': f'Permission denied. Please ensure you have access to the tables and warehouse. Error: {error_msg}',
+        'error': (
+          f'Permission denied. Please ensure you have access to the tables '
+          f'and warehouse. Error: {error_msg}'
+        ),
         'columns': [],
       }
     else:
@@ -627,7 +636,11 @@ def validate_widget_fields(
   if missing_fields:
     return {
       'valid': False,
-      'error': f"Widget '{widget_type}' references fields that don't exist in the dataset: {', '.join(missing_fields)}. Available columns: {', '.join(available_columns)}",
+      'error': (
+        f"Widget '{widget_type}' references fields that don't exist in the "
+        f'dataset: {", ".join(missing_fields)}. Available columns: '
+        f'{", ".join(available_columns)}'
+      ),
       'warnings': warnings,
     }
 
@@ -637,12 +650,12 @@ def validate_widget_fields(
 
 def load_dashboard_tools(mcp_server):
   """Register simplified dashboard tools with MCP server.
-  
+
   This function registers three main MCP tools for Lakeview dashboard management:
   1. create_dashboard_file - Creates complete dashboard files with validation
-  2. validate_dashboard_sql - Validates SQL queries and widget field references  
+  2. validate_dashboard_sql - Validates SQL queries and widget field references
   3. get_widget_configuration_guide - Provides widget configuration documentation
-  
+
   Args:
       mcp_server: MCP server instance to register tools with
   """
@@ -658,17 +671,21 @@ def load_dashboard_tools(mcp_server):
     catalog: str = None,
     schema: str = None,
   ) -> Dict[str, Any]:
-    """Creates a complete .lvdash.json file compatible with Databricks Lakeview dashboards.
+    r"""Creates a complete .lvdash.json file compatible with Databricks Lakeview dashboards.
 
-    IMPORTANT: This tool creates the dashboard file directly on the filesystem at the specified path.
+    IMPORTANT: This tool creates the dashboard file directly on the filesystem
+    at the specified path.
     The file will be saved automatically and you'll receive confirmation of successful creation.
 
     COMPREHENSIVE WIDGET SUPPORT:
-    This tool supports all Lakeview widget types with full schema compliance and advanced configuration options.
-    All widgets support positioning, styling, and interactive features according to Lakeview specifications.
+    This tool supports all Lakeview widget types with full schema compliance
+    and advanced configuration options.
+    All widgets support positioning, styling, and interactive features
+    according to Lakeview specifications.
 
     DATASET OPTIMIZATION GUIDANCE:
-    Prefer fewer raw datasets with widget-level transformations over multiple pre-aggregated datasets.
+    Prefer fewer raw datasets with widget-level transformations over
+    multiple pre-aggregated datasets.
     This approach:
     - Supports more widgets with fewer datasets
     - Improves performance through Lakeview's native aggregation
@@ -757,7 +774,8 @@ def load_dashboard_tools(mcp_server):
             "file_path": "path/to/dashboard.lvdash.json",
             "content": "...complete JSON content as string...",
             "file_size": 1234,
-            "message": "Dashboard file successfully created at path/to/dashboard.lvdash.json (1234 bytes)",
+            "message": ("Dashboard file successfully created at "
+                        "path/to/dashboard.lvdash.json (1234 bytes)"),
             "validation_results": {                    # If validate_sql=True
                 "queries_validated": [                 # SQL validation results
                     {
@@ -799,7 +817,8 @@ def load_dashboard_tools(mcp_server):
         )
         # File is automatically saved! Check result["success"] for confirmation
 
-        # Multi-line query dashboard (generates queryLines: ["SELECT \\n", "            product, \\n", ...])
+        # Multi-line query dashboard (generates queryLines: ["SELECT \\n",
+        # "            product, \\n", ...])
         result = create_dashboard_file(
             name="Advanced Sales Dashboard",
             warehouse_id="abc123",
@@ -847,7 +866,9 @@ def load_dashboard_tools(mcp_server):
                         "displayName": "Start Date",
                         "keyword": "start_date",
                         "dataType": "DATE",
-                        "defaultSelection": {"values": {"dataType": "DATE", "values": [{"value": "2024-01-01"}]}}
+                        "defaultSelection": {
+                            "values": {"dataType": "DATE", "values": [{"value": "2024-01-01"}]}
+                        }
                     }]
                 },
                 {
@@ -857,9 +878,12 @@ def load_dashboard_tools(mcp_server):
                 }
             ],
             widgets=[
-                {"type": "counter", "dataset": "Revenue Metrics", "config": {"value_field": "total_revenue", "title": "Total Revenue"}},
-                {"type": "bar", "dataset": "Revenue Metrics", "config": {"x_field": "region", "y_field": "total_revenue"}},
-                {"type": "counter", "dataset": "Customer Count", "config": {"value_field": "total_customers", "title": "Total Customers"}}
+                {"type": "counter", "dataset": "Revenue Metrics",
+                 "config": {"value_field": "total_revenue", "title": "Total Revenue"}},
+                {"type": "bar", "dataset": "Revenue Metrics",
+                 "config": {"x_field": "region", "y_field": "total_revenue"}},
+                {"type": "counter", "dataset": "Customer Count",
+                 "config": {"value_field": "total_customers", "title": "Total Customers"}}
             ],
             file_path="path/executive_dashboard.lvdash.json",
             catalog="production",
@@ -976,7 +1000,9 @@ def load_dashboard_tools(mcp_server):
           if not validation_result['valid']:
             return {
               'success': False,
-              'error': f"Dataset '{dataset_name}' has invalid SQL query: {validation_result['error']}",
+              'error': (
+                f"Dataset '{dataset_name}' has invalid SQL query: {validation_result['error']}"
+              ),
               'validation_results': validation_results,
             }
 
@@ -986,7 +1012,8 @@ def load_dashboard_tools(mcp_server):
           for widget in widgets:
             if widget.get('dataset') == dataset_name:
               print(
-                f"🔍 Validating widget '{widget.get('type', 'unknown')}' fields against dataset '{dataset_name}'..."
+                f"🔍 Validating widget '{widget.get('type', 'unknown')}' "
+                f"fields against dataset '{dataset_name}'..."
               )
               widget_validation = validate_widget_fields(widget, dataset_columns)
 
@@ -1025,7 +1052,7 @@ def load_dashboard_tools(mcp_server):
 
       # File Creation Phase - write dashboard JSON to filesystem
       result = prepare_dashboard_for_client(dashboard_json, file_path)
-      
+
       # Include validation results in response for transparency
       result['validation_results'] = validation_results
 
@@ -1060,7 +1087,9 @@ def load_dashboard_tools(mcp_server):
                             "displayName": "param_name",
                             "keyword": "param_name",
                             "dataType": "STRING|DATE|NUMBER",
-                            "defaultSelection": {"values": {"dataType": "STRING", "values": [{"value": "default"}]}}
+                            "defaultSelection": {
+                                "values": {"dataType": "STRING", "values": [{"value": "default"}]}
+                            }
                         }
                     ]
                 }
@@ -1072,7 +1101,7 @@ def load_dashboard_tools(mcp_server):
                     "type": "bar|line|counter|table|pie|...",
                     "dataset": "Dataset Name",                 # Must match dataset name
                     "config": {
-                        "x_field": "column_name",              # Will be validated against actual columns
+                        "x_field": "column_name",              # Will be validated
                         "y_field": "column_name",
                         "color_field": "column_name",
                         "value_field": "column_name",
@@ -1203,7 +1232,9 @@ def load_dashboard_tools(mcp_server):
                     "displayName": "Start Date",
                     "keyword": "start_date",
                     "dataType": "DATE",
-                    "defaultSelection": {"values": {"dataType": "DATE", "values": [{"value": "2024-01-01"}]}}
+                    "defaultSelection": {
+                        "values": {"dataType": "DATE", "values": [{"value": "2024-01-01"}]}
+                    }
                 }]
             }],
             warehouse_id="analytics_warehouse",
@@ -1252,7 +1283,8 @@ def load_dashboard_tools(mcp_server):
           for widget in widgets:
             if widget.get('dataset') == dataset_name:
               print(
-                f"🔍 Validating widget '{widget.get('type', 'unknown')}' fields against dataset '{dataset_name}'..."
+                f"🔍 Validating widget '{widget.get('type', 'unknown')}' "
+                f"fields against dataset '{dataset_name}'..."
               )
               widget_validation = validate_widget_fields(widget, dataset_columns)
 
@@ -1314,11 +1346,13 @@ def load_dashboard_tools(mcp_server):
         widget_type: Optional specific widget type to get detailed info for.
                     If not provided, returns overview of all widget types.
                     Supported values:
-                    - Chart widgets: "bar", "line", "area", "scatter", "pie", "histogram", "heatmap", "box", "funnel", "combo"
+                    - Chart widgets: "bar", "line", "area", "scatter", "pie",
+                      "histogram", "heatmap", "box", "funnel", "combo"
                     - Map widgets: "choropleth-map", "symbol-map"
                     - Display widgets: "counter", "table", "pivot", "text"
                     - Advanced widgets: "sankey"
-                    - Filter widgets: "filter-single-select", "filter-multi-select", "filter-date-range-picker", "range-slider"
+                    - Filter widgets: "filter-single-select", "filter-multi-select",
+                      "filter-date-range-picker", "range-slider"
 
     Returns:
         Comprehensive widget configuration guide with examples and best practices.
@@ -1327,16 +1361,16 @@ def load_dashboard_tools(mcp_server):
     # This categorization helps users understand widget types and their use cases
     widget_categories = {
       'chart': [
-        'bar',           # Bar charts for categorical comparisons
-        'line',          # Line charts for trends over time
-        'area',          # Area charts for cumulative values
-        'scatter',       # Scatter plots for correlation analysis
-        'pie',           # Pie charts for part-to-whole relationships
-        'histogram',     # Histograms for distribution analysis
-        'heatmap',       # Heatmaps for matrix/correlation visualization
-        'box',           # Box plots for statistical distribution
-        'funnel',        # Funnel charts for conversion analysis
-        'combo',         # Combination charts (multiple chart types)
+        'bar',  # Bar charts for categorical comparisons
+        'line',  # Line charts for trends over time
+        'area',  # Area charts for cumulative values
+        'scatter',  # Scatter plots for correlation analysis
+        'pie',  # Pie charts for part-to-whole relationships
+        'histogram',  # Histograms for distribution analysis
+        'heatmap',  # Heatmaps for matrix/correlation visualization
+        'box',  # Box plots for statistical distribution
+        'funnel',  # Funnel charts for conversion analysis
+        'combo',  # Combination charts (multiple chart types)
       ],
       'map': ['choropleth-map', 'symbol-map'],  # Geographic visualizations
       'display': ['counter', 'table', 'pivot', 'text'],  # Data display widgets
@@ -1433,7 +1467,10 @@ def load_dashboard_tools(mcp_server):
             'Single source of truth per data source',
           ],
         },
-        'usage': 'Call this function with a specific widget_type parameter to get detailed configuration options for that widget type.',
+        'usage': (
+          'Call this function with a specific widget_type parameter to get '
+          'detailed configuration options for that widget type.'
+        ),
       }
 
     # Detailed configurations for specific widget types
@@ -1451,7 +1488,9 @@ def load_dashboard_tools(mcp_server):
           'title': 'Widget title',
           'x_axis_title': 'Custom x-axis title',
           'y_axis_title': 'Custom y-axis title',
-          'x_expression': 'Custom SQL expression for x-axis (e.g., \'DATE_TRUNC("MONTH", `date`)\')',
+          'x_expression': (
+            'Custom SQL expression for x-axis (e.g., \'DATE_TRUNC("MONTH", `date`)\')'
+          ),
           'y_expression': "Custom SQL expression for y-axis (e.g., 'SUM(`revenue`)')",
         },
         'examples': [
@@ -1496,7 +1535,11 @@ def load_dashboard_tools(mcp_server):
         'required_fields': ['value_field'],
         'preferred_fields': ['stage_field', 'value_field'],
         'fallback_fields': ['category_field', 'x_field', 'color_field'],
-        'field_notes': 'If stage_field is not provided, the system will attempt to use category_field, x_field, or color_field as the categorical dimension',
+        'field_notes': (
+          'If stage_field is not provided, the system will attempt '
+          'to use category_field, x_field, or color_field as the '
+          'categorical dimension'
+        ),
         'optional_fields': {
           'stage_display_name': 'Display name for stage field',
           'value_display_name': 'Display name for value field',
@@ -1653,7 +1696,9 @@ def load_dashboard_tools(mcp_server):
         **widget_configs[widget_type],
         'transformation_support': {
           'description': 'All widgets support field expressions for custom SQL transformations',
-          'pattern': "Use {field_key}_expression for custom SQL (e.g., 'y_expression': 'SUM(`revenue`)')",
+          'pattern': (
+            "Use {field_key}_expression for custom SQL (e.g., 'y_expression': 'SUM(`revenue`)')"
+          ),
           'helper_functions': [
             'get_aggregation_expression(field, func) - Generate aggregation expressions',
             'get_date_trunc_expression(field, interval) - Generate date truncation expressions',

@@ -34,10 +34,10 @@ def test_uc_tools():
     print('\n📁 Testing describe_uc_catalog with common catalog...')
     catalog_names = ['hive_metastore', 'main', 'samples']
     catalog_found = False
-    
+
     for catalog_name in catalog_names:
       try:
-        print(f"  Trying catalog: {catalog_name}")
+        print(f'  Trying catalog: {catalog_name}')
         catalog_details = w.catalogs.get(catalog_name)
         print(f'✅ Found catalog: {catalog_details.name}')
         catalog_found = True
@@ -147,7 +147,7 @@ def test_uc_tools():
         break  # Found a working catalog, exit loop
       except Exception as e:
         print(f"⚠️  Could not describe catalog '{catalog_name}': {e}")
-    
+
     if not catalog_found:
       print('ℹ️  No accessible catalogs found')
 

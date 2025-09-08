@@ -4,8 +4,6 @@ import os
 
 from databricks.sdk import WorkspaceClient
 
-from .utils import sanitize_error_message
-
 
 def load_uc_tools(mcp_server):
   """Register Unity Catalog MCP tools with the server.
@@ -13,7 +11,6 @@ def load_uc_tools(mcp_server):
   Args:
       mcp_server: The FastMCP server instance to register tools with
   """
-
 
   @mcp_server.tool()
   def describe_uc_catalog(catalog_name: str) -> dict:
