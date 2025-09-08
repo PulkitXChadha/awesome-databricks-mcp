@@ -1,188 +1,277 @@
-# Build Lakeflow Declarative Pipeline (LDP) (Formerly Known as Delta Live Tables DLT) Medallion Architecture Pipeline
+---
+name: build_ldp_pipeline
+description: Build Lakeflow Declarative Pipeline with medallion architecture
+arguments:
+  - name: pipeline_name
+    description: Name for your pipeline
+    required: true
+    schema:
+      type: string
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+  
+  - name: catalog
+    description: Unity Catalog name (will create if specified)
+    required: true
+    schema:
+      type: string
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+  
+  - name: schema
+    description: Schema for Lakeflow tables (will create if specified)  
+    required: true
+    schema:
+      type: string
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+  
+  - name: source_tables
+    description: List of source tables to process
+    required: true
+    schema:
+      type: array
+      items:
+        type: string
+      minItems: 1
+  
+  - name: databricks_cli_profile
+    description: Databricks CLI profile to use
+    required: false
+    schema:
+      type: string
+      default: "DEFAULT"
+  
+  - name: sql_warehouse
+    description: SQL warehouse ID or name for queries
+    required: true
+    schema:
+      type: string
+---
 
-I can help you build a Lakeflow Declarative Pipeline (LDP) (formerly known as Delta Live Tables (DLT) pipeline) using the medallion architecture pattern. This tool will guide you through the complete deployment lifecycle, from initial deployment to Databricks asset bundle deployments of the pipelines, resolving all failures, and ensuring successful pipeline execution.
+Build a Lakeflow Declarative Pipeline (LDP) using medallion architecture for scalable data processing with built-in quality controls.
 
-## Features
-- **Bronze Layer**: Raw data ingestion with audit columns and schema evolution
-- **Silver Layer**: Cleaned and validated data with comprehensive data quality rules
-- **Gold Layer**: Business-ready star schema with fact and dimension tables optimized for analytics and BI tools
-- **Serverless Compute**: Configured for cost-effective, autoscaling compute.
-- **Data Quality Rules**: Built-in expectations that handle real-world data issues gracefully
-- **Multiple Source Types**: Supports Parquet, Delta, CSV, JSON, Kafka, and Auto Loader
-- **Asset Bundle Deployment**: Complete Databricks Asset Bundle for CI/CD deployment
-- **Star Schema Design**: Optimized dimensional model for analytics and reporting
-- **Resolve Errors**: Validate Deployed Databricks Asset Bundle. Execute the pipeline and fix errors, and redeploy until successful execution. 
+## Context
 
+**Configuration Provided:**
+- Pipeline Name: ${pipeline_name}
+- Catalog: ${catalog}
+- Schema: ${schema}
+- Source Tables: ${source_tables}
+- CLI Profile: ${databricks_cli_profile}
+- SQL Warehouse: ${sql_warehouse}
 
-## How to Use
+## Objective
 
-To build your Lakeflow Declarative Pipeline, I'll need information about your source tables and configuration preferences:
+Create a production-ready Lakeflow Declarative Pipeline (formerly Delta Live Tables) that:
+1. Implements medallion architecture (Bronze → Silver → Gold)
+2. Enforces data quality through expectations
+3. Optimizes for analytics with star schema design
+4. Deploys via Databricks Asset Bundles with serverless compute
 
-### Required Information
-- **name**: Table name (e.g., "customers", "orders")
+## Workflow
 
-### Pipeline Configuration
-- **pipeline_name**: Name for your pipeline
-- **catalog**: Unity Catalog name (will create new catalog if specified)
-- **schema**: Schema for the Lakeflow Declarative Pipelines tables (will create new schema if specified)
-- **databricks_cli_profile**: Databricks CLI profile to use (defaults to "DEFAULT" if not provided)
-- **sql_warehouse**: SQL warehouse ID or name to run SQL queries. The pipeline will be serverless.
+### 1. Requirements Analysis
+- Analyze source table structures and relationships
+- Identify primary keys and business entities
+- Define data quality requirements
+- Plan star schema design for gold layer
 
-### Star Schema Design
-The gold layer will be designed as a star schema with:
-- **Fact Tables**: Central tables containing business metrics and measures
-- **Dimension Tables**: Descriptive attributes and hierarchies for analysis
-- **Optimized for Analytics**: Proper indexing, partitioning, and clustering for BI tools
-- **Business Intelligence Ready**: Structured for easy querying and reporting
+### 2. Pipeline Architecture
 
-## What You'll Get
+**Bronze Layer (Raw Ingestion):**
+- Ingest data with minimal transformation
+- Add audit columns (ingestion_time, source_file)
+- Enable schema evolution for flexibility
+- Support multiple formats (Delta, Parquet, CSV, JSON)
 
-The tool will generate:
+**Silver Layer (Cleansed & Validated):**
+- Apply data quality expectations
+- Standardize data types and formats
+- Handle nulls and duplicates
+- Create conformed dimensions
 
-1. **Complete Lakeflow Declarative Pipeline Python Code**: Ready-to-deploy ELT pipeline code with appropriate Expectations that handle real-world data issues gracefully.
-2. **Star Schema Design**: Optimized dimensional model in the gold layer
-3. **Pipeline Configuration**: JSON configuration for Databricks Declarative Pipeline with serverless compute
-4. **Asset Bundle Structure**: Complete Databricks Asset Bundle with:
-   - `databricks.yml` configuration file
-   - `resources/` directory with pipeline definitions
-5. **Monitor and Fix All Errors**: Deploy the Databricks Asset Bundle, run the bundle, and monitor its execution until it succeeds.
+**Gold Layer (Business-Ready):**
+- Implement star schema design
+- Create fact and dimension tables
+- Optimize for query performance
+- Add business calculations
 
-## Success Criteria ✅
-- Pipeline state: "IDLE" 
-- Latest update: "COMPLETED"
-- No ERROR events in recent history
-- All expected tables created and accessible
+### 3. Implementation
 
-## Monitoring Workflow
-1. **Deploy**: `databricks bundle deploy --target dev`
-2. **Start**: `databricks bundle run --target dev {pipeline_name}`
-3. **Monitor**: I'll continuously check status and fix errors
-4. **Success**: Pipeline runs without errors and creates all tables
+**Pipeline Structure:**
+```python
+# Bronze Layer
+@dlt.table(
+    name="bronze_table",
+    comment="Raw data ingestion"
+)
+@dlt.expect_or_drop("valid_id", "id IS NOT NULL")
+def bronze_table():
+    return spark.readStream.table("source_table")
 
-## Common Issues and Solutions
-- **Permission errors**: Run the pre-deployment permissions script first
-- **Schema evolution**: the pipeline handles this automatically with proper expectations
-- **Compute issues**: Serverless compute is configured by default
-- **Data type errors**: Ensure proper type handling in transformations
+# Silver Layer
+@dlt.table(
+    name="silver_table",
+    comment="Cleansed and validated data"
+)
+def silver_table():
+    return dlt.read("bronze_table").select(...)
 
-## Critical Rules (Must Follow)
-- **Data Types**: Use `float()` for numeric values, `datetime.now()` for timestamps
-- **Unity Catalog**: Use `target: {schema_name}` and `catalog: {catalog_name}` separately
-- **Error Handling**: Always handle division by zero and null values
-- **Type Safety**: Use `.0` suffix for numeric literals, never pass PySpark Column objects as data values
-
-## Required Permission Setup
-
-### Pre-deployment Permissions Script
-```sql
--- Create catalog and schema
-CREATE CATALOG IF NOT EXISTS {catalog_name} 
-COMMENT 'Retail analytics catalog for medallion architecture';
-
-CREATE SCHEMA IF NOT EXISTS {catalog_name}.{schema_name} 
-COMMENT 'Medallion architecture schema for bronze, silver, and gold tables';
-
--- Grant comprehensive permissions
-GRANT USE CATALOG ON CATALOG {catalog_name} TO `{user_email}`;
-GRANT CREATE SCHEMA ON CATALOG {catalog_name} TO `{user_email}`;
-GRANT USE SCHEMA ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
-GRANT CREATE TABLE ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
-GRANT CREATE MATERIALIZED VIEW ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
-GRANT CREATE FUNCTION ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
-GRANT ALL PRIVILEGES ON SCHEMA {catalog_name}.{schema_name} TO `{user_email}`;
-
--- Grant source data access
-GRANT SELECT ON SCHEMA {source_catalog}.{source_schema} TO `{user_email}`;
+# Gold Layer
+@dlt.table(
+    name="gold_fact_table",
+    comment="Business metrics fact table"
+)
+def gold_fact_table():
+    return dlt.read("silver_table").join(...)
 ```
 
-## Databricks Documentation
+### 4. Data Quality Expectations
 
-### Core Concepts
-- **[Delta Live Tables Overview](https://docs.databricks.com/en/delta-live-tables/index.html)**: Complete guide to DLT concepts and architecture
-- **[Medallion Architecture](https://docs.databricks.com/en/lakehouse/medallion.html)**: Best practices for data lakehouse design patterns
-- **[Unity Catalog](https://docs.databricks.com/en/data-governance/unity-catalog/index.html)**: Data governance and catalog management
-- **[Delta Lake](https://docs.databricks.com/en/delta/index.html)**: ACID transactions and schema evolution
+**Common Patterns:**
+```python
+# Required fields
+@dlt.expect_or_drop("not_null", "column IS NOT NULL")
 
-### DLT Development
-- **[DLT Python API](https://docs.databricks.com/en/delta-live-tables/python-ref.html)**: Python functions and decorators reference
-- **[DLT Expectations](https://docs.databricks.com/en/delta-live-tables/expectations.html)**: Data quality rules and validation
-- **[DLT Pipeline Configuration](https://docs.databricks.com/en/delta-live-tables/configuration.html)**: Pipeline settings and compute configuration
-- **[DLT Best Practices](https://docs.databricks.com/en/delta-live-tables/best-practices.html)**: Performance and reliability guidelines
+# Data validation
+@dlt.expect_or_fail("valid_range", "value BETWEEN 0 AND 100")
 
-### Deployment & Operations
-- **[Databricks Asset Bundles](https://docs.databricks.com/en/dev-tools/bundles/index.html)**: Infrastructure as code for Databricks
-- **[Asset Bundle CLI](https://docs.databricks.com/en/dev-tools/bundles/cli.html)**: Command-line interface for deployment
-- **[DLT Pipeline Management](https://docs.databricks.com/en/delta-live-tables/manage.html)**: Monitoring, troubleshooting, and maintenance
-- **[Serverless Compute](https://docs.databricks.com/en/compute/serverless.html)**: On-demand compute for cost optimization
+# Referential integrity
+@dlt.expect("foreign_key", "id IN (SELECT id FROM dimension)")
 
-### Data Engineering
-- **[Auto Loader](https://docs.databricks.com/en/ingestion/auto-loader/index.html)**: Incremental data ingestion
-- **[Streaming with DLT](https://docs.databricks.com/en/delta-live-tables/streaming.html)**: Real-time data processing
-- **[Schema Evolution](https://docs.databricks.com/en/delta-live-tables/schema-evolution.html)**: Handling changing data structures
-- **[Data Quality Monitoring](https://docs.databricks.com/en/delta-live-tables/quality-monitoring.html)**: Tracking data quality metrics
+# Data freshness
+@dlt.expect("recent_data", "date >= current_date() - 7")
+```
 
-## Configuration Details
+### 5. Asset Bundle Configuration
 
-- **New Catalog/Schema**: Will create specified catalog and schema if they don't exist
-- **Single Schema**: All medallion tables will be created in one schema.
-- **Serverless Compute**: All layers configured to use serverless compute for cost optimization
-- **CLI Profile**: Uses specified Databricks CLI profile for deployment
-- **SQL Warehouse**: Configured to use the specified warehouse for SQL queries only. The DLT pipeline will be serverless.
+**Directory Structure:**
+```
+project/
+├── databricks.yml
+├── resources/
+│   └── pipeline.yml
+└── src/
+    └── pipeline.py
+```
 
-## Critical Code Generation Rules
+**databricks.yml:**
+```yaml
+bundle:
+  name: ${pipeline_name}_bundle
 
-### Data Type Safety (MANDATORY)
-- **ALWAYS** use `float()` for numeric values in schemas with `DoubleType()`
-- **ALWAYS** use `datetime.now()` instead of `F.current_timestamp()` for data values
-- **ALWAYS** use `.0` suffix for numeric literals (e.g., `0.0` not `0`)
-- **NEVER** pass PySpark Column objects as data values
+resources:
+  pipelines:
+    ${pipeline_name}:
+      name: ${pipeline_name}
+      target: ${schema}
+      catalog: ${catalog}
+      libraries:
+        - file:
+            path: ./src/pipeline.py
+      configuration:
+        pipelines.autoOptimize.managed: true
+      serverless: true
+```
 
-### Unity Catalog Configuration (MANDATORY)
-- **ALWAYS** use `target: {schema_name}` (schema name only)
-- **ALWAYS** specify `catalog: {catalog_name}` as separate field
-- **ALWAYS** include comprehensive permission grants
+### 6. Deployment & Monitoring
 
-### Error Prevention Patterns
-- Handle division by zero: `value if total > 0 else 0.0`
-- Null-safe counting: `df.count() or 0`
-- Type conversion: `float(count)` for all numeric metrics
+**Deployment Steps:**
+```bash
+# Validate bundle
+databricks bundle validate --target dev
 
-## Example Monitoring Session
-  ### Step 1: Deploy and start
-  databricks bundle deploy --target dev
-  databricks bundle run --target dev retail_pipeline
+# Deploy to workspace
+databricks bundle deploy --target dev
 
-  ### Step 2: Get pipeline ID
-  pipeline_id = get_pipeline_id_from_bundle_summary()
+# Start pipeline
+databricks bundle run --target dev ${pipeline_name}
+```
 
-  ### Step 3: Monitor continuously
-  while True:
-      status = check_pipeline_status(pipeline_id)
-      events = get_recent_events(pipeline_id)
+**Monitoring Checklist:**
+- Pipeline state reaches "IDLE"
+- Latest update shows "COMPLETED"
+- No ERROR events in history
+- All tables created and queryable
+- Data quality metrics pass thresholds
 
-      if "COMPLETED" in status:
-          print("✅ Pipeline completed successfully!")
-          break
-      elif "FAILED" in status or any_errors_in_events(events):
-          print("❌ Error found, analyzing...")
-          error_details = extract_error_details(events)
-          fix_code_based_on_error(error_details)
-          redeploy_and_restart()
-      else:
-          print(f"⏳ Pipeline running... Status: {status}")
-          sleep(30)
+## Best Practices
 
-IMPORTANT: Never consider the pipeline "done" until you have continuously monitored it through to successful completion. Many issues only surface during actual execution, not during deployment.
+### Performance Optimization
+- Use serverless compute for auto-scaling
+- Implement incremental processing with Auto Loader
+- Partition large tables by date or category
+- Z-order clustering for query optimization
 
-  After generating the Lakeflow Declarative Pipeline code:
+### Error Handling
+```python
+# Safe division
+value / total if total > 0 else 0.0
 
-  1. GENERATE the complete pipeline with all imports and syntax validation
-  2. DEPLOY the pipeline to the target environment
-  3. START continuous monitoring as described above
-  4. ITERATIVELY fix any errors found during execution
-  5. CONTINUE until successful completion is verified
-  6. DOCUMENT any fixes made during the monitoring process
+# Null handling
+COALESCE(field, default_value)
 
-NOTE: DLT (Delta Live Tables) and Lakeflow Declarative Pipeline are use interchangeabiliy. 
+# Type conversion
+CAST(string_col AS DOUBLE)
+```
 
-Just describe your source tables and requirements, and I'll build a complete Lakeflow Declarative Pipeline with star schema design and Asset Bundle deployment as well as run the Asset Bundle for you!
+### Star Schema Design
+- **Fact Tables**: Transactions, events, measurements
+- **Dimension Tables**: Customers, products, time, geography
+- **Slowly Changing Dimensions**: Type 2 with effective dates
+- **Conformed Dimensions**: Shared across fact tables
+
+## Available Tools
+
+**Pipeline Management:**
+- `list_pipelines`, `get_pipeline`, `create_pipeline`
+- `start_pipeline_update`, `stop_pipeline_update`
+- `get_pipeline_run`, `list_pipeline_runs`
+
+**Unity Catalog:**
+- `create_catalog`, `create_schema`
+- `describe_uc_table`, `list_uc_tables`
+
+**Monitoring:**
+- `execute_dbsql` - Query validation
+- `get_job_run_logs` - Pipeline execution logs
+
+## Success Criteria
+
+✓ Pipeline deploys without errors
+✓ All medallion layers created successfully
+✓ Data quality expectations pass
+✓ Star schema tables queryable
+✓ Performance meets SLA (<5 min for daily refresh)
+✓ Asset Bundle version controlled
+
+## Common Issues & Solutions
+
+| Issue | Solution |
+|-------|----------|
+| Permission denied | Grant schema privileges before deployment |
+| Schema evolution conflicts | Enable `mergeSchema` option |
+| Memory errors | Use serverless or increase cluster size |
+| Slow queries | Add Z-ordering on filter columns |
+| Failed expectations | Review data quality rules, use `expect` instead of `expect_or_fail` |
+
+## Example Star Schema
+
+```yaml
+Gold Layer:
+  Fact Tables:
+    - fact_sales (date_key, product_key, customer_key, amount, quantity)
+    - fact_inventory (date_key, product_key, warehouse_key, quantity)
+  
+  Dimensions:
+    - dim_date (date_key, date, year, quarter, month, day_of_week)
+    - dim_product (product_key, name, category, price)
+    - dim_customer (customer_key, name, segment, geography)
+```
+
+## Documentation References
+
+- [Lakeflow/DLT Overview](https://docs.databricks.com/delta-live-tables/)
+- [Medallion Architecture](https://docs.databricks.com/lakehouse/medallion)
+- [Asset Bundles Guide](https://docs.databricks.com/dev-tools/bundles/)
+- [Data Quality Expectations](https://docs.databricks.com/delta-live-tables/expectations)
+
+Ready to build your Lakeflow Declarative Pipeline! Provide any additional requirements or constraints to customize the implementation.

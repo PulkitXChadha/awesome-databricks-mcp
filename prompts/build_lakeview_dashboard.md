@@ -1,176 +1,218 @@
-# Build Comprehensive Lakeview Dashboard
+---
+name: build_lakeview_dashboard
+description: Build comprehensive Lakeview Dashboard from Unity Catalog tables
+arguments:
+  - name: catalog
+    description: Unity Catalog name containing source data
+    required: false
+    schema:
+      type: string
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+  
+  - name: schema
+    description: Schema containing tables (use all tables) - mutually exclusive with table_names
+    required: false
+    schema:
+      type: string
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+  
+  - name: table_names
+    description: Specific table names (catalog.schema.table format) - mutually exclusive with schema
+    required: false
+    schema:
+      type: array
+      items:
+        type: string
+        pattern: "^[a-zA-Z][a-zA-Z0-9_]*\\.[a-zA-Z][a-zA-Z0-9_]*\\.[a-zA-Z][a-zA-Z0-9_]*$"
+      minItems: 1
+      maxItems: 50
+  
+  - name: warehouse_id
+    description: SQL Warehouse ID for query execution
+    required: true
+    schema:
+      type: string
+      pattern: "^[a-f0-9]{16}$"
+  
+  - name: dashboard_name
+    description: Name for the dashboard
+    required: false
+    schema:
+      type: string
+      maxLength: 255
 
-I can help you build a Lakeview Dashboard from the set of Unity Catalog Tables. This tool will guide you the transforming your data into actionable business insights through automated dashboard creation with comprehensive widget selection, optimal layout design, and production deployment validation.
-
-## Features
-- **User Requirements Gathering**: **FIRST** ask user for catalog, schema, specific tables/views to analyze, and SQL warehouse ID
-- **Data Discovery**: Explore Unity Catalog structure (`describe_uc_schema`, `describe_uc_table`)
-- **Query Validation**: Test SQL with `execute_dbsql` - validate syntax, performance, results
-- **Widget Creation**: Build widgets with validated data and proper configuration
-- **Dashboard Deployment**: Deploy to Databricks with continuous monitoring
-- **Error Resolution**: Iteratively fix issues until all widgets render correctly
-
-## How to Use
-
-To build your Lakeflow Dashboard, I'll need information the following information: 
-
-- **Catalog**: Unity Catalog name containing your data
-- **Schema**: Schema containing the tables to visualize  
-- **Warehouse ID**: SQL warehouse ID for query execution
-- **Dashboard Name**: Name for your dashboard
-- **Tables**: List of tables/views to analyze (auto-discovered if not provided)
-- **Target Workspace**: [specify workspace URL, e.g., https://<workspace-deployment-name>.cloud.databricks.com/]
-- **Business Context**: [describe the business use case and target audience]
-- **Key Metrics**: [list 3-5 primary KPIs to highlight
-
-## CRITICAL REQUIREMENTS (MANDATORY)
-
-### User Input Collection (FIRST STEP - NEVER SKIP)
-- **ALWAYS** ask the user to specify:
-  1. **Databricks Profile Name** (run `databricks auth profiles` if unknown)
-  2. **Source tables/views** with full three-part names (catalog.schema.table)
-  3. **SQL warehouse ID** with validation
-  4. **Target workspace URL** for verification
-- **VALIDATE** profile connectivity before proceeding with data discovery
-- **NEVER** proceed with data discovery or tool execution until user provides table information AND warehouse ID
-- **ALWAYS** confirm catalog, schema, specific tables to analyze, and SQL warehouse ID with the user first
-
-### Widget Expression Validation
-- **ALWAYS** validate that aggregations use widget expressions, not dataset pre-aggregation
-- **TEST** widget expressions with sample queries: `SELECT SUM(field), COUNT(DISTINCT field) FROM table`
-- **VERIFY** date functions work: `SELECT DATE_TRUNC('WEEK', date_field) FROM table`
-- **CONFIRM** conditional logic: `SELECT COUNT(CASE WHEN condition THEN 1 END) FROM table`
-
-### Data Validation (NEVER SKIP)
-- **ALWAYS** test ALL SQL queries with `execute_dbsql` before creating ANY widgets
-- **ALWAYS** verify column names exist in query results using `describe_uc_table`
-- **ALWAYS** check data types match widget requirements
-- **ALWAYS** handle NULL values: `COALESCE(field, 0)` or `CASE WHEN field IS NOT NULL`
-- **ALWAYS** prevent division by zero: `CASE WHEN denominator > 0 THEN value/denominator ELSE 0 END`
-- **ALWAYS**: Create consolidated datasets that can support multiple widget types (avoid 1:1 dataset-to-widget mapping)
-
-### Dashboard Configuration (MANDATORY)
-- **ALWAYS** create exactly ONE .lvdash.json file in `src/` directory
-- **ALWAYS** create widgets with business focurse legends and axis names
-- **NEVER** hard-code email addresses or user names
-- **NEVER** create widgets wider than 6 columns
-- **ALWAYS** specify position coordinates (x, y, width, height)
-
-## 🎯 WIDGET EXPRESSIONS - PRIMARY APPROACH (MANDATORY)
-
-### Core Principle: Raw Data + Widget Expressions
-- **NEVER** pre-aggregate data in datasets
-- **ALWAYS** provide raw, granular data in datasets
-- **IMPLEMENT** all aggregations using widget expressions
-- **LEVERAGE** Lakeview's native aggregation engine for optimal performance
-
-### Required Widget Expression Patterns
-- **Counters**: `SUM(field)`, `COUNT(DISTINCT field)`, `AVG(field)`
-- **Conditional Counts**: `COUNT(CASE WHEN condition THEN 1 END)`
-- **Charts**: Use `y_expression: "SUM(field)"` for aggregated values
-- **Time Series**: `DATE_TRUNC('WEEK', date_field)` for time grouping
-- **Histograms**: `BIN_FLOOR(field, bin_size)` for distribution analysis
-
-### Dataset Design Philosophy
-- **One dataset per logical entity** (sales, customers, orders)
-- **Include all raw dimensions** needed for filtering and grouping
-- **Avoid pre-calculated fields** like totals, averages, or counts
-- **Let widgets handle aggregation** through expressions
-
-**Why This Matters**: Widget expressions provide better performance, more flexibility, and easier maintenance than pre-aggregated datasets. This is a Lakeview best practice that should be the default approach.
-
-## What You'll Get
-### Deliverables
-
-1. **Complete .lvdash.json File**: Production-ready dashboard in `src/` directory
-2. **Optimized SQL Datasets**: Consolidated queries supporting multiple widgets
-3. **Asset Bundle Structure**: `databricks.yml` with parameterized users
-4. **Deploy in Databricks Workspace Bundle**: Deployed dashboard with working URL
-5. Documentation (README.md)
-
-## **🏗️ ASSET BUNDLE BEST PRACTICES**
-- Use `file_path` (not `serialized_dashboard`) for native dashboard resources
-- CRITICAL: Include sync exclusion to prevent duplicate dashboards:
-  sync:
-    exclude:
-      - "*.lvdash.json" 
-- Include proper `root_path` configuration to avoid warnings
-- Use correct permission levels for dashboards (CAN_READ, CAN_MANAGE)
-- Target workspace: field-eng-east (https://adb-984752964297111.11.azuredatabricks.net/)
-- **IMPORTANT**: Remove unsupported fields from databricks.yml (exclude, include patterns not supported in current CLI version)
-
-## Data Quality & Performance
-
-### Safe SQL Patterns (REQUIRED)
-```sql
--- Handle null values safely
-COALESCE(field, 0) AS safe_field
-
--- Prevent division by zero  
-CASE WHEN total > 0 THEN value/total ELSE 0 END AS percentage
-
-```
-
-### Layout Best Practices
-- **12-column responsive grid** with consistent spacing
-- **KPIs at top** for immediate visibility
-- **Logical flow** from overview to detail
-- **Filters prominently placed** for easy access
-
-
-## Implementation Steps
-
-1. **Requirements Collection**: **MANDATORY FIRST STEP** - Ask user for catalog, schema, table names, and SQL warehouse ID
-2. **Data Discovery**: Use `describe_uc_schema`, `describe_uc_table` to explore structure
-3. **Query Validation**: Test ALL SQL with `execute_dbsql` before widget creation  
-4. **Dashboard Creation**: Use `create_lakeview_dashboard` with validated queries
-5. **Widget Building**: Start with KPIs, add supporting charts, configure filters
-6. **Deployment & Monitoring**: Deploy and monitor until all widgets render successfully
-
-## **Deployment Requirements**
-- **Asset Bundle**: Create Databricks Asset Bundle for version control
-- **Parameterization**: Use ${workspace.current_user.userName} for all user references
-- **Environment**: [specify target environment, e.g., dev/prod]
-- **Permissions**: [specify permission levels needed]
-
-## Common Error Fixes
-
-### Missing Columns
-```sql
--- Get actual schema first
-DESCRIBE TABLE catalog.schema.table;
-
--- Update query with correct columns  
-SELECT correct_column_name AS expected_name
-FROM catalog.schema.table;
-```
-
-### Data Type Mismatches
-```sql
--- Cast to appropriate types
-SELECT CAST(string_number AS DOUBLE) AS numeric_value
-FROM source_table;
-```
-
-## 🛠️ Available Tools
-
-### Data Exploration
-- `describe_uc_schema`, `describe_uc_table` - Analyze data structure
-- `execute_dbsql` - Test and validate SQL queries
-
-### Dashboard & Widget Creation  
-- `create_lakeview_dashboard` - Build new dashboard
-- `get_lakeview_dashboard` - Monitor dashboard status
-- Widget functions: bar charts, line charts, counters, tables, filters
-
-## Key Resources
-
-- **[Lakeview Dashboards](https://docs.databricks.com/en/dashboards/lakeview/index.html)**: Complete guide
-- **[Asset Bundles](https://docs.databricks.com/en/dev-tools/bundles/index.html)**: Deployment framework
-- **[Unity Catalog](https://docs.databricks.com/en/data-governance/unity-catalog/index.html)**: Data governance
-
+mutually_exclusive:
+  - [schema, table_names]
 ---
 
-**Remember**: This tool provides end-to-end dashboard creation from data discovery to production deployment. Always validate SQL queries first, use consolidated datasets for efficiency, and monitor until complete success.
+Create a comprehensive Lakeview Dashboard from Unity Catalog tables with optimized widgets, layouts, and production-ready deployment.
 
-Just describe your source tables and requirements, and I'll build a complete Lakeflow Dashboard and Asset Bundle deployment for you!
+## Context
+
+**Configuration Provided:**
+- Warehouse ID: ${warehouse_id}
+- Catalog: ${catalog}
+- Schema: ${schema}
+- Tables: ${table_names}
+- Dashboard Name: ${dashboard_name}
+
+## Objective
+
+Transform Unity Catalog data into an actionable Lakeview Dashboard by:
+1. Discovering and analyzing the data structure
+2. Creating optimized SQL datasets with widget expressions
+3. Building responsive dashboard layouts with appropriate visualizations
+4. Deploying via Databricks Asset Bundles
+
+## Workflow
+
+### 1. Data Discovery & Requirements
+- Gather missing configuration details (catalog, schema, tables if not provided)
+- Explore Unity Catalog structure using `describe_uc_schema` and `describe_uc_table`
+- Understand business context and key metrics to highlight
+- Identify relationships between tables
+
+### 2. Query Design & Validation
+- Design consolidated datasets that support multiple widgets
+- Test all SQL queries with `execute_dbsql` before widget creation
+- Validate column names, data types, and handle edge cases
+- Implement safe SQL patterns (NULL handling, division by zero prevention)
+
+### 3. Dashboard Creation Strategy
+
+**Dataset Design Principles:**
+- One dataset per logical entity (sales, customers, orders)
+- Include raw dimensions for filtering and grouping
+- Let widgets handle aggregation through expressions
+- Optimize for performance with proper indexing hints
+
+**Widget Expression Patterns:**
+```sql
+-- Aggregations in widgets, not datasets
+y_expression: "SUM(revenue)"
+x_expression: "DATE_TRUNC('MONTH', date)"
+
+-- Conditional counts
+"COUNT(CASE WHEN status = 'active' THEN 1 END)"
+
+-- Percentages with safe division
+"CASE WHEN SUM(total) > 0 THEN SUM(value)/SUM(total) * 100 ELSE 0 END"
+```
+
+### 4. Dashboard Implementation
+- Create dashboard using `create_dashboard_file` with validated configurations
+- Design 12-column responsive grid layout
+- Position KPIs at top for immediate visibility
+- Add supporting charts with logical flow from overview to detail
+- Include interactive filters for user exploration
+
+**Layout Guidelines:**
+- Full width: `width: 12` (for headers/separators)
+- Half width: `width: 6` (side-by-side comparisons)
+- Quarter width: `width: 3` (KPI cards)
+- Standard height: `height: 4` (most widgets)
+
+### 5. Deployment & Validation
+- Create Databricks Asset Bundle structure
+- Generate `databricks.yml` with proper configurations
+- Deploy using `databricks bundle deploy`
+- Monitor dashboard rendering and fix any issues
+- Validate all widgets display correctly
+
+### 6. Asset Bundle Configuration
+
+**Critical Configuration Requirements:**
+- Use `file_path` (not `serialized_dashboard`) for native dashboard resources
+- Include sync exclusion to prevent duplicate dashboards:
+  ```yaml
+  sync:
+    exclude:
+      - "*.lvdash.json"
+  ```
+- Include proper `root_path` configuration to avoid warnings
+- Use correct permission levels for dashboards (`CAN_READ`, `CAN_MANAGE`)
+- Remove unsupported fields from databricks.yml (exclude/include patterns not supported in current CLI version)
+
+**Example databricks.yml Configuration:**
+```yaml
+bundle:
+  name: my_dashboard_bundle
+
+workspace:
+  root_path: /Workspace/Users/${workspace.current_user.userName}/dashboards
+
+sync:
+  exclude:
+    - "*.lvdash.json"
+
+resources:
+  dashboards:
+    my_dashboard:
+      display_name: "Sales Analytics Dashboard"
+      file_path: ./src/dashboard.lvdash.json
+      permissions:
+        - level: CAN_MANAGE
+          user_name: ${workspace.current_user.userName}
+        - level: CAN_READ
+          group_name: analysts
+
+targets:
+  dev:
+    workspace:
+      host: https://adb-984752964297111.11.azuredatabricks.net/
+```
+
+## Best Practices
+
+### Widget Selection Guide
+- **Counters**: Single KPI metrics
+- **Bar Charts**: Categorical comparisons
+- **Line Charts**: Time series trends
+- **Tables**: Detailed data exploration
+- **Pie Charts**: Part-to-whole relationships
+- **Heatmaps**: Two-dimensional analysis
+
+### Error Prevention
+- Verify table existence before querying
+- Check column data types match widget requirements
+- Test with sample data before full deployment
+- Include error handling in SQL queries
+
+## Available Tools
+
+**Data Exploration:**
+- `list_uc_schemas`, `list_uc_tables`
+- `describe_uc_catalog`, `describe_uc_schema`, `describe_uc_table`
+- `execute_dbsql` - Test and validate queries
+
+**Dashboard Management:**
+- `create_dashboard_file` - Create new dashboard with widgets
+- `validate_dashboard_sql` - Validate SQL before dashboard creation
+- `get_widget_configuration_guide` - Widget configuration reference
+
+## Success Criteria
+
+✓ All SQL queries execute without errors
+✓ Dashboard renders with all widgets displaying data
+✓ Layout is responsive and user-friendly
+✓ Asset Bundle deploys successfully
+✓ Performance meets expectations (<3s load time)
+
+## Example Dashboard Structure
+
+```yaml
+Dashboard:
+  - Row 1: KPI Cards (4 counters)
+  - Row 2: Revenue Trend (line chart) | Category Breakdown (bar chart)
+  - Row 3: Detailed Table with Filters
+  - Row 4: Geographic Distribution (map) | Top Products (horizontal bar)
+```
+
+## Notes
+
+- Prioritize widget expressions over pre-aggregated datasets for flexibility
+- Use parameterized queries for dynamic filtering
+- Consider creating multiple dashboards for different user personas
+- Document assumptions and data refresh schedules
+
+Ready to build your Lakeview Dashboard! Provide any additional requirements or context to customize the implementation.
