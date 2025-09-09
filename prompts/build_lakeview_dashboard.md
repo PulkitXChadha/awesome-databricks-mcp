@@ -52,7 +52,7 @@ mutually_exclusive:
   - [schema, table_names]
 ---
 
-Build a Lakeview Dashboard from Unity Catalog tables with optimized widgets, layouts, and production-ready deployment.
+Build a Lakeview Dashboard from tables in Databricks with optimized widgets, layouts, and production-ready deployment.
 
 ## Context
 
@@ -75,6 +75,7 @@ Create production-ready Lakeview Dashborads by:
 ## Workflow
 
 ### 1: Validation & Discovery (REQUIRED FIRST)
+- Make sure to get the values of the parameter from the user before running any tool.
 - **STOP**: Verify workspace context and required parameters
 - Validate source table accessibility
 - Understand business context and key metrics to highlight
