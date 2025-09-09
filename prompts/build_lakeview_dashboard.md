@@ -52,7 +52,7 @@ mutually_exclusive:
   - [schema, table_names]
 ---
 
-Build a Lakeview Dashboard from Unity Catalog tables with optimized widgets, layouts, and production-ready deployment.
+Build a Lakeview Dashboard from tables in Databricks with optimized widgets, layouts, and production-ready deployment.
 
 ## Context
 
