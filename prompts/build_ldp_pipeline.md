@@ -73,6 +73,7 @@ Create a production-ready Lakeflow Declarative Pipeline (formerly Delta Live Tab
 ## Workflow
 
 ### 1: Validation & Discovery (REQUIRED FIRST)
+- Make sure to get the values of the parameter from the user before running any tool.
 - **STOP**: Verify workspace context and required parameters
 - Validate source table accessibility
 - Identify primary keys and business entities
