@@ -52,7 +52,7 @@ mutually_exclusive:
   - [schema, table_names]
 ---
 
-Create a comprehensive Lakeview Dashboard from Unity Catalog tables with optimized widgets, layouts, and production-ready deployment.
+Build a Lakeview Dashboard from Unity Catalog tables with optimized widgets, layouts, and production-ready deployment.
 
 ## Context
 
@@ -66,7 +66,7 @@ Create a comprehensive Lakeview Dashboard from Unity Catalog tables with optimiz
 
 ## Objective
 
-Transform Unity Catalog data into an actionable Lakeview Dashboard by:
+Create production-ready Lakeview Dashborads by:
 1. Discovering and analyzing the data structure
 2. Creating optimized SQL datasets with widget expressions
 3. Building responsive dashboard layouts with appropriate visualizations
@@ -76,12 +76,11 @@ Transform Unity Catalog data into an actionable Lakeview Dashboard by:
 
 ### 1: Validation & Discovery (REQUIRED FIRST)
 - **STOP**: Verify workspace context and required parameters
-- Explore Unity Catalog structure using `describe_uc_schema` and `describe_uc_table`
+- Validate source table accessibility
 - Understand business context and key metrics to highlight
 - Identify relationships between tables
 - Extract configuration from existing databricks.yml if present
 - Identify table relationships and data patterns
-- Handle empty tables gracefully (common in dev environments)
 
 ### 2. Query Design & Validation
 - **ALWAYS** Use widget-level aggregations rather than pre-aggregated datasets
