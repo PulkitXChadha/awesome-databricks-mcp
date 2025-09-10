@@ -43,10 +43,54 @@ def load_config() -> dict:
 
 
 config = load_config()
-servername = config.get('servername', 'databricks-mcp')
+servername = config.get('servername', 'awesome-databricks-mcp')
 
-# Create MCP server
-mcp_server = FastMCP(name=servername)
+# Create MCP server with comprehensive instructions
+mcp_server = FastMCP(
+    name=servername,
+    instructions="""
+Welcome to the Awesome Databricks MCP Server! This server provides comprehensive tools for interacting with your Databricks workspace through Claude and other MCP clients.
+
+## Available Capabilities
+
+### 🔧 Core Tools (88+ available across 5 active modules):
+- **SQL Operations**: Execute queries, manage warehouses, monitor performance
+- **Unity Catalog**: Browse catalogs, schemas, tables, and manage metadata  
+- **Jobs & Pipelines**: Create, run, and monitor Databricks jobs and DLT pipelines
+- **Lakeview Dashboards**: Build comprehensive dashboards with 16+ widget types
+- **Data Management**: Handle DBFS operations, external locations, and storage
+
+### 📝 Smart Prompts:
+- **build_lakeview_dashboard**: Create comprehensive Lakeview dashboards with data validation
+- **build_ldp_pipeline**: Build Lakehouse Data Pipelines for data processing
+
+## Getting Started
+
+### Quick Commands to Try:
+1. `What MCP tools are available?` - See all available tools
+2. `List my Databricks catalogs` - Browse Unity Catalog structure
+3. `Execute: SHOW DATABASES` - Run SQL queries
+4. `Create a sales dashboard` - Build interactive dashboards
+5. `Show my recent job runs` - Monitor pipeline execution
+
+### Best Practices:
+- Start with `list_uc_catalogs` to explore your data
+- Use `execute_dbsql` for running SQL queries with automatic warehouse selection
+- Build dashboards step-by-step: data → validation → widgets → layout
+- Monitor long-running operations with status checking tools
+
+### Authentication:
+- **Local Development**: Uses your Databricks CLI credentials automatically
+- **Production**: OAuth handled seamlessly through Databricks Apps platform
+
+### Need Help?
+- Ask: `How do I build a dashboard?` for detailed guidance
+- Ask: `What databases can I access?` to explore your data sources
+- Ask: `Show me job monitoring tools` for pipeline management options
+
+This server bridges Claude's AI capabilities with your Databricks workspace, enabling natural language data operations, automated dashboard creation, and intelligent workspace management.
+    """.strip()
+)
 
 # Load prompts and tools
 load_prompts(mcp_server)
